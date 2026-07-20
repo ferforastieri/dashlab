@@ -4,6 +4,7 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsInt, IsObject, IsOpti
 export enum SurfaceDto { WEB = 'WEB', MOBILE = 'MOBILE' }
 export enum KindDto { APPLICATION = 'APPLICATION', WIDGET = 'WIDGET' }
 export enum WidgetTypeDto { SYSTEM='SYSTEM', STORAGE='STORAGE', NETWORK='NETWORK', CLOCK='CLOCK', WEATHER='WEATHER', SEARCH='SEARCH', STATUS='STATUS', PROMQL='PROMQL' }
+export enum LayoutPresetDto { FREE='FREE', ZIMA='ZIMA', FOCUS='FOCUS', COMPACT='COMPACT' }
 
 export class BrandingDto {
   @IsOptional() @IsString() @Length(1, 80) name?: string;
@@ -55,4 +56,11 @@ export class SaveLayoutDto {
 export class WeatherQueryDto {
   @Type(() => Number) @Min(-90) @Max(90) latitude!: number;
   @Type(() => Number) @Min(-180) @Max(180) longitude!: number;
+}
+export class SelectLayoutPresetDto {
+  @IsEnum(LayoutPresetDto) preset!: LayoutPresetDto;
+  @IsOptional() @IsEnum(SurfaceDto) surface?: SurfaceDto;
+}
+export class ResetLayoutPresetDto {
+  @IsOptional() @IsEnum(SurfaceDto) surface?: SurfaceDto;
 }

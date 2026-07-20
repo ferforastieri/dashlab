@@ -214,6 +214,8 @@ function Dashboard({ logout }: { logout: () => void }) {
   const [data, setData] = useState<any>(null),
     [metrics, setMetrics] = useState<Record<string, number | null>>({}),
     [show, setShow] = useState(false),
+    [showLayouts,setShowLayouts]=useState(false),
+    [presets,setPresets]=useState<any[]>([]),
     [mode,setMode] = useState<'app'|'widget'|'brand'|'account'>('app'),
     [selected,setSelected] = useState<any>(null),
     [actionItem,setActionItem] = useState<{kind:'app'|'widget',item:any}|null>(null),
@@ -229,6 +231,7 @@ function Dashboard({ logout }: { logout: () => void }) {
       .catch((e) => setInfo({title:'Não foi possível carregar',message:e.message}));
   useEffect(() => {
     load();
+    request('/layout-presets').then(setPresets).catch(()=>{});
     const loadMetrics = () =>
       request("/metrics/overview")
         .then(setMetrics)
@@ -251,7 +254,9 @@ function Dashboard({ logout }: { logout: () => void }) {
     } catch {}
   }
   async function remove(){if(!confirmDelete)return;const x=confirmDelete;setConfirmDelete(null);try{await request(`/${x.kind}/${x.id}`,{method:'DELETE'});load()}catch{}}
-  async function moveApp(id:string,delta:number){const layouts=[...data.layouts];const appLayouts=layouts.filter((x:any)=>x.kind==='APPLICATION');const at=appLayouts.findIndex((x:any)=>x.applicationId===id),to=Math.max(0,Math.min(appLayouts.length-1,at+delta));if(at===to)return;const a=appLayouts[at],b=appLayouts[to];const ai=layouts.indexOf(a),bi=layouts.indexOf(b);[layouts[ai],layouts[bi]]=[layouts[bi],layouts[ai]];await request('/layouts/mobile',{method:'PUT',body:JSON.stringify({items:layouts.map((x:any)=>({kind:x.kind,applicationId:x.applicationId,widgetId:x.widgetId,x:x.x||0,y:x.y||0,w:x.w||1,h:x.h||1}))})});load()}
+  async function saveLayouts(layouts:any[]){await request('/layouts/mobile',{method:'PUT',body:JSON.stringify({items:layouts.map((x:any)=>({kind:x.kind,applicationId:x.applicationId,widgetId:x.widgetId,x:x.x||0,y:x.y||0,w:x.w||1,h:x.h||1}))})});load()}
+  async function moveItem(kind:'APPLICATION'|'WIDGET',id:string,delta:number){const layouts=[...data.layouts],same=layouts.filter((x:any)=>x.kind===kind),field=kind==='APPLICATION'?'applicationId':'widgetId',at=same.findIndex((x:any)=>x[field]===id),to=Math.max(0,Math.min(same.length-1,at+delta));if(at===to)return;const a=same[at],b=same[to],ai=layouts.indexOf(a),bi=layouts.indexOf(b);[layouts[ai],layouts[bi]]=[layouts[bi],layouts[ai]];await saveLayouts(layouts)}
+  async function resizeItem(id:string,delta:number){await saveLayouts(data.layouts.map((x:any)=>x.widgetId===id?{...x,w:Math.max(1,Math.min(6,(x.w||1)+delta))}:x))}
   async function open(app: AppItem) {
     if (app.deepLink) {
       const ok = await Linking.canOpenURL(app.deepLink);
@@ -259,6 +264,7 @@ function Dashboard({ logout }: { logout: () => void }) {
     }
     Linking.openURL(app.url);
   }
+  async function selectPreset(preset:string){try{await request('/layout-presets/active',{method:'PUT',body:JSON.stringify({preset,surface:'MOBILE'})});setShowLayouts(false);load()}catch{}}
   if (!data)
     return (
       <Center>
@@ -273,7 +279,7 @@ function Dashboard({ logout }: { logout: () => void }) {
           <Text style={s.brand}>{data.branding?.name || data.name}</Text>
           <Text style={s.muted}>Seu espaço pessoal</Text>
         </View>
-        <View style={{flexDirection:'row',gap:18}}><Pressable onPress={()=>{setMode('brand');setName(data.branding?.name||data.name);setUrl(data.branding?.wallpaper||'https://');setExtra(data.branding?.accent||'#ff7a1a');setShow(true)}}><Ionicons name="settings-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onLongPress={logout} onPress={()=>{setMode('account');setName('');setUrl('');setShow(true)}}><Ionicons name="person-circle-outline" color="#dbe5ef" size={25} /></Pressable></View>
+        <View style={{flexDirection:'row',gap:18}}><Pressable onPress={()=>setShowLayouts(true)}><Ionicons name="grid-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onPress={()=>{setMode('brand');setName(data.branding?.name||data.name);setUrl(data.branding?.wallpaper||'https://');setExtra(data.branding?.accent||'#ff7a1a');setShow(true)}}><Ionicons name="settings-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onLongPress={logout} onPress={()=>{setMode('account');setName('');setUrl('');setShow(true)}}><Ionicons name="person-circle-outline" color="#dbe5ef" size={25} /></Pressable></View>
       </View>
       <ScrollView contentContainerStyle={s.content}>
         <View style={s.search}>
@@ -346,7 +352,8 @@ function Dashboard({ logout }: { logout: () => void }) {
           </View>
         </View>
       </Modal>
-      {!!actionItem&&<ActionModal title={actionItem.item.name||actionItem.item.title} close={()=>setActionItem(null)} actions={actionItem.kind==='app'?[{label:'Mover antes',run:()=>moveApp(actionItem.item.id,-1)},{label:'Mover depois',run:()=>moveApp(actionItem.item.id,1)},{label:'Editar',run:()=>edit('app',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'applications',id:actionItem.item.id,name:actionItem.item.name})}]:[{label:'Editar',run:()=>edit('widget',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'widgets',id:actionItem.item.id,name:actionItem.item.title})}]}/>}
+      <Modal transparent visible={showLayouts} animationType="slide" onRequestClose={()=>setShowLayouts(false)}><Pressable style={s.modalBack} onPress={()=>setShowLayouts(false)}><Pressable style={s.layoutSheet} onPress={()=>{}}><View style={s.sheetHandle}/><Text style={s.dialogTitle}>Escolha um layout</Text><Text style={s.dialogMessage}>Cada opção mantém sua própria organização.</Text>{presets.map(p=><Pressable key={p.id} style={[s.mobilePreset,data.layoutPreset===p.id&&s.mobilePresetActive]} onPress={()=>selectPreset(p.id)}><View style={s.mobilePresetIcon}><Ionicons name={p.id==='ZIMA'?'albums-outline':p.id==='FOCUS'?'browsers-outline':'grid-outline'} color="#ff8b35" size={25}/></View><View style={{flex:1}}><Text style={s.mobilePresetTitle}>{p.name}</Text><Text style={s.mobilePresetDescription}>{p.description}</Text></View>{data.layoutPreset===p.id&&<Ionicons name="checkmark-circle" color="#ff8b35" size={22}/>}</Pressable>)}<Pressable style={s.actionRow} onPress={()=>setShowLayouts(false)}><Text style={s.actionText}>Cancelar</Text></Pressable></Pressable></Pressable></Modal>
+      {!!actionItem&&<ActionModal title={actionItem.item.name||actionItem.item.title} close={()=>setActionItem(null)} actions={actionItem.kind==='app'?[{label:'Mover antes',run:()=>moveItem('APPLICATION',actionItem.item.id,-1)},{label:'Mover depois',run:()=>moveItem('APPLICATION',actionItem.item.id,1)},{label:'Editar',run:()=>edit('app',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'applications',id:actionItem.item.id,name:actionItem.item.name})}]:[{label:'Mover antes',run:()=>moveItem('WIDGET',actionItem.item.id,-1)},{label:'Mover depois',run:()=>moveItem('WIDGET',actionItem.item.id,1)},{label:'Diminuir',run:()=>resizeItem(actionItem.item.id,-1)},{label:'Aumentar',run:()=>resizeItem(actionItem.item.id,1)},{label:'Editar',run:()=>edit('widget',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'widgets',id:actionItem.item.id,name:actionItem.item.title})}]}/>}
       {!!confirmDelete&&<ConfirmMobile title="Excluir item" message={`Deseja excluir “${confirmDelete.name}”?`} cancel={()=>setConfirmDelete(null)} confirm={remove}/>}
       {!!info&&<InfoModal title={info.title} message={info.message} close={()=>setInfo(null)}/>}
     </SafeAreaView>
@@ -547,4 +554,10 @@ const s = StyleSheet.create({
   actionRow:{paddingVertical:15,borderBottomWidth:1,borderBottomColor:'#ffffff0c'},
   actionText:{color:'#e5ebf1',fontSize:16,textAlign:'center'},
   actionDanger:{color:'#ff7f78'},
+  layoutSheet:{backgroundColor:'#101a26',borderTopLeftRadius:28,borderTopRightRadius:28,padding:20,paddingBottom:30,gap:10},
+  mobilePreset:{flexDirection:'row',alignItems:'center',gap:12,padding:13,borderRadius:16,borderWidth:1,borderColor:'#ffffff14',backgroundColor:'#ffffff08'},
+  mobilePresetActive:{borderColor:'#ff7a1a',backgroundColor:'#ff7a1a16'},
+  mobilePresetIcon:{width:48,height:48,borderRadius:13,backgroundColor:'#071019',alignItems:'center',justifyContent:'center'},
+  mobilePresetTitle:{color:'#f2f5f8',fontWeight:'700',fontSize:15},
+  mobilePresetDescription:{color:'#8291a2',fontSize:11,marginTop:3},
 });

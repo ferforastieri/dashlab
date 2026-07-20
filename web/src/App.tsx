@@ -12,9 +12,10 @@ import {
   Server,
   Settings,
   Edit3,
-  Maximize2,
-  Minimize2,
   UserRound,
+  LayoutGrid,
+  Pencil,
+  RotateCcw,
   Trash2,
   X,
 } from "lucide-react";
@@ -47,7 +48,9 @@ type Dash = {
   applications: AppItem[];
   widgets: Widget[];
   layouts: Layout[];
+  layoutPreset: 'FREE'|'ZIMA'|'FOCUS'|'COMPACT';
 };
+type Preset={id:'FREE'|'ZIMA'|'FOCUS'|'COMPACT';name:string;description:string};
 const icons: any = {
   nextcloud: "☁️",
   immich: "🌄",
@@ -138,6 +141,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     [query, setQuery] = useState(""),
     [modal, setModal] = useState<"app" | "widget" | "brand" | "account" | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | null>(null),
+    [layoutEdit,setLayoutEdit]=useState(false),
+    [showLayouts,setShowLayouts]=useState(false),
+    [presets,setPresets]=useState<Preset[]>([]),
     [drag, setDrag] = useState<number | null>(null),
     [menu, setMenu] = useState<string | null>(null),
     [statuses, setStatuses] = useState<Record<string, any>>({}),
@@ -145,6 +151,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const load = () => api("/dashboard?surface=web").then(setDash);
   useEffect(() => {
     load();
+    api('/layout-presets').then(setPresets).catch(()=>{});
     const tick = () =>
       api("/metrics/overview")
         .then(setMetrics)
@@ -174,8 +181,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   async function drop(at: number) {
     if (drag === null || !dash) return;
     const next = [...ordered];
-    const [m] = next.splice(drag, 1);
-    next.splice(at, 0, m);
+    if (dash.layoutPreset === 'FREE') { const [m] = next.splice(drag, 1); next.splice(at, 0, m); }
+    else { const a=next[drag],b=next[at];[a.x,b.x]=[b.x,a.x];[a.y,b.y]=[b.y,a.y]; }
     setDrag(null);
     await api("/layouts/web", {
       method: "PUT",
@@ -183,8 +190,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         next.map((x, i) => ({
           ...x,
           order: i,
-          x: i % 4,
-          y: Math.floor(i / 4),
+          x: dash.layoutPreset === 'FREE' ? i % 4 : x.x,
+          y: dash.layoutPreset === 'FREE' ? Math.floor(i / 4) : x.y,
           w: x.w || (x.kind === 'WIDGET' ? 2 : 1),
           h: x.h || 1,
         })),
@@ -192,11 +199,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     });
     load();
   }
-  async function resize(layout: Layout, delta: number) {
-    const next = ordered.map(x => x.id === layout.id ? { ...x, w: Math.max(1, Math.min(4, (x.w || 1) + delta)) } : x);
+  async function resize(layout: Layout, axis:'w'|'h', delta: number) {
+    const max=axis==='w'?(dash?.layoutPreset==='FREE'?4:12):6;
+    const next = ordered.map(x => x.id === layout.id ? { ...x, [axis]: Math.max(1, Math.min(max, (x[axis] || 1) + delta)) } : x);
     await api('/layouts/web', { method:'PUT', body: JSON.stringify({ items: next.map(({kind,applicationId,widgetId,x,y,w,h}) => ({kind,applicationId,widgetId,x,y,w,h})) }) });
     load();
   }
+  async function choosePreset(preset:Preset['id']){await api('/layout-presets/active',{method:'PUT',body:JSON.stringify({preset,surface:'WEB'})});setShowLayouts(false);load()}
+  async function resetPreset(){if(!dash)return;await api(`/layout-presets/${dash.layoutPreset}/reset`,{method:'POST',body:JSON.stringify({surface:'WEB'})});load()}
   async function remove(kind: string, id: string) {
     await api(`/${kind}/${id}`, { method: "DELETE" });
     setMenu(null);
@@ -206,7 +216,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const branding = dash.branding || {};
   return (
     <div
-      className="desktop"
+      className={`desktop preset-${dash.layoutPreset.toLowerCase()} ${layoutEdit?'layout-editing':''}`}
       style={{
         backgroundImage: branding.wallpaper
           ? `linear-gradient(#07101aaa,#07101aaa),url(${branding.wallpaper})`
@@ -248,12 +258,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           >
             <Settings />
           </button>
+          <button className="icon-button" onClick={()=>setShowLayouts(true)} title="Escolher layout"><LayoutGrid /></button>
+          <button className={`icon-button ${layoutEdit?'active':''}`} onClick={()=>setLayoutEdit(!layoutEdit)} title="Editar organização"><Pencil /></button>
           <button className="icon-button" onClick={() => setModal("account")} title="Minha conta"><UserRound /></button>
           <button className="icon-button" onClick={onLogout} title="Sair">
             <LogOut />
           </button>
         </div>
       </header>
+      <div className="layout-bar"><div><LayoutGrid/><strong>{presets.find(x=>x.id===dash.layoutPreset)?.name || dash.layoutPreset}</strong></div>{layoutEdit&&<><span>Arraste os cards e ajuste seus tamanhos</span><button onClick={resetPreset}><RotateCcw/> Restaurar</button><button className="primary" onClick={()=>setLayoutEdit(false)}>Concluir</button></>}</div>
       <main>
         <section className="app-grid">
           {ordered.map((layout, index) => {
@@ -269,8 +282,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             return (
               <div
                 key={layout.id}
-                className={`layout-item span-${Math.min(4, layout.w || 1)}`}
-                draggable
+                className={`layout-item span-${Math.min(12, layout.w || 1)} kind-${layout.kind.toLowerCase()}`}
+                style={dash.layoutPreset==='FREE'?undefined:{gridColumn:`${layout.x+1} / span ${layout.w}`,gridRow:`${layout.y+1} / span ${layout.h}`}}
+                draggable={layoutEdit}
                 onDragStart={() => setDrag(index)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => drop(index)}
@@ -294,7 +308,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     <b>{app.name}</b>
                     <i className={`status-dot ${statuses[app.id]?.online ? 'online' : statuses[app.id] ? 'offline' : ''}`} title={statuses[app.id] ? `${statuses[app.id].online?'Online':'Offline'} · ${statuses[app.id].latency} ms` : 'Verificando'} />
                     <button
-                      className="item-menu"
+                      className="item-menu item-control"
                       onClick={() => setMenu(menu === app.id ? null : app.id)}
                     >
                       <MoreVertical />
@@ -313,7 +327,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     widget={widget!}
                     metrics={metrics}
                     onEdit={() => { setEditing(widget!); setModal('widget'); }}
-                    onResize={(d) => resize(layout, d)}
+                    onResize={(axis,d) => resize(layout,axis,d)}
+                    editingLayout={layoutEdit}
                     onDelete={() => setConfirmDelete({kind:"widgets",id:widget!.id,name:widget!.title})}
                   />
                 )}
@@ -348,6 +363,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         />
       )}
       {confirmDelete&&<ConfirmModal title="Excluir item" message={`Deseja excluir “${confirmDelete.name}”? Esta ação não pode ser desfeita.`} confirmLabel="Excluir" danger onCancel={()=>setConfirmDelete(null)} onConfirm={async()=>{const x=confirmDelete;setConfirmDelete(null);await remove(x.kind,x.id)}}/>}
+      {showLayouts&&<LayoutPicker presets={presets} active={dash.layoutPreset} close={()=>setShowLayouts(false)} choose={choosePreset}/>}
     </div>
   );
 }
@@ -369,12 +385,14 @@ function WidgetCard({
   onDelete,
   onEdit,
   onResize,
+  editingLayout,
 }: {
   widget: Widget;
   metrics: any;
   onDelete: () => void;
   onEdit: () => void;
-  onResize: (delta:number) => void;
+  onResize: (axis:'w'|'h',delta:number) => void;
+  editingLayout:boolean;
 }) {
   const [remote, setRemote] = useState<any>(null);
   useEffect(() => {
@@ -406,10 +424,10 @@ function WidgetCard({
   const Icon = data[0];
   return (
     <div className="widget">
-      <button className="widget-delete" onClick={onDelete}>
+      <button className="widget-delete item-control" onClick={onDelete}>
         <X />
       </button>
-      <div className="widget-actions"><button onClick={onEdit} title="Editar"><Edit3 /></button><button onClick={()=>onResize(-1)} title="Diminuir"><Minimize2 /></button><button onClick={()=>onResize(1)} title="Aumentar"><Maximize2 /></button></div>
+      {editingLayout&&<div className="widget-actions"><button onClick={onEdit} title="Editar"><Edit3 /></button><button onClick={()=>onResize('w',-1)} title="Menos largura">−W</button><button onClick={()=>onResize('w',1)} title="Mais largura">+W</button><button onClick={()=>onResize('h',-1)} title="Menos altura">−H</button><button onClick={()=>onResize('h',1)} title="Mais altura">+H</button></div>}
       <div className="widget-title">
         <Icon />
         {widget.title}
@@ -642,5 +660,9 @@ function Account({close}:{close:()=>void}) {
   async function logoutAll(){await api('/auth/logout-all',{method:'POST'});clearAuth();location.reload()}
   async function remove(){try{await api('/auth/account',{method:'DELETE',body:JSON.stringify({password:currentPassword})});setTimeout(()=>{clearAuth();location.reload()},900)}catch{}}
   return <><div className="account"><label>Senha atual<input type="password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/></label><label>Nova senha<input type="password" minLength={8} value={newPassword} onChange={e=>setNew(e.target.value)}/></label><button type="button" className="primary" onClick={change}>Alterar senha</button><h3>Sessões ativas ({sessions.length})</h3>{sessions.map(x=><div className="session" key={x.id}><span>{new Date(x.createdAt).toLocaleString('pt-BR')}</span><button type="button" onClick={async()=>{await api(`/auth/sessions/${x.id}`,{method:'DELETE'});setSessions(sessions.filter(s=>s.id!==x.id))}}>Revogar</button></div>)}<button type="button" className="secondary" onClick={logoutAll}>Encerrar todas as sessões</button><button type="button" className="danger" onClick={()=>setConfirmAccount(true)}>Excluir minha conta</button><button type="button" className="link" onClick={close}>Fechar</button></div>{confirmAccount&&<ConfirmModal title="Excluir conta" message="Todo o dashboard, aplicativos, widgets e imagens serão excluídos permanentemente." confirmLabel="Excluir permanentemente" danger onCancel={()=>setConfirmAccount(false)} onConfirm={()=>{setConfirmAccount(false);remove()}}/>}</>
+}
+function LayoutPicker({presets,active,close,choose}:{presets:Preset[],active:string,close:()=>void,choose:(id:Preset['id'])=>void}){
+  const icons:Record<string,string>={FREE:'▦',ZIMA:'◫',FOCUS:'▤',COMPACT:'▦'};
+  return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><div className="modal layout-picker"><button className="close" onClick={close}><X/></button><h2>Escolha um layout</h2><p>As posições de cada layout ficam salvas separadamente.</p><div className="preset-grid">{presets.map(p=><button key={p.id} className={`preset-card ${active===p.id?'selected':''}`} onClick={()=>choose(p.id)}><span className="preset-preview">{icons[p.id]}</span><strong>{p.name}</strong><small>{p.description}</small>{active===p.id&&<i>Ativo</i>}</button>)}</div></div></div>
 }
 function ConfirmModal({title,message,confirmLabel,onCancel,onConfirm,danger=false}:{title:string,message:string,confirmLabel:string,onCancel:()=>void,onConfirm:()=>void|Promise<void>,danger?:boolean}){return <div className="overlay confirm-overlay"><div className="modal confirm-modal" role="dialog" aria-modal="true"><h2>{title}</h2><p>{message}</p><div className="confirm-actions"><button className="secondary" onClick={onCancel}>Cancelar</button><button className={danger?'danger solid':'primary'} onClick={onConfirm}>{confirmLabel}</button></div></div></div>}

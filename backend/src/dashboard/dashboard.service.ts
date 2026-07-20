@@ -21,9 +21,14 @@ export class DashboardService {
       include: {
         applications: { orderBy: { createdAt: "asc" } },
         widgets: { orderBy: { createdAt: "asc" } },
-        layouts: { where: { surface }, orderBy: { order: "asc" } },
+        layouts: { where: { surface, preset: 'FREE' }, orderBy: { order: "asc" } },
       },
     });
+    if (d.layoutPreset !== 'FREE') d.layouts = await this.db.layoutItem.findMany({ where: { dashboardId: d.id, surface, preset: d.layoutPreset }, orderBy: { order: 'asc' } });
+    if (!d.layouts.length) {
+      await this.seedPreset(d.id, d.layoutPreset as any, surface);
+      d.layouts = await this.db.layoutItem.findMany({ where: { dashboardId: d.id, surface, preset: d.layoutPreset }, orderBy: { order: 'asc' } });
+    }
     return d;
   }
   async branding(userId: string, data: BrandingDto) {
@@ -138,7 +143,7 @@ export class DashboardService {
       ).map((x) => x.id),
     );
     await this.db.$transaction(async (tx) => {
-      await tx.layoutItem.deleteMany({ where: { dashboardId: d.id, surface } });
+      await tx.layoutItem.deleteMany({ where: { dashboardId: d.id, surface, preset: d.layoutPreset } });
       for (const [order, item] of items.entries()) {
         const isApp = item.kind === "APPLICATION";
         const target = isApp ? item.applicationId : item.widgetId;
@@ -148,6 +153,7 @@ export class DashboardService {
           data: {
             dashboardId: d.id,
             surface,
+            preset: d.layoutPreset,
             kind: item.kind,
             x: +item.x || 0,
             y: +item.y || 0,
@@ -224,6 +230,47 @@ export class DashboardService {
     try { return await this.fetchJson(`https://api.open-meteo.com/v1/forecast?${query}`, 5000); }
     catch { throw new BadGatewayException('Serviço de clima indisponível'); }
   }
+  presets() {
+    return [
+      { id: 'FREE', name: 'Livre', description: 'Grade flexível com aplicativos e widgets misturados' },
+      { id: 'ZIMA', name: 'Zima', description: 'Widgets laterais e aplicativos na área principal' },
+      { id: 'FOCUS', name: 'Foco', description: 'Aplicativos em destaque e widgets abaixo' },
+      { id: 'COMPACT', name: 'Compacto', description: 'Mais conteúdo usando menos espaço' },
+    ];
+  }
+  async selectPreset(userId: string, preset: 'FREE'|'ZIMA'|'FOCUS'|'COMPACT', surface: 'WEB'|'MOBILE') {
+    const d = await this.dashboard(userId);
+    if (!await this.db.layoutItem.count({ where: { dashboardId: d.id, preset, surface } })) await this.seedPreset(d.id, preset, surface);
+    await this.db.dashboard.update({ where: { id: d.id }, data: { layoutPreset: preset } });
+    return { ok: true, message: `Layout ${this.presets().find(x=>x.id===preset)?.name} ativado` };
+  }
+  async resetPreset(userId: string, preset: 'FREE'|'ZIMA'|'FOCUS'|'COMPACT', surface: 'WEB'|'MOBILE') {
+    const d = await this.dashboard(userId);
+    await this.db.layoutItem.deleteMany({ where: { dashboardId: d.id, preset, surface } });
+    await this.seedPreset(d.id, preset, surface);
+    return { ok: true, message: 'Layout restaurado ao padrão' };
+  }
+  private async seedPreset(dashboardId: string, preset: 'FREE'|'ZIMA'|'FOCUS'|'COMPACT', surface: 'WEB'|'MOBILE') {
+    const apps = await this.db.application.findMany({ where: { dashboardId }, orderBy: { createdAt: 'asc' } });
+    const widgets = await this.db.widget.findMany({ where: { dashboardId }, orderBy: { createdAt: 'asc' } });
+    const mobile = surface === 'MOBILE';
+    const items: any[] = [];
+    const push = (kind:'APPLICATION'|'WIDGET', id:string, order:number, x:number, y:number, w:number, h:number) => items.push({ dashboardId, surface, preset, kind, order, x, y, w, h, applicationId:kind==='APPLICATION'?id:null, widgetId:kind==='WIDGET'?id:null });
+    if (preset === 'ZIMA' && !mobile) {
+      widgets.forEach((w,i)=>push('WIDGET',w.id,i,0,i+(i>3?1:0),3,i===3?2:1));
+      apps.forEach((a,i)=>push('APPLICATION',a.id,100+i,3+(i%5)*2,Math.floor(i/5)*2,2,2));
+    } else if (preset === 'FOCUS') {
+      apps.forEach((a,i)=>push('APPLICATION',a.id,i,(i%(mobile?3:4))*(mobile?2:3),Math.floor(i/(mobile?3:4))*2,mobile?2:3,2));
+      widgets.forEach((w,i)=>push('WIDGET',w.id,100+i,(i%(mobile?1:3))*(mobile?6:4),6+Math.floor(i/(mobile?1:3))*2,mobile?6:4,2));
+    } else if (preset === 'COMPACT') {
+      apps.forEach((a,i)=>push('APPLICATION',a.id,i,(i%(mobile?4:6))*(mobile?1:2),Math.floor(i/(mobile?4:6)),mobile?1:2,1));
+      widgets.forEach((w,i)=>push('WIDGET',w.id,100+i,(i%(mobile?2:4))*(mobile?2:3),4+Math.floor(i/(mobile?2:4)),mobile?2:3,1));
+    } else {
+      apps.forEach((a,i)=>push('APPLICATION',a.id,i,i%(mobile?3:4),Math.floor(i/(mobile?3:4)),1,1));
+      widgets.forEach((w,i)=>push('WIDGET',w.id,100+i,(i%(mobile?1:3))*(mobile?3:4),3+Math.floor(i/(mobile?1:3)),mobile?3:4,1));
+    }
+    if (items.length) await this.db.layoutItem.createMany({ data: items });
+  }
   private async fetchJson(url: string, timeout: number) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeout);
@@ -252,16 +299,23 @@ export class DashboardService {
     kind: "APPLICATION" | "WIDGET",
     id: string,
   ) {
-    const count = await this.db.layoutItem.count({ where: { dashboardId } });
-    await this.db.layoutItem.createMany({
-      data: ["WEB", "MOBILE"].map((surface: any) => ({
-        dashboardId,
-        surface,
-        kind,
-        order: count,
-        applicationId: kind === "APPLICATION" ? id : null,
-        widgetId: kind === "WIDGET" ? id : null,
-      })),
-    });
+    const data:any[]=[];
+    for(const preset of ["FREE","ZIMA","FOCUS","COMPACT"] as const) for(const surface of ["WEB","MOBILE"] as const){
+      const n=await this.db.layoutItem.count({where:{dashboardId,preset,surface,kind}}), mobile=surface==='MOBILE';
+      let x=0,y=0,w=1,h=1;
+      if(kind==='APPLICATION'){
+        if(preset==='ZIMA'&&!mobile){x=3+(n%5)*2;y=Math.floor(n/5)*2;w=2;h=2;}
+        else if(preset==='FOCUS'){x=(n%(mobile?3:4))*(mobile?2:3);y=Math.floor(n/(mobile?3:4))*2;w=mobile?2:3;h=2;}
+        else if(preset==='COMPACT'){x=(n%(mobile?4:6))*(mobile?1:2);y=Math.floor(n/(mobile?4:6));w=mobile?1:2;}
+        else{x=n%(mobile?3:4);y=Math.floor(n/(mobile?3:4));}
+      }else{
+        if(preset==='ZIMA'&&!mobile){x=0;y=n+(n>3?1:0);w=3;h=n===3?2:1;}
+        else if(preset==='FOCUS'){x=(n%(mobile?1:3))*(mobile?6:4);y=6+Math.floor(n/(mobile?1:3))*2;w=mobile?6:4;h=2;}
+        else if(preset==='COMPACT'){x=(n%(mobile?2:4))*(mobile?2:3);y=4+Math.floor(n/(mobile?2:4));w=mobile?2:3;}
+        else{x=(n%(mobile?1:3))*(mobile?3:4);y=3+Math.floor(n/(mobile?1:3));w=mobile?3:4;}
+      }
+      data.push({dashboardId,surface,preset,kind,order:kind==='APPLICATION'?n:100+n,x,y,w,h,applicationId:kind==='APPLICATION'?id:null,widgetId:kind==='WIDGET'?id:null});
+    }
+    await this.db.layoutItem.createMany({data});
   }
 }

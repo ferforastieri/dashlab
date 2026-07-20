@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { CreateApplicationDto, CreateWidgetDto, SaveLayoutDto } from './dashboard.dto';
+import { CreateApplicationDto, CreateWidgetDto, SaveLayoutDto, SelectLayoutPresetDto } from './dashboard.dto';
 
 describe('Dashboard DTO security boundaries', () => {
   it('rejects script protocols and accepts private homelab URLs', async () => {
@@ -14,5 +14,9 @@ describe('Dashboard DTO security boundaries', () => {
   it('caps layout dimensions and number of items', async () => {
     const dto = plainToInstance(SaveLayoutDto, { items:[{kind:'APPLICATION',applicationId:'x',x:0,y:0,w:99,h:1}] });
     expect(await validate(dto)).not.toHaveLength(0);
+  });
+  it('accepts only supported layout presets', async()=>{
+    expect(await validate(plainToInstance(SelectLayoutPresetDto,{preset:'ZIMA',surface:'WEB'}))).toHaveLength(0);
+    expect(await validate(plainToInstance(SelectLayoutPresetDto,{preset:'CUSTOM'}))).not.toHaveLength(0);
   });
 });

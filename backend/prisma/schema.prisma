@@ -24,6 +24,12 @@ enum WidgetType {
   STATUS
   PROMQL
 }
+enum LayoutPreset {
+  FREE
+  ZIMA
+  FOCUS
+  COMPACT
+}
 
 model User {
   id String @id @default(cuid())
@@ -46,6 +52,7 @@ model Dashboard {
   id String @id @default(cuid())
   name String @default("Meu DashLab")
   branding Json
+  layoutPreset LayoutPreset @default(FREE)
   userId String @unique
   user User @relation(fields:[userId], references:[id], onDelete:Cascade)
   applications Application[]
@@ -89,6 +96,7 @@ model Widget {
 model LayoutItem {
   id String @id @default(cuid())
   surface Surface
+  preset LayoutPreset @default(FREE)
   kind ItemKind
   x Int @default(0)
   y Int @default(0)
@@ -101,7 +109,7 @@ model LayoutItem {
   application Application? @relation(fields:[applicationId], references:[id], onDelete:Cascade)
   widgetId String?
   widget Widget? @relation(fields:[widgetId], references:[id], onDelete:Cascade)
-  @@index([dashboardId, surface])
+  @@index([dashboardId, surface, preset])
 }
 model Asset {
   id String @id @default(cuid())
