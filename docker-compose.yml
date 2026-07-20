@@ -17,8 +17,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-dashlab}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-dashlab}
       JWT_SECRET: ${JWT_SECRET}
       PROMETHEUS_URL: ${PROMETHEUS_URL:-http://127.0.0.1:9090}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
       PORT: 3001
+      UPLOAD_DIR: /app/uploads
     depends_on: {postgres: {condition: service_healthy}}
+    volumes: [uploads:/app/uploads]
     healthcheck: {test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health"], interval: 20s, timeout: 5s, retries: 6}
   web:
     build: {context: ., dockerfile: Dockerfile.web}
@@ -26,4 +29,4 @@ services:
     restart: unless-stopped
     ports: ["${WEB_PORT:-3000}:80"]
     depends_on: [backend]
-volumes: {postgres_data: {}}
+volumes: {postgres_data: {}, uploads: {}}

@@ -1,20 +1,22 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from "./auth.service";
 import {
   ChangePasswordDto,
   LoginDto,
   RefreshDto,
   RegisterDto,
+  DeleteAccountDto,
 } from "./auth.dto";
 import { AuthRequest, JwtAuthGuard } from "./jwt.guard";
 
 @Controller("auth")
 export class AuthController {
   constructor(private service: AuthService) {}
-  @Post("register") register(@Body() dto: RegisterDto) {
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) @Post("register") register(@Body() dto: RegisterDto) {
     return this.service.register(dto);
   }
-  @Post("login") login(@Body() dto: LoginDto) {
+  @Throttle({ default: { limit: 8, ttl: 60000 } }) @Post("login") login(@Body() dto: LoginDto) {
     return this.service.login(dto);
   }
   @Post("refresh") refresh(@Body() dto: RefreshDto) {
@@ -31,5 +33,17 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     return this.service.changePassword(req.user.sub, dto);
+  }
+  @UseGuards(JwtAuthGuard) @Get("sessions") sessions(@Req() req: AuthRequest) {
+    return this.service.sessions(req.user.sub);
+  }
+  @UseGuards(JwtAuthGuard) @Delete("sessions/:id") revoke(@Req() req: AuthRequest, @Param("id") id: string) {
+    return this.service.revokeSession(req.user.sub, id);
+  }
+  @UseGuards(JwtAuthGuard) @Post("logout-all") logoutAll(@Req() req: AuthRequest) {
+    return this.service.logoutAll(req.user.sub);
+  }
+  @UseGuards(JwtAuthGuard) @Delete("account") deleteAccount(@Req() req: AuthRequest, @Body() dto: DeleteAccountDto) {
+    return this.service.deleteAccount(req.user.sub, dto.password);
   }
 }

@@ -166,6 +166,23 @@ export class AuthService {
     await this.db.session.deleteMany({ where: { userId } });
     return { ok: true };
   }
+  async sessions(userId: string) {
+    return this.db.session.findMany({ where: { userId, expiresAt: { gt: new Date() } }, select: { id: true, createdAt: true, expiresAt: true }, orderBy: { createdAt: 'desc' } });
+  }
+  async revokeSession(userId: string, id: string) {
+    await this.db.session.deleteMany({ where: { id, userId } });
+    return { ok: true };
+  }
+  async logoutAll(userId: string) {
+    await this.db.session.deleteMany({ where: { userId } });
+    return { ok: true };
+  }
+  async deleteAccount(userId: string, password: string) {
+    const user = await this.db.user.findUniqueOrThrow({ where: { id: userId } });
+    if (!(await argon2.verify(user.passwordHash, password))) throw new UnauthorizedException('Senha inválida');
+    await this.db.user.delete({ where: { id: userId } });
+    return { ok: true };
+  }
   private async issue(id: string, username: string) {
     const refreshToken = randomBytes(48).toString("base64url");
     await this.db.session.create({

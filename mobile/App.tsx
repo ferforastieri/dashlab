@@ -29,11 +29,11 @@ type AppItem = {
   inDock: boolean;
 };
 const STORE = "dashlab_server",
-  TOKEN = "dashlab_token";
+  TOKEN = "dashlab_token", REFRESH = 'dashlab_refresh';
 let server = "";
 let token = "";
 async function request(path: string, options: RequestInit = {}) {
-  const r = await fetch(`${server}${path}`, {
+  let r = await fetch(`${server}${path}`, {
     ...options,
     headers: {
       "content-type": "application/json",
@@ -41,6 +41,13 @@ async function request(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
+  if (r.status === 401 && path !== '/auth/refresh') {
+    const refreshToken = await SecureStore.getItemAsync(REFRESH);
+    if (refreshToken) {
+      const rr = await fetch(`${server}/auth/refresh`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({refreshToken})});
+      if (rr.ok) { const session=await rr.json(); token=session.accessToken; await SecureStore.setItemAsync(TOKEN,token); await SecureStore.setItemAsync(REFRESH,session.refreshToken); r=await fetch(`${server}${path}`,{...options,headers:{'content-type':'application/json',authorization:`Bearer ${token}`,...options.headers}}); }
+    }
+  }
   const d = await r.json().catch(() => ({}));
   if (!r.ok)
     throw new Error(
@@ -88,6 +95,7 @@ export default function App() {
     <Dashboard
       logout={async () => {
         await SecureStore.deleteItemAsync(TOKEN);
+        await SecureStore.deleteItemAsync(REFRESH);
         token = "";
         setPhase("auth");
       }}
@@ -154,6 +162,7 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
       });
       token = d.accessToken;
       await SecureStore.setItemAsync(TOKEN, token);
+      await SecureStore.setItemAsync(REFRESH, d.refreshToken);
       done();
     } catch (e: any) {
       Alert.alert("Não foi possível entrar", e.message);
@@ -204,8 +213,12 @@ function Dashboard({ logout }: { logout: () => void }) {
   const [data, setData] = useState<any>(null),
     [metrics, setMetrics] = useState<Record<string, number | null>>({}),
     [show, setShow] = useState(false),
+    [mode,setMode] = useState<'app'|'widget'|'brand'|'account'>('app'),
+    [selected,setSelected] = useState<any>(null),
+    [query,setQuery] = useState(''),
     [name, setName] = useState(""),
-    [url, setUrl] = useState("https://");
+    [url, setUrl] = useState("https://"),
+    [extra,setExtra] = useState('');
   const load = () =>
     request("/dashboard?surface=mobile")
       .then(setData)
@@ -220,19 +233,23 @@ function Dashboard({ logout }: { logout: () => void }) {
     const timer = setInterval(loadMetrics, 10000);
     return () => clearInterval(timer);
   }, []);
-  async function add() {
+  function edit(kind:'app'|'widget', item:any) { setMode(kind);setSelected(item);setName(item.name || item.title);setUrl(item.url || 'https://');setExtra(item.category || item.type || 'SYSTEM');setShow(true); }
+  async function save() {
     try {
-      await request("/applications", {
-        method: "POST",
-        body: JSON.stringify({ name, url }),
-      });
+      if(mode==='app') await request(selected?`/applications/${selected.id}`:"/applications", { method:selected?'PATCH':'POST', body:JSON.stringify({ name, url, category:extra || undefined }) });
+      if(mode==='widget') await request(selected?`/widgets/${selected.id}`:'/widgets',{method:selected?'PATCH':'POST',body:JSON.stringify({title:name,type:extra||'SYSTEM',config:selected?.config||{}})});
+      if(mode==='brand') await request('/branding',{method:'PUT',body:JSON.stringify({name,accent:extra || '#ff7a1a',wallpaper:url==='https://'?'':url})});
+      if(mode==='account') await request('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:name,newPassword:url})});
       setShow(false);
       setName("");
+      setSelected(null); setExtra(''); setUrl('https://');
       load();
     } catch (e: any) {
       Alert.alert("Erro", e.message);
     }
   }
+  async function remove(kind:'applications'|'widgets',id:string){Alert.alert('Excluir','Deseja excluir este item?',[{text:'Cancelar'},{text:'Excluir',style:'destructive',onPress:async()=>{await request(`/${kind}/${id}`,{method:'DELETE'});load()}}])}
+  async function moveApp(id:string,delta:number){const layouts=[...data.layouts];const appLayouts=layouts.filter((x:any)=>x.kind==='APPLICATION');const at=appLayouts.findIndex((x:any)=>x.applicationId===id),to=Math.max(0,Math.min(appLayouts.length-1,at+delta));if(at===to)return;const a=appLayouts[at],b=appLayouts[to];const ai=layouts.indexOf(a),bi=layouts.indexOf(b);[layouts[ai],layouts[bi]]=[layouts[bi],layouts[ai]];await request('/layouts/mobile',{method:'PUT',body:JSON.stringify({items:layouts.map((x:any)=>({kind:x.kind,applicationId:x.applicationId,widgetId:x.widgetId,x:x.x||0,y:x.y||0,w:x.w||1,h:x.h||1}))})});load()}
   async function open(app: AppItem) {
     if (app.deepLink) {
       const ok = await Linking.canOpenURL(app.deepLink);
@@ -254,23 +271,21 @@ function Dashboard({ logout }: { logout: () => void }) {
           <Text style={s.brand}>{data.branding?.name || data.name}</Text>
           <Text style={s.muted}>Seu espaço pessoal</Text>
         </View>
-        <Pressable onPress={logout}>
-          <Ionicons name="log-out-outline" color="#dbe5ef" size={24} />
-        </Pressable>
+        <View style={{flexDirection:'row',gap:18}}><Pressable onPress={()=>{setMode('brand');setName(data.branding?.name||data.name);setUrl(data.branding?.wallpaper||'https://');setExtra(data.branding?.accent||'#ff7a1a');setShow(true)}}><Ionicons name="settings-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onLongPress={logout} onPress={()=>{setMode('account');setName('');setUrl('');setShow(true)}}><Ionicons name="person-circle-outline" color="#dbe5ef" size={25} /></Pressable></View>
       </View>
       <ScrollView contentContainerStyle={s.content}>
         <View style={s.search}>
           <Ionicons name="search" color="#8190a2" size={18} />
-          <Text style={s.searchText}>Pesquisar na web</Text>
+          <TextInput style={s.searchInput} value={query} onChangeText={setQuery} placeholder="Pesquisar apps ou web" placeholderTextColor="#8190a2" returnKeyType="search" onSubmitEditing={()=>{const local=data.applications.find((a:any)=>a.name.toLowerCase().includes(query.toLowerCase()));local?open(local):Linking.openURL(`https://google.com/search?q=${encodeURIComponent(query)}`)}}/>
         </View>
         <Text style={s.section}>Aplicativos</Text>
         <FlatList
           scrollEnabled={false}
-          data={data.applications}
+          data={data.layouts.filter((l:any)=>l.kind==='APPLICATION').map((l:any)=>data.applications.find((a:any)=>a.id===l.applicationId)).filter((a:any)=>a&&(!query||a.name.toLowerCase().includes(query.toLowerCase())))}
           numColumns={3}
           keyExtractor={(x: any) => x.id}
           renderItem={({ item }) => (
-            <Pressable style={s.app} onPress={() => open(item)}>
+            <Pressable style={s.app} onPress={() => open(item)} onLongPress={()=>Alert.alert(item.name,'O que deseja fazer?',[{text:'Mover antes',onPress:()=>moveApp(item.id,-1)},{text:'Mover depois',onPress:()=>moveApp(item.id,1)},{text:'Editar',onPress:()=>edit('app',item)},{text:'Excluir',style:'destructive',onPress:()=>remove('applications',item.id)},{text:'Cancelar'}])}>
               <View style={s.appIcon}>
                 <Text style={s.emoji}>{icon(item.icon)}</Text>
               </View>
@@ -283,15 +298,15 @@ function Dashboard({ logout }: { logout: () => void }) {
         <Text style={s.section}>Visão geral</Text>
         <View style={s.widgets}>
           {data.widgets.slice(0, 6).map((w: any) => (
-            <View style={s.widget} key={w.id}>
+            <Pressable style={s.widget} key={w.id} onLongPress={()=>Alert.alert(w.title,'O que deseja fazer?',[{text:'Editar',onPress:()=>edit('widget',w)},{text:'Excluir',style:'destructive',onPress:()=>remove('widgets',w.id)},{text:'Cancelar'}])}>
               <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
               <Text style={s.widgetTitle}>{w.title}</Text>
               <Text style={s.metric}>{widgetValue(w.type, metrics)}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       </ScrollView>
-      <Pressable style={s.fab} onPress={() => setShow(true)}>
+      <Pressable style={s.fab} onPress={() => {setMode('app');setSelected(null);setName('');setUrl('https://');setExtra('');setShow(true)}} onLongPress={()=>{setMode('widget');setName('');setExtra('SYSTEM');setShow(true)}}>
         <Ionicons name="add" color="white" size={30} />
       </Pressable>
       <Modal
@@ -302,22 +317,27 @@ function Dashboard({ logout }: { logout: () => void }) {
       >
         <View style={s.modalBack}>
           <View style={s.sheet}>
-            <Text style={s.title}>Novo aplicativo</Text>
+            <Text style={s.title}>{mode==='app'?(selected?'Editar aplicativo':'Novo aplicativo'):mode==='widget'?(selected?'Editar widget':'Novo widget'):mode==='brand'?'Personalizar':'Minha conta'}</Text>
             <TextInput
               style={s.input}
-              placeholder="Nome"
+              placeholder={mode==='account'?'Senha atual':mode==='widget'?'Título':'Nome'}
               placeholderTextColor="#617184"
               value={name}
               onChangeText={setName}
             />
             <TextInput
               style={s.input}
-              placeholder="https://..."
+              secureTextEntry={mode==='account'}
+              placeholder={mode==='account'?'Nova senha':'https://...'}
               placeholderTextColor="#617184"
               value={url}
               onChangeText={setUrl}
             />
-            <Button title="Adicionar" onPress={add} />
+            {mode==='app'&&<TextInput style={s.input} placeholder="Categoria" placeholderTextColor="#617184" value={extra} onChangeText={setExtra}/>}
+            {mode==='widget'&&<View style={s.typeGrid}>{['SYSTEM','STORAGE','NETWORK','CLOCK','WEATHER','SEARCH','STATUS','PROMQL'].map(t=><Pressable key={t} onPress={()=>setExtra(t)} style={[s.typeChip,extra===t&&s.typeChipActive]}><Text style={s.typeText}>{t}</Text></Pressable>)}</View>}
+            {mode==='brand'&&<TextInput style={s.input} placeholder="#ff7a1a" placeholderTextColor="#617184" value={extra} onChangeText={setExtra}/>}
+            <Button title="Salvar" onPress={save} />
+            {mode==='account'&&<Pressable onPress={logout}><Text style={s.link}>Sair desta conta</Text></Pressable>}
             <Pressable onPress={() => setShow(false)}>
               <Text style={s.link}>Cancelar</Text>
             </Pressable>
@@ -439,6 +459,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
   },
   searchText: { color: "#8090a2" },
+  searchInput: { flex: 1, color: '#eef3f8', paddingVertical: 8 },
   section: {
     color: "#dbe5ef",
     fontWeight: "700",
@@ -492,4 +513,8 @@ const s = StyleSheet.create({
     paddingBottom: 40,
     gap: 14,
   },
+  typeGrid:{flexDirection:'row',flexWrap:'wrap',gap:7},
+  typeChip:{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:'#ffffff0c',borderWidth:1,borderColor:'#ffffff16'},
+  typeChipActive:{backgroundColor:'#ff7a1a55',borderColor:'#ff7a1a'},
+  typeText:{color:'#dbe5ef',fontSize:11},
 });

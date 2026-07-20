@@ -1,9 +1,11 @@
 import {
+  BadGatewayException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { BrandingDto, CreateApplicationDto, CreateWidgetDto, LayoutItemDto, UpdateApplicationDto, UpdateWidgetDto } from './dashboard.dto';
 
 @Injectable()
 export class DashboardService {
@@ -24,14 +26,15 @@ export class DashboardService {
     });
     return d;
   }
-  async branding(userId: string, data: any) {
+  async branding(userId: string, data: BrandingDto) {
     const d = await this.dashboard(userId);
+    const current = (d.branding || {}) as Record<string, unknown>;
     return this.db.dashboard.update({
       where: { id: d.id },
-      data: { name: String(data.name || d.name).slice(0, 80), branding: data },
+      data: { name: data.name || d.name, branding: { ...current, ...data } },
     });
   }
-  async createApp(userId: string, data: any) {
+  async createApp(userId: string, data: CreateApplicationDto) {
     const d = await this.dashboard(userId);
     const app = await this.db.application.create({
       data: {
@@ -49,7 +52,7 @@ export class DashboardService {
     await this.addLayouts(d.id, "APPLICATION", app.id);
     return app;
   }
-  async updateApp(userId: string, id: string, data: any) {
+  async updateApp(userId: string, id: string, data: UpdateApplicationDto) {
     await this.assertApp(userId, id);
     return this.db.application.update({
       where: { id },
@@ -71,7 +74,7 @@ export class DashboardService {
     await this.db.application.delete({ where: { id } });
     return { ok: true };
   }
-  async createWidget(userId: string, data: any) {
+  async createWidget(userId: string, data: CreateWidgetDto) {
     const d = await this.dashboard(userId);
     const allowed = [
       "SYSTEM",
@@ -90,20 +93,20 @@ export class DashboardService {
         dashboardId: d.id,
         title: String(data.title).slice(0, 80),
         type: data.type,
-        config: data.config || {},
+        config: (data.config || {}) as any,
       },
     });
     await this.addLayouts(d.id, "WIDGET", widget.id);
     return widget;
   }
-  async updateWidget(userId: string, id: string, data: any) {
+  async updateWidget(userId: string, id: string, data: UpdateWidgetDto) {
     await this.assertWidget(userId, id);
     return this.db.widget.update({
       where: { id },
       data: {
         title: data.title,
         type: data.type,
-        config: data.config,
+        config: data.config as any,
         visible: data.visible,
       },
     });
@@ -113,7 +116,7 @@ export class DashboardService {
     await this.db.widget.delete({ where: { id } });
     return { ok: true };
   }
-  async saveLayout(userId: string, surface: "WEB" | "MOBILE", items: any[]) {
+  async saveLayout(userId: string, surface: "WEB" | "MOBILE", items: LayoutItemDto[]) {
     const d = await this.dashboard(userId);
     const ownedApps = new Set(
       (
@@ -136,7 +139,7 @@ export class DashboardService {
       for (const [order, item] of items.entries()) {
         const isApp = item.kind === "APPLICATION";
         const target = isApp ? item.applicationId : item.widgetId;
-        if (!(isApp ? ownedApps : ownedWidgets).has(target))
+        if (!target || !(isApp ? ownedApps : ownedWidgets).has(target))
           throw new ForbiddenException();
         await tx.layoutItem.create({
           data: {
@@ -173,12 +176,13 @@ export class DashboardService {
       Object.entries(queries).map(async ([key, q]) => {
         try {
           const controller = new AbortController();
-          setTimeout(() => controller.abort(), 4000);
+          const timer = setTimeout(() => controller.abort(), 4000);
           const response = await fetch(
             `${base}/api/v1/query?query=${encodeURIComponent(q as string)}`,
             { signal: controller.signal },
           );
           const json: any = await response.json();
+          clearTimeout(timer);
           result[key] = Number(json?.data?.result?.[0]?.value?.[1] || 0);
         } catch {
           result[key] = null;
@@ -194,10 +198,37 @@ export class DashboardService {
     if (!query || query.length > 1000)
       throw new ForbiddenException("Consulta inválida");
     const base = process.env.PROMETHEUS_URL || "";
-    const response = await fetch(
-      `${base}/api/v1/query?query=${encodeURIComponent(query)}`,
-    );
-    return response.json();
+    try {
+      return await this.fetchJson(`${base}/api/v1/query?query=${encodeURIComponent(query)}`, 5000);
+    } catch { throw new BadGatewayException('Prometheus indisponível'); }
+  }
+  async statuses(userId: string) {
+    const d = await this.dashboard(userId);
+    const apps = await this.db.application.findMany({ where: { dashboardId: d.id, visible: true }, select: { id: true, url: true, statusUrl: true } });
+    return Promise.all(apps.map(async app => {
+      const started = Date.now();
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+        const response = await fetch(app.statusUrl || app.url, { method: 'HEAD', redirect: 'manual', signal: controller.signal });
+        clearTimeout(timer);
+        return { id: app.id, online: response.status < 500, status: response.status, latency: Date.now() - started };
+      } catch { return { id: app.id, online: false, status: null, latency: Date.now() - started }; }
+    }));
+  }
+  async weather(latitude: number, longitude: number) {
+    const query = new URLSearchParams({ latitude: String(latitude), longitude: String(longitude), current: 'temperature_2m,apparent_temperature,weather_code,is_day', timezone: 'auto', forecast_days: '1' });
+    try { return await this.fetchJson(`https://api.open-meteo.com/v1/forecast?${query}`, 5000); }
+    catch { throw new BadGatewayException('Serviço de clima indisponível'); }
+  }
+  private async fetchJson(url: string, timeout: number) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error(String(response.status));
+      return await response.json();
+    } finally { clearTimeout(timer); }
   }
   private async assertApp(userId: string, id: string) {
     const x = await this.db.application.findFirst({

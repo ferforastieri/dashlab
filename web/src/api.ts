@@ -23,10 +23,11 @@ export async function auth(path: string, body: any) {
   return d;
 }
 export async function api(path: string, options: RequestInit = {}) {
+  const isForm = options.body instanceof FormData;
   let r = await fetch(`${base}${path}`, {
     ...options,
     headers: {
-      "content-type": "application/json",
+      ...(isForm ? {} : { "content-type": "application/json" }),
       authorization: `Bearer ${access}`,
       ...options.headers,
     },
@@ -37,7 +38,7 @@ export async function api(path: string, options: RequestInit = {}) {
       r = await fetch(`${base}${path}`, {
         ...options,
         headers: {
-          "content-type": "application/json",
+          ...(isForm ? {} : { "content-type": "application/json" }),
           authorization: `Bearer ${access}`,
           ...options.headers,
         },

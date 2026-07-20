@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -13,6 +14,7 @@ import {
 } from "@nestjs/common";
 import { AuthRequest, JwtAuthGuard } from "../auth/jwt.guard";
 import { DashboardService } from "./dashboard.service";
+import { BrandingDto, CreateApplicationDto, CreateWidgetDto, SaveLayoutDto, SurfaceDto, UpdateApplicationDto, UpdateWidgetDto, WeatherQueryDto } from './dashboard.dto';
 
 @Controller()
 export class DashboardController {
@@ -28,20 +30,20 @@ export class DashboardController {
   }
   @UseGuards(JwtAuthGuard) @Put("branding") branding(
     @Req() r: AuthRequest,
-    @Body() b: any,
+    @Body() b: BrandingDto,
   ) {
     return this.service.branding(r.user.sub, b);
   }
   @UseGuards(JwtAuthGuard) @Post("applications") createApp(
     @Req() r: AuthRequest,
-    @Body() b: any,
+    @Body() b: CreateApplicationDto,
   ) {
     return this.service.createApp(r.user.sub, b);
   }
   @UseGuards(JwtAuthGuard) @Patch("applications/:id") updateApp(
     @Req() r: AuthRequest,
     @Param("id") id: string,
-    @Body() b: any,
+    @Body() b: UpdateApplicationDto,
   ) {
     return this.service.updateApp(r.user.sub, id, b);
   }
@@ -53,14 +55,14 @@ export class DashboardController {
   }
   @UseGuards(JwtAuthGuard) @Post("widgets") createWidget(
     @Req() r: AuthRequest,
-    @Body() b: any,
+    @Body() b: CreateWidgetDto,
   ) {
     return this.service.createWidget(r.user.sub, b);
   }
   @UseGuards(JwtAuthGuard) @Patch("widgets/:id") updateWidget(
     @Req() r: AuthRequest,
     @Param("id") id: string,
-    @Body() b: any,
+    @Body() b: UpdateWidgetDto,
   ) {
     return this.service.updateWidget(r.user.sub, id, b);
   }
@@ -73,9 +75,11 @@ export class DashboardController {
   @UseGuards(JwtAuthGuard) @Put("layouts/:surface") layout(
     @Req() r: AuthRequest,
     @Param("surface") s: string,
-    @Body() b: any[],
+    @Body() b: SaveLayoutDto,
   ) {
-    return this.service.saveLayout(r.user.sub, s.toUpperCase() as any, b);
+    const surface = s.toUpperCase();
+    if (!Object.values(SurfaceDto).includes(surface as SurfaceDto)) throw new BadRequestException('Superfície inválida');
+    return this.service.saveLayout(r.user.sub, surface as any, b.items);
   }
   @UseGuards(JwtAuthGuard) @Get("metrics/overview") metrics() {
     return this.service.metrics();
@@ -85,5 +89,11 @@ export class DashboardController {
     @Param("id") id: string,
   ) {
     return this.service.promql(r.user.sub, id);
+  }
+  @UseGuards(JwtAuthGuard) @Get("applications/status") statuses(@Req() r: AuthRequest) {
+    return this.service.statuses(r.user.sub);
+  }
+  @UseGuards(JwtAuthGuard) @Get("weather") weather(@Query() q: WeatherQueryDto) {
+    return this.service.weather(q.latitude, q.longitude);
   }
 }

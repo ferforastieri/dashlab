@@ -11,6 +11,10 @@ import {
   Search,
   Server,
   Settings,
+  Edit3,
+  Maximize2,
+  Minimize2,
+  UserRound,
   Trash2,
   X,
 } from "lucide-react";
@@ -23,6 +27,9 @@ type AppItem = {
   icon?: string;
   category?: string;
   inDock: boolean;
+  statusUrl?: string;
+  deepLink?: string;
+  visible?: boolean;
 };
 type Widget = { id: string; type: string; title: string; config: any };
 type Layout = {
@@ -31,6 +38,7 @@ type Layout = {
   applicationId?: string;
   widgetId?: string;
   order: number;
+  x: number; y: number; w: number; h: number;
 };
 type Dash = {
   id: string;
@@ -126,9 +134,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [dash, setDash] = useState<Dash | null>(null),
     [metrics, setMetrics] = useState<any>({}),
     [query, setQuery] = useState(""),
-    [modal, setModal] = useState<"app" | "widget" | "brand" | null>(null),
+    [modal, setModal] = useState<"app" | "widget" | "brand" | "account" | null>(null),
+    [editing, setEditing] = useState<AppItem | Widget | null>(null),
     [drag, setDrag] = useState<number | null>(null),
-    [menu, setMenu] = useState<string | null>(null);
+    [menu, setMenu] = useState<string | null>(null),
+    [statuses, setStatuses] = useState<Record<string, any>>({});
   const load = () => api("/dashboard?surface=web").then(setDash);
   useEffect(() => {
     load();
@@ -137,6 +147,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         .then(setMetrics)
         .catch(() => {});
     tick();
+    api('/applications/status').then((xs:any[]) => setStatuses(Object.fromEntries(xs.map(x => [x.id,x])))).catch(()=>{});
     const i = setInterval(tick, 10000);
     return () => clearInterval(i);
   }, []);
@@ -147,6 +158,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       "--accent",
       dash.branding?.accent || "#ff7a1a",
     );
+    if (dash.branding?.favicon) {
+      let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+      if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+      link.href = dash.branding.favicon;
+    }
   }, [dash]);
   const ordered = useMemo(() => {
     if (!dash) return [];
@@ -160,17 +176,22 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setDrag(null);
     await api("/layouts/web", {
       method: "PUT",
-      body: JSON.stringify(
+      body: JSON.stringify({ items:
         next.map((x, i) => ({
           ...x,
           order: i,
           x: i % 4,
           y: Math.floor(i / 4),
-          w: 1,
-          h: 1,
+          w: x.w || (x.kind === 'WIDGET' ? 2 : 1),
+          h: x.h || 1,
         })),
-      ),
+      }),
     });
+    load();
+  }
+  async function resize(layout: Layout, delta: number) {
+    const next = ordered.map(x => x.id === layout.id ? { ...x, w: Math.max(1, Math.min(4, (x.w || 1) + delta)) } : x);
+    await api('/layouts/web', { method:'PUT', body: JSON.stringify({ items: next.map(({kind,applicationId,widgetId,x,y,w,h}) => ({kind,applicationId,widgetId,x,y,w,h})) }) });
     load();
   }
   async function remove(kind: string, id: string) {
@@ -225,6 +246,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           >
             <Settings />
           </button>
+          <button className="icon-button" onClick={() => setModal("account")} title="Minha conta"><UserRound /></button>
           <button className="icon-button" onClick={onLogout} title="Sair">
             <LogOut />
           </button>
@@ -245,6 +267,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
             return (
               <div
                 key={layout.id}
+                className={`layout-item span-${Math.min(4, layout.w || 1)}`}
                 draggable
                 onDragStart={() => setDrag(index)}
                 onDragOver={(e) => e.preventDefault()}
@@ -267,6 +290,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       </span>
                     </a>
                     <b>{app.name}</b>
+                    <i className={`status-dot ${statuses[app.id]?.online ? 'online' : statuses[app.id] ? 'offline' : ''}`} title={statuses[app.id] ? `${statuses[app.id].online?'Online':'Offline'} · ${statuses[app.id].latency} ms` : 'Verificando'} />
                     <button
                       className="item-menu"
                       onClick={() => setMenu(menu === app.id ? null : app.id)}
@@ -275,6 +299,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     </button>
                     {menu === app.id && (
                       <div className="context">
+                        <button onClick={() => { setEditing(app); setModal('app'); setMenu(null); }}><Edit3 /> Editar</button>
                         <button onClick={() => remove("applications", app.id)}>
                           <Trash2 /> Excluir
                         </button>
@@ -285,6 +310,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <WidgetCard
                     widget={widget!}
                     metrics={metrics}
+                    onEdit={() => { setEditing(widget!); setModal('widget'); }}
+                    onResize={(d) => resize(layout, d)}
                     onDelete={() => remove("widgets", widget!.id)}
                   />
                 )}
@@ -297,8 +324,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         {dash.applications
           .filter((a) => a.inDock)
           .map((a) => (
-            <a href={a.url} target="_blank" key={a.id}>
-              <span>{icons[a.icon || ""] || "◉"}</span>
+            <a href={a.url} target="_blank" rel="noreferrer" key={a.id}>
+              <span>{a.icon?.startsWith('http') ? <img src={a.icon} /> : icons[a.icon || ""] || "◉"}</span>
             </a>
           ))}
       </div>
@@ -309,9 +336,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <Editor
           type={modal}
           dash={dash}
+          editing={editing}
           close={() => setModal(null)}
           done={() => {
             setModal(null);
+            setEditing(null);
             load();
           }}
         />
@@ -335,11 +364,25 @@ function WidgetCard({
   widget,
   metrics,
   onDelete,
+  onEdit,
+  onResize,
 }: {
   widget: Widget;
   metrics: any;
   onDelete: () => void;
+  onEdit: () => void;
+  onResize: (delta:number) => void;
 }) {
+  const [remote, setRemote] = useState<any>(null);
+  useEffect(() => {
+    if (widget.type === 'PROMQL') api(`/widgets/${widget.id}/data`).then(setRemote).catch(()=>setRemote(null));
+    if (widget.type === 'WEATHER') {
+      const { latitude = -23.55, longitude = -46.63 } = widget.config || {};
+      api(`/weather?latitude=${latitude}&longitude=${longitude}`).then(setRemote).catch(()=>setRemote(null));
+    }
+  }, [widget.id, widget.type, widget.config]);
+  const promValue = remote?.data?.result?.[0]?.value?.[1];
+  const weatherValue = remote?.current?.temperature_2m != null ? `${Math.round(remote.current.temperature_2m)}°C` : '—';
   const map: any = {
     SYSTEM: [Activity, "CPU", metrics.cpu, "Memória", metrics.memory],
     STORAGE: [HardDrive, "Disco", metrics.disk],
@@ -351,9 +394,10 @@ function WidgetCard({
       metrics.upload ? `${(metrics.upload / 1e6).toFixed(1)} MB/s` : "—",
     ],
     CLOCK: [Server, "Agora", new Date().toLocaleTimeString("pt-BR")],
-    WEATHER: [CloudSun, "Clima", "—"],
+    WEATHER: [CloudSun, "Temperatura", weatherValue, "Sensação", remote?.current?.apparent_temperature != null ? `${Math.round(remote.current.apparent_temperature)}°C` : '—'],
     SEARCH: [Search, "Pesquisa", "Google"],
-    PROMQL: [Activity, "Métrica", "…"],
+    STATUS: [Activity, 'Serviços', 'Veja os indicadores nos aplicativos'],
+    PROMQL: [Activity, widget.config?.unit || "Valor", promValue != null ? `${Number(promValue).toFixed(Number(widget.config?.decimals ?? 1))}${widget.config?.suffix || ''}` : '—'],
   };
   const data = map[widget.type] || [MemoryStick, widget.title, "—"];
   const Icon = data[0];
@@ -362,6 +406,7 @@ function WidgetCard({
       <button className="widget-delete" onClick={onDelete}>
         <X />
       </button>
+      <div className="widget-actions"><button onClick={onEdit} title="Editar"><Edit3 /></button><button onClick={()=>onResize(-1)} title="Diminuir"><Minimize2 /></button><button onClick={()=>onResize(1)} title="Aumentar"><Maximize2 /></button></div>
       <div className="widget-title">
         <Icon />
         {widget.title}
@@ -379,11 +424,13 @@ function WidgetCard({
 function Editor({
   type,
   dash,
+  editing,
   close,
   done,
 }: {
   type: string;
   dash: Dash;
+  editing: AppItem | Widget | null;
   close: () => void;
   done: () => void;
 }) {
@@ -397,24 +444,37 @@ function Editor({
       type: "SYSTEM",
       config: {},
       ...dash.branding,
+      ...(editing || {}),
+      query: (editing as Widget | null)?.config?.query || '',
     });
+  const [busy,setBusy] = useState(false), [error,setError] = useState('');
   async function save(e: FormEvent) {
     e.preventDefault();
+    setBusy(true); setError('');
+    try {
     if (mode === "app")
-      await api("/applications", {
-        method: "POST",
+      await api(editing ? `/applications/${editing.id}` : "/applications", {
+        method: editing ? "PATCH" : "POST",
         body: JSON.stringify(form),
       });
     else if (mode === "widget")
-      await api("/widgets", {
-        method: "POST",
+      await api(editing ? `/widgets/${editing.id}` : "/widgets", {
+        method: editing ? "PATCH" : "POST",
         body: JSON.stringify({
           ...form,
-          config: form.type === "PROMQL" ? { query: form.query } : form.config,
+          config: form.type === "PROMQL" ? { ...form.config, query: form.query } : form.config,
         }),
       });
-    else await api("/branding", { method: "PUT", body: JSON.stringify(form) });
+    else if (mode === 'brand') await api("/branding", { method: "PUT", body: JSON.stringify(form) });
+    else return;
     done();
+    } catch(e:any) { setError(e.message); } finally { setBusy(false); }
+  }
+  async function upload(field:string, file?:File) {
+    if (!file) return;
+    const body = new FormData(); body.append('file',file);
+    const asset = await api('/assets',{method:'POST',body});
+    setForm((x:any)=>({...x,[field]:asset.url}));
   }
   return (
     <div
@@ -425,7 +485,7 @@ function Editor({
         <button type="button" className="close" onClick={close}>
           <X />
         </button>
-        {type !== "brand" && (
+        {type !== "brand" && type !== 'account' && !editing && (
           <div className="tabs">
             <button
               type="button"
@@ -446,9 +506,10 @@ function Editor({
         <h2>
           {mode === "brand"
             ? "Personalizar meu DashLab"
+            : mode === 'account' ? 'Minha conta'
             : mode === "app"
-              ? "Novo aplicativo"
-              : "Novo widget"}
+              ? `${editing ? 'Editar' : 'Novo'} aplicativo`
+              : `${editing ? 'Editar' : 'Novo'} widget`}
         </h2>
         {mode === "app" && (
           <>
@@ -475,6 +536,11 @@ function Editor({
                 onChange={(e) => setForm({ ...form, icon: e.target.value })}
               />
             </label>
+            <label>Enviar ícone<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e=>upload('icon',e.target.files?.[0])}/></label>
+            <label>Descrição<input value={form.description || ''} onChange={e=>setForm({...form,description:e.target.value})}/></label>
+            <label>Categoria<input value={form.category || ''} onChange={e=>setForm({...form,category:e.target.value})}/></label>
+            <label>Deep link mobile<input value={form.deepLink || ''} onChange={e=>setForm({...form,deepLink:e.target.value})}/></label>
+            <label>URL de status<input value={form.statusUrl || ''} onChange={e=>setForm({...form,statusUrl:e.target.value})}/></label>
             <label className="check">
               <input
                 type="checkbox"
@@ -516,14 +582,16 @@ function Editor({
               </select>
             </label>
             {form.type === "PROMQL" && (
-              <label>
+              <><label>
                 Consulta PromQL
                 <textarea
                   value={form.query || ""}
                   onChange={(e) => setForm({ ...form, query: e.target.value })}
                 />
-              </label>
+              </label><label>Sufixo/unidade<input value={form.config?.suffix || ''} onChange={e=>setForm({...form,config:{...form.config,suffix:e.target.value}})}/></label></>
             )}
+            {form.type === 'WEATHER' && <div className="field-row"><label>Latitude<input type="number" step="any" value={form.config?.latitude ?? -23.55} onChange={e=>setForm({...form,config:{...form.config,latitude:+e.target.value}})}/></label><label>Longitude<input type="number" step="any" value={form.config?.longitude ?? -46.63} onChange={e=>setForm({...form,config:{...form.config,longitude:+e.target.value}})}/></label></div>}
+            {form.type === 'SEARCH' && <label>Provedor<select value={form.config?.provider || 'google'} onChange={e=>setForm({...form,config:{...form.config,provider:e.target.value}})}><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option><option value="bing">Bing</option></select></label>}
           </>
         )}
         {mode === "brand" && (
@@ -544,6 +612,9 @@ function Editor({
                 }
               />
             </label>
+            <label>Enviar wallpaper<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e=>upload('wallpaper',e.target.files?.[0])}/></label>
+            <label>Logo (URL)<input value={form.logo || ''} onChange={e=>setForm({...form,logo:e.target.value})}/></label>
+            <label>Enviar logo<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={e=>upload('logo',e.target.files?.[0])}/></label>
             <label>
               Cor de destaque
               <input
@@ -554,8 +625,18 @@ function Editor({
             </label>
           </>
         )}
-        <button className="primary">Salvar</button>
+        {mode === 'account' && <Account close={close}/>}
+        {error && <div className="error">{error}</div>}
+        {mode !== 'account' && <button className="primary" disabled={busy}>{busy?'Salvando…':'Salvar'}</button>}
       </form>
     </div>
   );
+}
+function Account({close}:{close:()=>void}) {
+  const [currentPassword,setCurrent]=useState(''),[newPassword,setNew]=useState(''),[sessions,setSessions]=useState<any[]>([]),[error,setError]=useState('');
+  useEffect(()=>{api('/auth/sessions').then(setSessions).catch(()=>{})},[]);
+  async function change(){try{await api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword,newPassword})});alert('Senha alterada. Entre novamente.');clearAuth();location.reload()}catch(e:any){setError(e.message)}}
+  async function logoutAll(){await api('/auth/logout-all',{method:'POST'});clearAuth();location.reload()}
+  async function remove(){if(!currentPassword||!confirm('Excluir permanentemente sua conta e todo o dashboard?'))return;try{await api('/auth/account',{method:'DELETE',body:JSON.stringify({password:currentPassword})});clearAuth();location.reload()}catch(e:any){setError(e.message)}}
+  return <div className="account"><label>Senha atual<input type="password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/></label><label>Nova senha<input type="password" minLength={8} value={newPassword} onChange={e=>setNew(e.target.value)}/></label>{error&&<div className="error">{error}</div>}<button type="button" className="primary" onClick={change}>Alterar senha</button><h3>Sessões ativas ({sessions.length})</h3>{sessions.map(x=><div className="session" key={x.id}><span>{new Date(x.createdAt).toLocaleString('pt-BR')}</span><button type="button" onClick={async()=>{await api(`/auth/sessions/${x.id}`,{method:'DELETE'});setSessions(sessions.filter(s=>s.id!==x.id))}}>Revogar</button></div>)}<button type="button" className="secondary" onClick={logoutAll}>Encerrar todas as sessões</button><button type="button" className="danger" onClick={remove}>Excluir minha conta</button><button type="button" className="link" onClick={close}>Fechar</button></div>
 }

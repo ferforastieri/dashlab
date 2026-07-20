@@ -6,7 +6,10 @@ export class RegisterDto {
 }
 export class LoginDto extends RegisterDto {}
 export class RefreshDto {
-  @IsString() refreshToken!: string;
+  @IsString() @Length(32, 256) refreshToken!: string;
+}
+export class DeleteAccountDto {
+  @IsString() @Length(8, 128) password!: string;
 }
 export class ChangePasswordDto {
   @IsString() currentPassword!: string;

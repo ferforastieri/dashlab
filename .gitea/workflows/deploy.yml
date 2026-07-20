@@ -39,8 +39,11 @@ jobs:
           npm --prefix backend ci
           npm --prefix backend run prisma:generate
           npm --prefix backend run build
+          npm --prefix backend test -- --passWithNoTests
           npm --prefix web ci
           npm --prefix web run build
+          npm --prefix mobile ci
+          npm --prefix mobile run build:check
       - name: Deploy containers
         env:
           POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
