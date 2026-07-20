@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Surface {
+  WEB
+  MOBILE
+}
+enum ItemKind {
+  APPLICATION
+  WIDGET
+}
+enum WidgetType {
+  SYSTEM
+  STORAGE
+  NETWORK
+  CLOCK
+  WEATHER
+  SEARCH
+  STATUS
+  PROMQL
+}
+
+model User {
+  id String @id @default(cuid())
+  username String @unique
+  passwordHash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dashboards Dashboard[]
+  sessions Session[]
+}
+model Session {
+  id String @id @default(cuid())
+  tokenHash String @unique
+  expiresAt DateTime
+  userId String
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  createdAt DateTime @default(now())
+}
+model Dashboard {
+  id String @id @default(cuid())
+  name String @default("Meu DashLab")
+  branding Json
+  userId String @unique
+  user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+  applications Application[]
+  widgets Widget[]
+  layouts LayoutItem[]
+  assets Asset[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Application {
+  id String @id @default(cuid())
+  name String
+  description String?
+  url String
+  deepLink String?
+  icon String?
+  category String?
+  statusUrl String?
+  inDock Boolean @default(false)
+  visible Boolean @default(true)
+  dashboardId String
+  dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)
+  layouts LayoutItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([dashboardId])
+}
+model Widget {
+  id String @id @default(cuid())
+  type WidgetType
+  title String
+  config Json
+  visible Boolean @default(true)
+  dashboardId String
+  dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)
+  layouts LayoutItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([dashboardId])
+}
+model LayoutItem {
+  id String @id @default(cuid())
+  surface Surface
+  kind ItemKind
+  x Int @default(0)
+  y Int @default(0)
+  w Int @default(1)
+  h Int @default(1)
+  order Int @default(0)
+  dashboardId String
+  dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)
+  applicationId String?
+  application Application? @relation(fields:[applicationId], references:[id], onDelete:Cascade)
+  widgetId String?
+  widget Widget? @relation(fields:[widgetId], references:[id], onDelete:Cascade)
+  @@index([dashboardId, surface])
+}
+model Asset {
+  id String @id @default(cuid())
+  name String
+  mimeType String
+  path String
+  dashboardId String
+  dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)
+  createdAt DateTime @default(now())
+  @@index([dashboardId])
+}

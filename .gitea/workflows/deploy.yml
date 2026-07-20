@@ -1,0 +1,48 @@
+name: Build and deploy DashLab
+on:
+  push:
+    branches: [main, master]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate secrets
+        env:
+          POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
+          JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+          EXPO_TOKEN: "${{ secrets.EXPO_TOKEN }}"
+        run: |
+          set -eu
+          test -n "$POSTGRES_PASSWORD"
+          test ${#JWT_SECRET} -ge 32
+          test -n "$EXPO_TOKEN"
+      - name: Test and build
+        run: |
+          npm --prefix backend ci
+          npm --prefix backend run prisma:generate
+          npm --prefix backend run build
+          npm --prefix web ci
+          npm --prefix web run build
+      - name: Deploy containers
+        env:
+          POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
+          JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+          PROMETHEUS_URL: "${{ secrets.PROMETHEUS_URL }}"
+        run: |
+          set -eu
+          umask 077
+          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "${PROMETHEUS_URL:-http://127.0.0.1:9090}" > .env
+          docker compose --env-file .env build --pull
+          docker compose --env-file .env up -d postgres
+          docker compose --env-file .env run --rm backend npx prisma migrate deploy
+          docker compose --env-file .env up -d
+          docker compose --env-file .env ps
+      - name: Trigger Android build on Expo Cloud
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: "${{ secrets.EXPO_TOKEN }}"
+        run: |
+          set -eu
+          npx eas-cli@latest whoami
+          npx eas-cli@latest build --platform android --profile production --non-interactive --no-wait
