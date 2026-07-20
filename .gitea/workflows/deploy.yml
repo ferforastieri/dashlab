@@ -15,8 +15,7 @@ jobs:
             exit 0
           fi
           apt-get update
-          apt-get install -y docker.io docker-compose-plugin 2>/dev/null || \
-            apt-get install -y docker.io docker-compose-v2
+          apt-get install -y docker.io docker-compose
       - name: Validate secrets
         env:
           POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
@@ -41,13 +40,21 @@ jobs:
           PROMETHEUS_URL: "${{ secrets.PROMETHEUS_URL }}"
         run: |
           set -eu
+          if docker compose version >/dev/null 2>&1; then
+            COMPOSE="docker compose"
+          elif command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE="docker-compose"
+          else
+            echo "Docker Compose is unavailable"
+            exit 1
+          fi
           umask 077
           printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "${PROMETHEUS_URL:-http://127.0.0.1:9090}" > .env
-          docker compose --env-file .env build --pull
-          docker compose --env-file .env up -d postgres
-          docker compose --env-file .env run --rm backend npx prisma migrate deploy
-          docker compose --env-file .env up -d
-          docker compose --env-file .env ps
+          $COMPOSE --env-file .env build --pull
+          $COMPOSE --env-file .env up -d postgres
+          $COMPOSE --env-file .env run --rm backend npx prisma migrate deploy
+          $COMPOSE --env-file .env up -d
+          $COMPOSE --env-file .env ps
       - name: Trigger Android build on Expo Cloud
         working-directory: mobile
         env:
