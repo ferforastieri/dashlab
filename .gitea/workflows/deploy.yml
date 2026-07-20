@@ -1,5 +1,6 @@
 name: Build and deploy DashLab
 on:
+  workflow_dispatch:
   push:
     branches: [main, master]
 jobs:
