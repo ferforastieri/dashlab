@@ -1,12 +1,495 @@
-import AsyncStorage from'@react-native-async-storage/async-storage';import{Ionicons}from'@expo/vector-icons';import*as Linking from'expo-linking';import*as SecureStore from'expo-secure-store';import{StatusBar}from'expo-status-bar';import React,{useEffect,useState}from'react';import{ActivityIndicator,Alert,FlatList,KeyboardAvoidingView,Modal,Platform,Pressable,SafeAreaView,ScrollView,StyleSheet,Text,TextInput,View}from'react-native';
-type Phase='loading'|'server'|'auth'|'dashboard';type AppItem={id:string;name:string;url:string;deepLink?:string;icon?:string;inDock:boolean};
-const STORE='dashlab_server',TOKEN='dashlab_token';let server='';let token='';
-async function request(path:string,options:RequestInit={}){const r=await fetch(`${server}${path}`,{...options,headers:{'content-type':'application/json',authorization:`Bearer ${token}`,...options.headers}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(Array.isArray(d.message)?d.message[0]:d.message||'Não foi possível continuar');return d}
-function normalize(value:string){const url=new URL(value.trim());if(!['http:','https:'].includes(url.protocol))throw new Error('Use http:// ou https://');url.pathname=url.pathname.replace(/\/+$/,'')+'/api';return url.toString().replace(/\/$/,'')}
-export default function App(){const[phase,setPhase]=useState<Phase>('loading');useEffect(()=>{Promise.all([AsyncStorage.getItem(STORE),SecureStore.getItemAsync(TOKEN)]).then(async([s,t])=>{if(!s)return setPhase('server');server=s;token=t||'';setPhase(t?'dashboard':'auth')})},[]);if(phase==='loading')return<Center><ActivityIndicator color="#ff7a1a"/></Center>;if(phase==='server')return<ServerSetup done={()=>setPhase('auth')}/>;if(phase==='auth')return<Auth done={()=>setPhase('dashboard')} reset={()=>setPhase('server')}/>;return<Dashboard logout={async()=>{await SecureStore.deleteItemAsync(TOKEN);token='';setPhase('auth')}}/>}
-function ServerSetup({done}:{done:()=>void}){const[url,setUrl]=useState('https://dashboard.example.invalid'),[busy,setBusy]=useState(false);async function connect(){setBusy(true);try{const normalized=normalize(url);const r=await fetch(`${normalized}/health`);if(!r.ok)throw new Error();server=normalized;await AsyncStorage.setItem(STORE,normalized);done()}catch{Alert.alert('Servidor indisponível','Confira o endereço e tente novamente.')}finally{setBusy(false)}}return<SafeAreaView style={s.page}><KeyboardAvoidingView style={s.center} behavior={Platform.OS==='ios'?'padding':undefined}><Logo/><Text style={s.title}>Conecte ao seu DashLab</Text><Text style={s.muted}>Digite o endereço do seu servidor para continuar.</Text><TextInput style={s.input} autoCapitalize="none" keyboardType="url" value={url} onChangeText={setUrl} placeholder="https://home.exemplo.com" placeholderTextColor="#617184"/><Button title={busy?'Conectando…':'Conectar'} onPress={connect}/></KeyboardAvoidingView></SafeAreaView>}
-function Auth({done,reset}:{done:()=>void;reset:()=>void}){const[register,setRegister]=useState(false),[username,setUsername]=useState(''),[password,setPassword]=useState(''),[busy,setBusy]=useState(false);async function submit(){setBusy(true);try{const d=await request(`/auth/${register?'register':'login'}`,{method:'POST',body:JSON.stringify({username,password})});token=d.accessToken;await SecureStore.setItemAsync(TOKEN,token);done()}catch(e:any){Alert.alert('Não foi possível entrar',e.message)}finally{setBusy(false)}}return<SafeAreaView style={s.page}><View style={s.center}><Logo/><Text style={s.title}>{register?'Crie sua conta':'Seu homelab, do seu jeito'}</Text><TextInput style={s.input} autoCapitalize="none" placeholder="Usuário" placeholderTextColor="#617184" value={username} onChangeText={setUsername}/><TextInput style={s.input} secureTextEntry placeholder="Senha" placeholderTextColor="#617184" value={password} onChangeText={setPassword}/><Button title={busy?'Aguarde…':register?'Criar conta':'Entrar'} onPress={submit}/><Pressable onPress={()=>setRegister(!register)}><Text style={s.link}>{register?'Já tenho uma conta':'Criar uma conta'}</Text></Pressable><Pressable onPress={reset}><Text style={s.subtle}>Trocar servidor</Text></Pressable></View></SafeAreaView>}
-function Dashboard({logout}:{logout:()=>void}){const[data,setData]=useState<any>(null),[show,setShow]=useState(false),[name,setName]=useState(''),[url,setUrl]=useState('https://');const load=()=>request('/dashboard?surface=mobile').then(setData).catch(e=>Alert.alert('Erro',e.message));useEffect(load,[]);async function add(){try{await request('/applications',{method:'POST',body:JSON.stringify({name,url})});setShow(false);setName('');load()}catch(e:any){Alert.alert('Erro',e.message)}}async function open(app:AppItem){if(app.deepLink){const ok=await Linking.canOpenURL(app.deepLink);if(ok)return Linking.openURL(app.deepLink)}Linking.openURL(app.url)}if(!data)return<Center><ActivityIndicator color="#ff7a1a"/></Center>;return<SafeAreaView style={s.page}><StatusBar style="light"/><View style={s.header}><View><Text style={s.brand}>{data.branding?.name||data.name}</Text><Text style={s.muted}>Seu espaço pessoal</Text></View><Pressable onPress={logout}><Ionicons name="log-out-outline" color="#dbe5ef" size={24}/></Pressable></View><ScrollView contentContainerStyle={s.content}><View style={s.search}><Ionicons name="search" color="#8190a2" size={18}/><Text style={s.searchText}>Pesquisar na web</Text></View><Text style={s.section}>Aplicativos</Text><FlatList scrollEnabled={false} data={data.applications} numColumns={3} keyExtractor={(x:any)=>x.id} renderItem={({item})=><Pressable style={s.app} onPress={()=>open(item)}><View style={s.appIcon}><Text style={s.emoji}>{icon(item.icon)}</Text></View><Text numberOfLines={1} style={s.appName}>{item.name}</Text></Pressable>}/><Text style={s.section}>Visão geral</Text><View style={s.widgets}>{data.widgets.slice(0,6).map((w:any)=><View style={s.widget} key={w.id}><Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21}/><Text style={s.widgetTitle}>{w.title}</Text><Text style={s.metric}>—</Text></View>)}</View></ScrollView><Pressable style={s.fab} onPress={()=>setShow(true)}><Ionicons name="add" color="white" size={30}/></Pressable><Modal transparent visible={show} animationType="slide" onRequestClose={()=>setShow(false)}><View style={s.modalBack}><View style={s.sheet}><Text style={s.title}>Novo aplicativo</Text><TextInput style={s.input} placeholder="Nome" placeholderTextColor="#617184" value={name} onChangeText={setName}/><TextInput style={s.input} placeholder="https://..." placeholderTextColor="#617184" value={url} onChangeText={setUrl}/><Button title="Adicionar" onPress={add}/><Pressable onPress={()=>setShow(false)}><Text style={s.link}>Cancelar</Text></Pressable></View></View></Modal></SafeAreaView>}
-const icon=(x?:string)=>({nextcloud:'☁️',immich:'🌄',jellyfin:'▶️','shield-checkmark':'🔐','git-branch':'⑂','stats-chart':'📊',shield:'🛡️',server:'▦'}as any)[x||'']||'◉';const widgetIcon=(x:string):any=>({SYSTEM:'speedometer-outline',STORAGE:'server-outline',NETWORK:'swap-vertical-outline',CLOCK:'time-outline',WEATHER:'partly-sunny-outline',SEARCH:'search-outline'}as any)[x]||'grid-outline';
-function Logo(){return<View style={s.logo}><Text style={s.logoText}>D</Text></View>}function Button({title,onPress}:{title:string;onPress:()=>void}){return<Pressable style={s.button} onPress={onPress}><Text style={s.buttonText}>{title}</Text></Pressable>}function Center({children}:{children:React.ReactNode}){return<View style={[s.page,s.center]}>{children}</View>}
-const s=StyleSheet.create({page:{flex:1,backgroundColor:'#091019'},center:{flex:1,justifyContent:'center',padding:28,gap:16},logo:{width:82,height:82,borderRadius:25,backgroundColor:'#ff7a1a',alignSelf:'center',alignItems:'center',justifyContent:'center',marginBottom:18},logoText:{fontSize:40,fontWeight:'800',color:'white'},title:{fontSize:25,fontWeight:'700',color:'#f6f8fb',textAlign:'center',marginBottom:4},muted:{color:'#8d9bac',fontSize:14},input:{backgroundColor:'#111d2a',borderWidth:1,borderColor:'#263545',color:'white',borderRadius:14,padding:14,fontSize:15},button:{backgroundColor:'#ff7a1a',padding:15,borderRadius:14,alignItems:'center'},buttonText:{color:'white',fontWeight:'700',fontSize:16},link:{color:'#ff9a50',textAlign:'center',padding:8},subtle:{color:'#647486',textAlign:'center'},header:{padding:20,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},brand:{color:'white',fontSize:23,fontWeight:'700'},content:{paddingHorizontal:18,paddingBottom:110},search:{height:44,borderRadius:15,backgroundColor:'#ffffff12',borderWidth:1,borderColor:'#ffffff16',flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:14},searchText:{color:'#8090a2'},section:{color:'#dbe5ef',fontWeight:'700',fontSize:17,marginTop:28,marginBottom:16},app:{width:'33.333%',alignItems:'center',marginBottom:24},appIcon:{width:66,height:66,borderRadius:20,backgroundColor:'#ffffff14',borderWidth:1,borderColor:'#ffffff1c',alignItems:'center',justifyContent:'center'},emoji:{fontSize:32},appName:{color:'#dbe5ef',fontSize:12,marginTop:8,maxWidth:95},widgets:{flexDirection:'row',flexWrap:'wrap',gap:10},widget:{width:'48%',minHeight:105,backgroundColor:'#ffffff10',borderWidth:1,borderColor:'#ffffff16',borderRadius:19,padding:15},widgetTitle:{color:'#9eacbc',fontSize:12,marginTop:7},metric:{color:'white',fontSize:23,fontWeight:'700',marginTop:5},fab:{position:'absolute',right:20,bottom:24,width:58,height:58,borderRadius:19,backgroundColor:'#ff7a1a',alignItems:'center',justifyContent:'center',elevation:8},modalBack:{flex:1,backgroundColor:'#0009',justifyContent:'flex-end'},sheet:{backgroundColor:'#101a26',borderTopLeftRadius:28,borderTopRightRadius:28,padding:24,paddingBottom:40,gap:14}});
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
+import * as SecureStore from "expo-secure-store";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+type Phase = "loading" | "server" | "auth" | "dashboard";
+type AppItem = {
+  id: string;
+  name: string;
+  url: string;
+  deepLink?: string;
+  icon?: string;
+  inDock: boolean;
+};
+const STORE = "dashlab_server",
+  TOKEN = "dashlab_token";
+let server = "";
+let token = "";
+async function request(path: string, options: RequestInit = {}) {
+  const r = await fetch(`${server}${path}`, {
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok)
+    throw new Error(
+      Array.isArray(d.message)
+        ? d.message[0]
+        : d.message || "Não foi possível continuar",
+    );
+  return d;
+}
+function normalize(value: string) {
+  const url = new URL(value.trim());
+  if (!["http:", "https:"].includes(url.protocol))
+    throw new Error("Use http:// ou https://");
+  url.pathname = url.pathname.replace(/\/+$/, "") + "/api";
+  return url.toString().replace(/\/$/, "");
+}
+export default function App() {
+  const [phase, setPhase] = useState<Phase>("loading");
+  useEffect(() => {
+    Promise.all([
+      AsyncStorage.getItem(STORE),
+      SecureStore.getItemAsync(TOKEN),
+    ]).then(async ([s, t]) => {
+      if (!s) return setPhase("server");
+      server = s;
+      token = t || "";
+      setPhase(t ? "dashboard" : "auth");
+    });
+  }, []);
+  if (phase === "loading")
+    return (
+      <Center>
+        <ActivityIndicator color="#ff7a1a" />
+      </Center>
+    );
+  if (phase === "server") return <ServerSetup done={() => setPhase("auth")} />;
+  if (phase === "auth")
+    return (
+      <Auth
+        done={() => setPhase("dashboard")}
+        reset={() => setPhase("server")}
+      />
+    );
+  return (
+    <Dashboard
+      logout={async () => {
+        await SecureStore.deleteItemAsync(TOKEN);
+        token = "";
+        setPhase("auth");
+      }}
+    />
+  );
+}
+function ServerSetup({ done }: { done: () => void }) {
+  const [url, setUrl] = useState("https://dashboard.example.invalid"),
+    [busy, setBusy] = useState(false);
+  async function connect() {
+    setBusy(true);
+    try {
+      const normalized = normalize(url);
+      const r = await fetch(`${normalized}/health`);
+      if (!r.ok) throw new Error();
+      server = normalized;
+      await AsyncStorage.setItem(STORE, normalized);
+      done();
+    } catch {
+      Alert.alert(
+        "Servidor indisponível",
+        "Confira o endereço e tente novamente.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <SafeAreaView style={s.page}>
+      <KeyboardAvoidingView
+        style={s.center}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Logo />
+        <Text style={s.title}>Conecte ao seu DashLab</Text>
+        <Text style={s.muted}>
+          Digite o endereço do seu servidor para continuar.
+        </Text>
+        <TextInput
+          style={s.input}
+          autoCapitalize="none"
+          keyboardType="url"
+          value={url}
+          onChangeText={setUrl}
+          placeholder="https://home.exemplo.com"
+          placeholderTextColor="#617184"
+        />
+        <Button title={busy ? "Conectando…" : "Conectar"} onPress={connect} />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+function Auth({ done, reset }: { done: () => void; reset: () => void }) {
+  const [register, setRegister] = useState(false),
+    [username, setUsername] = useState(""),
+    [password, setPassword] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function submit() {
+    setBusy(true);
+    try {
+      const d = await request(`/auth/${register ? "register" : "login"}`, {
+        method: "POST",
+        body: JSON.stringify({ username, password }),
+      });
+      token = d.accessToken;
+      await SecureStore.setItemAsync(TOKEN, token);
+      done();
+    } catch (e: any) {
+      Alert.alert("Não foi possível entrar", e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <SafeAreaView style={s.page}>
+      <View style={s.center}>
+        <Logo />
+        <Text style={s.title}>
+          {register ? "Crie sua conta" : "Seu homelab, do seu jeito"}
+        </Text>
+        <TextInput
+          style={s.input}
+          autoCapitalize="none"
+          placeholder="Usuário"
+          placeholderTextColor="#617184"
+          value={username}
+          onChangeText={setUsername}
+        />
+        <TextInput
+          style={s.input}
+          secureTextEntry
+          placeholder="Senha"
+          placeholderTextColor="#617184"
+          value={password}
+          onChangeText={setPassword}
+        />
+        <Button
+          title={busy ? "Aguarde…" : register ? "Criar conta" : "Entrar"}
+          onPress={submit}
+        />
+        <Pressable onPress={() => setRegister(!register)}>
+          <Text style={s.link}>
+            {register ? "Já tenho uma conta" : "Criar uma conta"}
+          </Text>
+        </Pressable>
+        <Pressable onPress={reset}>
+          <Text style={s.subtle}>Trocar servidor</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+function Dashboard({ logout }: { logout: () => void }) {
+  const [data, setData] = useState<any>(null),
+    [metrics, setMetrics] = useState<Record<string, number | null>>({}),
+    [show, setShow] = useState(false),
+    [name, setName] = useState(""),
+    [url, setUrl] = useState("https://");
+  const load = () =>
+    request("/dashboard?surface=mobile")
+      .then(setData)
+      .catch((e) => Alert.alert("Erro", e.message));
+  useEffect(() => {
+    load();
+    const loadMetrics = () =>
+      request("/metrics/overview")
+        .then(setMetrics)
+        .catch(() => undefined);
+    loadMetrics();
+    const timer = setInterval(loadMetrics, 10000);
+    return () => clearInterval(timer);
+  }, []);
+  async function add() {
+    try {
+      await request("/applications", {
+        method: "POST",
+        body: JSON.stringify({ name, url }),
+      });
+      setShow(false);
+      setName("");
+      load();
+    } catch (e: any) {
+      Alert.alert("Erro", e.message);
+    }
+  }
+  async function open(app: AppItem) {
+    if (app.deepLink) {
+      const ok = await Linking.canOpenURL(app.deepLink);
+      if (ok) return Linking.openURL(app.deepLink);
+    }
+    Linking.openURL(app.url);
+  }
+  if (!data)
+    return (
+      <Center>
+        <ActivityIndicator color="#ff7a1a" />
+      </Center>
+    );
+  return (
+    <SafeAreaView style={s.page}>
+      <StatusBar style="light" />
+      <View style={s.header}>
+        <View>
+          <Text style={s.brand}>{data.branding?.name || data.name}</Text>
+          <Text style={s.muted}>Seu espaço pessoal</Text>
+        </View>
+        <Pressable onPress={logout}>
+          <Ionicons name="log-out-outline" color="#dbe5ef" size={24} />
+        </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={s.content}>
+        <View style={s.search}>
+          <Ionicons name="search" color="#8190a2" size={18} />
+          <Text style={s.searchText}>Pesquisar na web</Text>
+        </View>
+        <Text style={s.section}>Aplicativos</Text>
+        <FlatList
+          scrollEnabled={false}
+          data={data.applications}
+          numColumns={3}
+          keyExtractor={(x: any) => x.id}
+          renderItem={({ item }) => (
+            <Pressable style={s.app} onPress={() => open(item)}>
+              <View style={s.appIcon}>
+                <Text style={s.emoji}>{icon(item.icon)}</Text>
+              </View>
+              <Text numberOfLines={1} style={s.appName}>
+                {item.name}
+              </Text>
+            </Pressable>
+          )}
+        />
+        <Text style={s.section}>Visão geral</Text>
+        <View style={s.widgets}>
+          {data.widgets.slice(0, 6).map((w: any) => (
+            <View style={s.widget} key={w.id}>
+              <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
+              <Text style={s.widgetTitle}>{w.title}</Text>
+              <Text style={s.metric}>{widgetValue(w.type, metrics)}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+      <Pressable style={s.fab} onPress={() => setShow(true)}>
+        <Ionicons name="add" color="white" size={30} />
+      </Pressable>
+      <Modal
+        transparent
+        visible={show}
+        animationType="slide"
+        onRequestClose={() => setShow(false)}
+      >
+        <View style={s.modalBack}>
+          <View style={s.sheet}>
+            <Text style={s.title}>Novo aplicativo</Text>
+            <TextInput
+              style={s.input}
+              placeholder="Nome"
+              placeholderTextColor="#617184"
+              value={name}
+              onChangeText={setName}
+            />
+            <TextInput
+              style={s.input}
+              placeholder="https://..."
+              placeholderTextColor="#617184"
+              value={url}
+              onChangeText={setUrl}
+            />
+            <Button title="Adicionar" onPress={add} />
+            <Pressable onPress={() => setShow(false)}>
+              <Text style={s.link}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+const icon = (x?: string) =>
+  (
+    ({
+      nextcloud: "☁️",
+      immich: "🌄",
+      jellyfin: "▶️",
+      "shield-checkmark": "🔐",
+      "git-branch": "⑂",
+      "stats-chart": "📊",
+      shield: "🛡️",
+      server: "▦",
+    }) as any
+  )[x || ""] || "◉";
+const widgetIcon = (x: string): any =>
+  (
+    ({
+      SYSTEM: "speedometer-outline",
+      STORAGE: "server-outline",
+      NETWORK: "swap-vertical-outline",
+      CLOCK: "time-outline",
+      WEATHER: "partly-sunny-outline",
+      SEARCH: "search-outline",
+    }) as any
+    )[x] || "grid-outline";
+const widgetValue = (type: string, metrics: Record<string, number | null>) => {
+  const percent = (value: number | null | undefined) =>
+    typeof value === "number" ? `${value.toFixed(0)}%` : "—";
+  const rate = (value: number | null | undefined) =>
+    typeof value === "number" ? `${(value / 1_000_000).toFixed(1)} MB/s` : "—";
+  if (type === "SYSTEM") return `CPU ${percent(metrics.cpu)} · RAM ${percent(metrics.memory)}`;
+  if (type === "STORAGE") return percent(metrics.disk);
+  if (type === "NETWORK") return `↓ ${rate(metrics.download)} · ↑ ${rate(metrics.upload)}`;
+  if (type === "CLOCK") return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return "—";
+};
+function Logo() {
+  return (
+    <View style={s.logo}>
+      <Text style={s.logoText}>D</Text>
+    </View>
+  );
+}
+function Button({ title, onPress }: { title: string; onPress: () => void }) {
+  return (
+    <Pressable style={s.button} onPress={onPress}>
+      <Text style={s.buttonText}>{title}</Text>
+    </Pressable>
+  );
+}
+function Center({ children }: { children: React.ReactNode }) {
+  return <View style={[s.page, s.center]}>{children}</View>;
+}
+const s = StyleSheet.create({
+  page: { flex: 1, backgroundColor: "#091019" },
+  center: { flex: 1, justifyContent: "center", padding: 28, gap: 16 },
+  logo: {
+    width: 82,
+    height: 82,
+    borderRadius: 25,
+    backgroundColor: "#ff7a1a",
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  logoText: { fontSize: 40, fontWeight: "800", color: "white" },
+  title: {
+    fontSize: 25,
+    fontWeight: "700",
+    color: "#f6f8fb",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  muted: { color: "#8d9bac", fontSize: 14 },
+  input: {
+    backgroundColor: "#111d2a",
+    borderWidth: 1,
+    borderColor: "#263545",
+    color: "white",
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 15,
+  },
+  button: {
+    backgroundColor: "#ff7a1a",
+    padding: 15,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  buttonText: { color: "white", fontWeight: "700", fontSize: 16 },
+  link: { color: "#ff9a50", textAlign: "center", padding: 8 },
+  subtle: { color: "#647486", textAlign: "center" },
+  header: {
+    padding: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  brand: { color: "white", fontSize: 23, fontWeight: "700" },
+  content: { paddingHorizontal: 18, paddingBottom: 110 },
+  search: {
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#ffffff12",
+    borderWidth: 1,
+    borderColor: "#ffffff16",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    paddingHorizontal: 14,
+  },
+  searchText: { color: "#8090a2" },
+  section: {
+    color: "#dbe5ef",
+    fontWeight: "700",
+    fontSize: 17,
+    marginTop: 28,
+    marginBottom: 16,
+  },
+  app: { width: "33.333%", alignItems: "center", marginBottom: 24 },
+  appIcon: {
+    width: 66,
+    height: 66,
+    borderRadius: 20,
+    backgroundColor: "#ffffff14",
+    borderWidth: 1,
+    borderColor: "#ffffff1c",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emoji: { fontSize: 32 },
+  appName: { color: "#dbe5ef", fontSize: 12, marginTop: 8, maxWidth: 95 },
+  widgets: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  widget: {
+    width: "48%",
+    minHeight: 105,
+    backgroundColor: "#ffffff10",
+    borderWidth: 1,
+    borderColor: "#ffffff16",
+    borderRadius: 19,
+    padding: 15,
+  },
+  widgetTitle: { color: "#9eacbc", fontSize: 12, marginTop: 7 },
+  metric: { color: "white", fontSize: 23, fontWeight: "700", marginTop: 5 },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 24,
+    width: 58,
+    height: 58,
+    borderRadius: 19,
+    backgroundColor: "#ff7a1a",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 8,
+  },
+  modalBack: { flex: 1, backgroundColor: "#0009", justifyContent: "flex-end" },
+  sheet: {
+    backgroundColor: "#101a26",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 40,
+    gap: 14,
+  },
+});
