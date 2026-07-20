@@ -126,7 +126,7 @@ export class AuthService {
         ],
       });
     }
-    return this.issue(user.id, user.username);
+    return this.issue(user.id, user.username, 'Conta criada com sucesso');
   }
   async login(dto: LoginDto) {
     const user = await this.db.user.findUnique({
@@ -134,7 +134,7 @@ export class AuthService {
     });
     if (!user || !(await argon2.verify(user.passwordHash, dto.password)))
       throw new UnauthorizedException("Usuário ou senha inválidos");
-    return this.issue(user.id, user.username);
+    return this.issue(user.id, user.username, 'Login realizado com sucesso');
   }
   async refresh(token: string) {
     const hash = createHash("sha256").update(token).digest("hex");
@@ -145,13 +145,13 @@ export class AuthService {
     if (!session || session.expiresAt < new Date())
       throw new UnauthorizedException("Sessão expirada");
     await this.db.session.delete({ where: { id: session.id } });
-    return this.issue(session.user.id, session.user.username);
+    return this.issue(session.user.id, session.user.username, 'Sessão renovada');
   }
   async logout(token: string) {
     await this.db.session.deleteMany({
       where: { tokenHash: createHash("sha256").update(token).digest("hex") },
     });
-    return { ok: true };
+    return { ok: true, message: 'Sessão encerrada com sucesso' };
   }
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.db.user.findUniqueOrThrow({
@@ -164,26 +164,26 @@ export class AuthService {
       data: { passwordHash: await argon2.hash(dto.newPassword) },
     });
     await this.db.session.deleteMany({ where: { userId } });
-    return { ok: true };
+    return { ok: true, message: 'Senha alterada com sucesso' };
   }
   async sessions(userId: string) {
     return this.db.session.findMany({ where: { userId, expiresAt: { gt: new Date() } }, select: { id: true, createdAt: true, expiresAt: true }, orderBy: { createdAt: 'desc' } });
   }
   async revokeSession(userId: string, id: string) {
     await this.db.session.deleteMany({ where: { id, userId } });
-    return { ok: true };
+    return { ok: true, message: 'Sessão revogada com sucesso' };
   }
   async logoutAll(userId: string) {
     await this.db.session.deleteMany({ where: { userId } });
-    return { ok: true };
+    return { ok: true, message: 'Todas as sessões foram encerradas' };
   }
   async deleteAccount(userId: string, password: string) {
     const user = await this.db.user.findUniqueOrThrow({ where: { id: userId } });
     if (!(await argon2.verify(user.passwordHash, password))) throw new UnauthorizedException('Senha inválida');
     await this.db.user.delete({ where: { id: userId } });
-    return { ok: true };
+    return { ok: true, message: 'Conta excluída com sucesso' };
   }
-  private async issue(id: string, username: string) {
+  private async issue(id: string, username: string, message: string) {
     const refreshToken = randomBytes(48).toString("base64url");
     await this.db.session.create({
       data: {
@@ -199,6 +199,7 @@ export class AuthService {
       ),
       refreshToken,
       user: { id, username },
+      message,
     };
   }
 }

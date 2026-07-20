@@ -15,7 +15,7 @@ describe('AuthService', () => {
   });
   it('invalidates all refresh sessions after password change', async()=>{
     const hash=await argon2.hash('old-password');db.user.findUniqueOrThrow.mockResolvedValue({id:'u1',passwordHash:hash});
-    await service.changePassword('u1',{currentPassword:'old-password',newPassword:'new-password'});
+    await expect(service.changePassword('u1',{currentPassword:'old-password',newPassword:'new-password'})).resolves.toMatchObject({message:'Senha alterada com sucesso'});
     expect(db.session.deleteMany).toHaveBeenCalledWith({where:{userId:'u1'}});
   });
   it('prevents duplicate usernames case-insensitively', async()=>{

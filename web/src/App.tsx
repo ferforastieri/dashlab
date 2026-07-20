@@ -60,15 +60,19 @@ const icons: any = {
 };
 export function App() {
   const [logged, setLogged] = useState(isLogged());
-  if (!logged) return <Auth onDone={() => setLogged(true)} />;
-  return (
+  return <><ToastHost />{!logged ? <Auth onDone={() => setLogged(true)} /> :
     <Dashboard
       onLogout={() => {
         clearAuth();
         setLogged(false);
       }}
     />
-  );
+  }</>;
+}
+function ToastHost(){
+  const [items,setItems]=useState<Array<{id:number,message:string,type:string}>>([]);
+  useEffect(()=>{const handler=(event:Event)=>{const detail=(event as CustomEvent).detail,id=Date.now()+Math.random();setItems(x=>[...x,{id,...detail}]);setTimeout(()=>setItems(x=>x.filter(t=>t.id!==id)),3500)};window.addEventListener('dashlab:toast',handler);return()=>window.removeEventListener('dashlab:toast',handler)},[]);
+  return <div className="toast-stack">{items.map(x=><div className={`toast ${x.type}`} key={x.id}>{x.message}</div>)}</div>
 }
 function Auth({ onDone }: { onDone: () => void }) {
   const [register, setRegister] = useState(false),
@@ -83,9 +87,7 @@ function Auth({ onDone }: { onDone: () => void }) {
     try {
       await auth(register ? "register" : "login", { username, password });
       onDone();
-    } catch (x: any) {
-      setError(x.message);
-    } finally {
+    } catch {} finally {
       setBusy(false);
     }
   }
@@ -138,7 +140,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     [editing, setEditing] = useState<AppItem | Widget | null>(null),
     [drag, setDrag] = useState<number | null>(null),
     [menu, setMenu] = useState<string | null>(null),
-    [statuses, setStatuses] = useState<Record<string, any>>({});
+    [statuses, setStatuses] = useState<Record<string, any>>({}),
+    [confirmDelete,setConfirmDelete] = useState<{kind:string,id:string,name:string}|null>(null);
   const load = () => api("/dashboard?surface=web").then(setDash);
   useEffect(() => {
     load();
@@ -195,7 +198,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     load();
   }
   async function remove(kind: string, id: string) {
-    if (!confirm("Excluir este item?")) return;
     await api(`/${kind}/${id}`, { method: "DELETE" });
     setMenu(null);
     load();
@@ -300,7 +302,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     {menu === app.id && (
                       <div className="context">
                         <button onClick={() => { setEditing(app); setModal('app'); setMenu(null); }}><Edit3 /> Editar</button>
-                        <button onClick={() => remove("applications", app.id)}>
+                        <button onClick={() => setConfirmDelete({kind:"applications",id:app.id,name:app.name})}>
                           <Trash2 /> Excluir
                         </button>
                       </div>
@@ -312,7 +314,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     metrics={metrics}
                     onEdit={() => { setEditing(widget!); setModal('widget'); }}
                     onResize={(d) => resize(layout, d)}
-                    onDelete={() => remove("widgets", widget!.id)}
+                    onDelete={() => setConfirmDelete({kind:"widgets",id:widget!.id,name:widget!.title})}
                   />
                 )}
               </div>
@@ -345,6 +347,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           }}
         />
       )}
+      {confirmDelete&&<ConfirmModal title="Excluir item" message={`Deseja excluir “${confirmDelete.name}”? Esta ação não pode ser desfeita.`} confirmLabel="Excluir" danger onCancel={()=>setConfirmDelete(null)} onConfirm={async()=>{const x=confirmDelete;setConfirmDelete(null);await remove(x.kind,x.id)}}/>}
     </div>
   );
 }
@@ -468,7 +471,7 @@ function Editor({
     else if (mode === 'brand') await api("/branding", { method: "PUT", body: JSON.stringify(form) });
     else return;
     done();
-    } catch(e:any) { setError(e.message); } finally { setBusy(false); }
+    } catch {} finally { setBusy(false); }
   }
   async function upload(field:string, file?:File) {
     if (!file) return;
@@ -633,10 +636,11 @@ function Editor({
   );
 }
 function Account({close}:{close:()=>void}) {
-  const [currentPassword,setCurrent]=useState(''),[newPassword,setNew]=useState(''),[sessions,setSessions]=useState<any[]>([]),[error,setError]=useState('');
+  const [currentPassword,setCurrent]=useState(''),[newPassword,setNew]=useState(''),[sessions,setSessions]=useState<any[]>([]),[confirmAccount,setConfirmAccount]=useState(false);
   useEffect(()=>{api('/auth/sessions').then(setSessions).catch(()=>{})},[]);
-  async function change(){try{await api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword,newPassword})});alert('Senha alterada. Entre novamente.');clearAuth();location.reload()}catch(e:any){setError(e.message)}}
+  async function change(){try{await api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword,newPassword})});setTimeout(()=>{clearAuth();location.reload()},900)}catch{}}
   async function logoutAll(){await api('/auth/logout-all',{method:'POST'});clearAuth();location.reload()}
-  async function remove(){if(!currentPassword||!confirm('Excluir permanentemente sua conta e todo o dashboard?'))return;try{await api('/auth/account',{method:'DELETE',body:JSON.stringify({password:currentPassword})});clearAuth();location.reload()}catch(e:any){setError(e.message)}}
-  return <div className="account"><label>Senha atual<input type="password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/></label><label>Nova senha<input type="password" minLength={8} value={newPassword} onChange={e=>setNew(e.target.value)}/></label>{error&&<div className="error">{error}</div>}<button type="button" className="primary" onClick={change}>Alterar senha</button><h3>Sessões ativas ({sessions.length})</h3>{sessions.map(x=><div className="session" key={x.id}><span>{new Date(x.createdAt).toLocaleString('pt-BR')}</span><button type="button" onClick={async()=>{await api(`/auth/sessions/${x.id}`,{method:'DELETE'});setSessions(sessions.filter(s=>s.id!==x.id))}}>Revogar</button></div>)}<button type="button" className="secondary" onClick={logoutAll}>Encerrar todas as sessões</button><button type="button" className="danger" onClick={remove}>Excluir minha conta</button><button type="button" className="link" onClick={close}>Fechar</button></div>
+  async function remove(){try{await api('/auth/account',{method:'DELETE',body:JSON.stringify({password:currentPassword})});setTimeout(()=>{clearAuth();location.reload()},900)}catch{}}
+  return <><div className="account"><label>Senha atual<input type="password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/></label><label>Nova senha<input type="password" minLength={8} value={newPassword} onChange={e=>setNew(e.target.value)}/></label><button type="button" className="primary" onClick={change}>Alterar senha</button><h3>Sessões ativas ({sessions.length})</h3>{sessions.map(x=><div className="session" key={x.id}><span>{new Date(x.createdAt).toLocaleString('pt-BR')}</span><button type="button" onClick={async()=>{await api(`/auth/sessions/${x.id}`,{method:'DELETE'});setSessions(sessions.filter(s=>s.id!==x.id))}}>Revogar</button></div>)}<button type="button" className="secondary" onClick={logoutAll}>Encerrar todas as sessões</button><button type="button" className="danger" onClick={()=>setConfirmAccount(true)}>Excluir minha conta</button><button type="button" className="link" onClick={close}>Fechar</button></div>{confirmAccount&&<ConfirmModal title="Excluir conta" message="Todo o dashboard, aplicativos, widgets e imagens serão excluídos permanentemente." confirmLabel="Excluir permanentemente" danger onCancel={()=>setConfirmAccount(false)} onConfirm={()=>{setConfirmAccount(false);remove()}}/>}</>
 }
+function ConfirmModal({title,message,confirmLabel,onCancel,onConfirm,danger=false}:{title:string,message:string,confirmLabel:string,onCancel:()=>void,onConfirm:()=>void|Promise<void>,danger?:boolean}){return <div className="overlay confirm-overlay"><div className="modal confirm-modal" role="dialog" aria-modal="true"><h2>{title}</h2><p>{message}</p><div className="confirm-actions"><button className="secondary" onClick={onCancel}>Cancelar</button><button className={danger?'danger solid':'primary'} onClick={onConfirm}>{confirmLabel}</button></div></div></div>}

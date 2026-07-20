@@ -6,7 +6,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -32,6 +31,7 @@ const STORE = "dashlab_server",
   TOKEN = "dashlab_token", REFRESH = 'dashlab_refresh';
 let server = "";
 let token = "";
+let toastSink: (message:string,type:'success'|'error')=>void = ()=>{};
 async function request(path: string, options: RequestInit = {}) {
   let r = await fetch(`${server}${path}`, {
     ...options,
@@ -49,12 +49,13 @@ async function request(path: string, options: RequestInit = {}) {
     }
   }
   const d = await r.json().catch(() => ({}));
-  if (!r.ok)
-    throw new Error(
-      Array.isArray(d.message)
-        ? d.message[0]
-        : d.message || "Não foi possível continuar",
-    );
+  const method=(options.method||'GET').toUpperCase();
+  if (!r.ok) {
+    const message=Array.isArray(d.message)?d.message[0]:d.message || 'Não foi possível continuar';
+    if(method!=='GET') toastSink(message,'error');
+    throw new Error(message);
+  }
+  if(method!=='GET'&&path!=='/auth/refresh'&&d.message) toastSink(d.message,'success');
   return d;
 }
 function normalize(value: string) {
@@ -66,6 +67,8 @@ function normalize(value: string) {
 }
 export default function App() {
   const [phase, setPhase] = useState<Phase>("loading");
+  const [toast,setToast]=useState<{message:string,type:'success'|'error'}|null>(null);
+  useEffect(()=>{toastSink=(message,type)=>{setToast({message,type});setTimeout(()=>setToast(null),3500)};return()=>{toastSink=()=>{}}},[]);
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(STORE),
@@ -77,21 +80,22 @@ export default function App() {
       setPhase(t ? "dashboard" : "auth");
     });
   }, []);
+  let content:React.ReactNode;
   if (phase === "loading")
-    return (
+    content = (
       <Center>
         <ActivityIndicator color="#ff7a1a" />
       </Center>
     );
-  if (phase === "server") return <ServerSetup done={() => setPhase("auth")} />;
-  if (phase === "auth")
-    return (
+  else if (phase === "server") content=<ServerSetup done={() => setPhase("auth")} />;
+  else if (phase === "auth")
+    content = (
       <Auth
         done={() => setPhase("dashboard")}
         reset={() => setPhase("server")}
       />
     );
-  return (
+  else content = (
     <Dashboard
       logout={async () => {
         await SecureStore.deleteItemAsync(TOKEN);
@@ -101,10 +105,11 @@ export default function App() {
       }}
     />
   );
+  return <View style={{flex:1}}>{content}{toast&&<View style={[s.toast,toast.type==='error'&&s.toastError]}><Text style={s.toastText}>{toast.message}</Text></View>}</View>;
 }
 function ServerSetup({ done }: { done: () => void }) {
   const [url, setUrl] = useState("https://dashboard.example.invalid"),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),[error,setError]=useState('');
   async function connect() {
     setBusy(true);
     try {
@@ -115,10 +120,7 @@ function ServerSetup({ done }: { done: () => void }) {
       await AsyncStorage.setItem(STORE, normalized);
       done();
     } catch {
-      Alert.alert(
-        "Servidor indisponível",
-        "Confira o endereço e tente novamente.",
-      );
+      setError('Não foi possível conectar ao endereço informado.');
     } finally {
       setBusy(false);
     }
@@ -145,6 +147,7 @@ function ServerSetup({ done }: { done: () => void }) {
         />
         <Button title={busy ? "Conectando…" : "Conectar"} onPress={connect} />
       </KeyboardAvoidingView>
+      {!!error&&<InfoModal title="Servidor indisponível" message={error} close={()=>setError('')}/>}
     </SafeAreaView>
   );
 }
@@ -164,9 +167,7 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
       await SecureStore.setItemAsync(TOKEN, token);
       await SecureStore.setItemAsync(REFRESH, d.refreshToken);
       done();
-    } catch (e: any) {
-      Alert.alert("Não foi possível entrar", e.message);
-    } finally {
+    } catch {} finally {
       setBusy(false);
     }
   }
@@ -215,6 +216,9 @@ function Dashboard({ logout }: { logout: () => void }) {
     [show, setShow] = useState(false),
     [mode,setMode] = useState<'app'|'widget'|'brand'|'account'>('app'),
     [selected,setSelected] = useState<any>(null),
+    [actionItem,setActionItem] = useState<{kind:'app'|'widget',item:any}|null>(null),
+    [confirmDelete,setConfirmDelete] = useState<{kind:'applications'|'widgets',id:string,name:string}|null>(null),
+    [info,setInfo]=useState<{title:string,message:string}|null>(null),
     [query,setQuery] = useState(''),
     [name, setName] = useState(""),
     [url, setUrl] = useState("https://"),
@@ -222,7 +226,7 @@ function Dashboard({ logout }: { logout: () => void }) {
   const load = () =>
     request("/dashboard?surface=mobile")
       .then(setData)
-      .catch((e) => Alert.alert("Erro", e.message));
+      .catch((e) => setInfo({title:'Não foi possível carregar',message:e.message}));
   useEffect(() => {
     load();
     const loadMetrics = () =>
@@ -244,11 +248,9 @@ function Dashboard({ logout }: { logout: () => void }) {
       setName("");
       setSelected(null); setExtra(''); setUrl('https://');
       load();
-    } catch (e: any) {
-      Alert.alert("Erro", e.message);
-    }
+    } catch {}
   }
-  async function remove(kind:'applications'|'widgets',id:string){Alert.alert('Excluir','Deseja excluir este item?',[{text:'Cancelar'},{text:'Excluir',style:'destructive',onPress:async()=>{await request(`/${kind}/${id}`,{method:'DELETE'});load()}}])}
+  async function remove(){if(!confirmDelete)return;const x=confirmDelete;setConfirmDelete(null);try{await request(`/${x.kind}/${x.id}`,{method:'DELETE'});load()}catch{}}
   async function moveApp(id:string,delta:number){const layouts=[...data.layouts];const appLayouts=layouts.filter((x:any)=>x.kind==='APPLICATION');const at=appLayouts.findIndex((x:any)=>x.applicationId===id),to=Math.max(0,Math.min(appLayouts.length-1,at+delta));if(at===to)return;const a=appLayouts[at],b=appLayouts[to];const ai=layouts.indexOf(a),bi=layouts.indexOf(b);[layouts[ai],layouts[bi]]=[layouts[bi],layouts[ai]];await request('/layouts/mobile',{method:'PUT',body:JSON.stringify({items:layouts.map((x:any)=>({kind:x.kind,applicationId:x.applicationId,widgetId:x.widgetId,x:x.x||0,y:x.y||0,w:x.w||1,h:x.h||1}))})});load()}
   async function open(app: AppItem) {
     if (app.deepLink) {
@@ -285,7 +287,7 @@ function Dashboard({ logout }: { logout: () => void }) {
           numColumns={3}
           keyExtractor={(x: any) => x.id}
           renderItem={({ item }) => (
-            <Pressable style={s.app} onPress={() => open(item)} onLongPress={()=>Alert.alert(item.name,'O que deseja fazer?',[{text:'Mover antes',onPress:()=>moveApp(item.id,-1)},{text:'Mover depois',onPress:()=>moveApp(item.id,1)},{text:'Editar',onPress:()=>edit('app',item)},{text:'Excluir',style:'destructive',onPress:()=>remove('applications',item.id)},{text:'Cancelar'}])}>
+            <Pressable style={s.app} onPress={() => open(item)} onLongPress={()=>setActionItem({kind:'app',item})}>
               <View style={s.appIcon}>
                 <Text style={s.emoji}>{icon(item.icon)}</Text>
               </View>
@@ -298,7 +300,7 @@ function Dashboard({ logout }: { logout: () => void }) {
         <Text style={s.section}>Visão geral</Text>
         <View style={s.widgets}>
           {data.widgets.slice(0, 6).map((w: any) => (
-            <Pressable style={s.widget} key={w.id} onLongPress={()=>Alert.alert(w.title,'O que deseja fazer?',[{text:'Editar',onPress:()=>edit('widget',w)},{text:'Excluir',style:'destructive',onPress:()=>remove('widgets',w.id)},{text:'Cancelar'}])}>
+            <Pressable style={s.widget} key={w.id} onLongPress={()=>setActionItem({kind:'widget',item:w})}>
               <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
               <Text style={s.widgetTitle}>{w.title}</Text>
               <Text style={s.metric}>{widgetValue(w.type, metrics)}</Text>
@@ -344,6 +346,9 @@ function Dashboard({ logout }: { logout: () => void }) {
           </View>
         </View>
       </Modal>
+      {!!actionItem&&<ActionModal title={actionItem.item.name||actionItem.item.title} close={()=>setActionItem(null)} actions={actionItem.kind==='app'?[{label:'Mover antes',run:()=>moveApp(actionItem.item.id,-1)},{label:'Mover depois',run:()=>moveApp(actionItem.item.id,1)},{label:'Editar',run:()=>edit('app',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'applications',id:actionItem.item.id,name:actionItem.item.name})}]:[{label:'Editar',run:()=>edit('widget',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'widgets',id:actionItem.item.id,name:actionItem.item.title})}]}/>}
+      {!!confirmDelete&&<ConfirmMobile title="Excluir item" message={`Deseja excluir “${confirmDelete.name}”?`} cancel={()=>setConfirmDelete(null)} confirm={remove}/>}
+      {!!info&&<InfoModal title={info.title} message={info.message} close={()=>setInfo(null)}/>}
     </SafeAreaView>
   );
 }
@@ -398,6 +403,15 @@ function Button({ title, onPress }: { title: string; onPress: () => void }) {
 }
 function Center({ children }: { children: React.ReactNode }) {
   return <View style={[s.page, s.center]}>{children}</View>;
+}
+function InfoModal({title,message,close}:{title:string,message:string,close:()=>void}){
+  return <Modal transparent visible animationType="fade" onRequestClose={close}><View style={s.dialogBack}><View style={s.dialog}><Text style={s.dialogTitle}>{title}</Text><Text style={s.dialogMessage}>{message}</Text><Button title="Entendi" onPress={close}/></View></View></Modal>
+}
+function ConfirmMobile({title,message,cancel,confirm}:{title:string,message:string,cancel:()=>void,confirm:()=>void}){
+  return <Modal transparent visible animationType="fade" onRequestClose={cancel}><View style={s.dialogBack}><View style={s.dialog}><Text style={s.dialogTitle}>{title}</Text><Text style={s.dialogMessage}>{message}</Text><View style={s.dialogActions}><Pressable style={s.dialogSecondary} onPress={cancel}><Text style={s.dialogSecondaryText}>Cancelar</Text></Pressable><Pressable style={s.dialogDanger} onPress={confirm}><Text style={s.buttonText}>Excluir</Text></Pressable></View></View></View></Modal>
+}
+function ActionModal({title,actions,close}:{title:string,actions:Array<{label:string,danger?:boolean,run:()=>void|Promise<void>}>,close:()=>void}){
+  return <Modal transparent visible animationType="slide" onRequestClose={close}><Pressable style={s.modalBack} onPress={close}><Pressable style={s.actionSheet} onPress={()=>{}}><View style={s.sheetHandle}/><Text style={s.dialogTitle}>{title}</Text>{actions.map(a=><Pressable key={a.label} style={s.actionRow} onPress={()=>{close();a.run()}}><Text style={[s.actionText,a.danger&&s.actionDanger]}>{a.label}</Text></Pressable>)}<Pressable style={s.actionRow} onPress={close}><Text style={s.actionText}>Cancelar</Text></Pressable></Pressable></Pressable></Modal>
 }
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: "#091019" },
@@ -517,4 +531,20 @@ const s = StyleSheet.create({
   typeChip:{paddingHorizontal:10,paddingVertical:7,borderRadius:10,backgroundColor:'#ffffff0c',borderWidth:1,borderColor:'#ffffff16'},
   typeChipActive:{backgroundColor:'#ff7a1a55',borderColor:'#ff7a1a'},
   typeText:{color:'#dbe5ef',fontSize:11},
+  toast:{position:'absolute',top:54,left:20,right:20,zIndex:100,elevation:20,backgroundColor:'#173426',borderColor:'#3bd47b66',borderWidth:1,borderRadius:14,paddingHorizontal:16,paddingVertical:13},
+  toastError:{backgroundColor:'#3b2023',borderColor:'#ff6b6b77'},
+  toastText:{color:'#f4f8fb',fontWeight:'600',textAlign:'center'},
+  dialogBack:{flex:1,backgroundColor:'#000b',alignItems:'center',justifyContent:'center',padding:24},
+  dialog:{width:'100%',maxWidth:420,backgroundColor:'#111d29',borderRadius:24,borderWidth:1,borderColor:'#ffffff1c',padding:22,gap:16},
+  dialogTitle:{color:'#f5f8fb',fontSize:20,fontWeight:'700'},
+  dialogMessage:{color:'#a9b5c2',fontSize:15,lineHeight:21},
+  dialogActions:{flexDirection:'row',gap:10},
+  dialogSecondary:{flex:1,padding:14,borderRadius:13,borderWidth:1,borderColor:'#ffffff22',alignItems:'center'},
+  dialogSecondaryText:{color:'#dbe5ef',fontWeight:'700'},
+  dialogDanger:{flex:1,padding:14,borderRadius:13,backgroundColor:'#d84b4b',alignItems:'center'},
+  actionSheet:{backgroundColor:'#101a26',borderTopLeftRadius:28,borderTopRightRadius:28,padding:20,paddingBottom:34,gap:4},
+  sheetHandle:{width:42,height:4,borderRadius:2,backgroundColor:'#ffffff33',alignSelf:'center',marginBottom:14},
+  actionRow:{paddingVertical:15,borderBottomWidth:1,borderBottomColor:'#ffffff0c'},
+  actionText:{color:'#e5ebf1',fontSize:16,textAlign:'center'},
+  actionDanger:{color:'#ff7f78'},
 });

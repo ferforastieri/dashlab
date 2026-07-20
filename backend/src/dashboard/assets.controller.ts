@@ -24,14 +24,14 @@ export class AssetsController {
     if (!file) throw new BadRequestException('Arquivo ausente');
     const dashboard = await this.db.dashboard.findUniqueOrThrow({ where: { userId: req.user.sub } });
     const asset = await this.db.asset.create({ data: { dashboardId: dashboard.id, name: file.originalname.slice(0,120), mimeType: file.mimetype, path: file.filename } });
-    return { ...asset, url: `/api/assets/files/${file.filename}` };
+    return { ...asset, url: `/api/assets/files/${file.filename}`, message: 'Imagem enviada com sucesso' };
   }
   @Delete(':id')
   async remove(@Req() req: AuthRequest, @Param('id') id: string) {
     const asset = await this.db.asset.findFirst({ where: { id, dashboard: { userId: req.user.sub } } });
-    if (!asset) return { ok: true };
+    if (!asset) return { ok: true, message: 'Imagem já havia sido removida' };
     await this.db.asset.delete({ where: { id } });
     try { unlinkSync(join(uploadDir, asset.path)); } catch {}
-    return { ok: true };
+    return { ok: true, message: 'Imagem removida com sucesso' };
   }
 }

@@ -29,10 +29,11 @@ export class DashboardService {
   async branding(userId: string, data: BrandingDto) {
     const d = await this.dashboard(userId);
     const current = (d.branding || {}) as Record<string, unknown>;
-    return this.db.dashboard.update({
+    const result = await this.db.dashboard.update({
       where: { id: d.id },
       data: { name: data.name || d.name, branding: { ...current, ...data } },
     });
+    return { ...result, message: 'Personalização salva com sucesso' };
   }
   async createApp(userId: string, data: CreateApplicationDto) {
     const d = await this.dashboard(userId);
@@ -50,11 +51,11 @@ export class DashboardService {
       },
     });
     await this.addLayouts(d.id, "APPLICATION", app.id);
-    return app;
+    return { ...app, message: 'Aplicativo criado com sucesso' };
   }
   async updateApp(userId: string, id: string, data: UpdateApplicationDto) {
     await this.assertApp(userId, id);
-    return this.db.application.update({
+    const result = await this.db.application.update({
       where: { id },
       data: {
         name: data.name,
@@ -68,11 +69,12 @@ export class DashboardService {
         visible: data.visible,
       },
     });
+    return { ...result, message: 'Aplicativo atualizado com sucesso' };
   }
   async deleteApp(userId: string, id: string) {
     await this.assertApp(userId, id);
     await this.db.application.delete({ where: { id } });
-    return { ok: true };
+    return { ok: true, message: 'Aplicativo excluído com sucesso' };
   }
   async createWidget(userId: string, data: CreateWidgetDto) {
     const d = await this.dashboard(userId);
@@ -97,11 +99,11 @@ export class DashboardService {
       },
     });
     await this.addLayouts(d.id, "WIDGET", widget.id);
-    return widget;
+    return { ...widget, message: 'Widget criado com sucesso' };
   }
   async updateWidget(userId: string, id: string, data: UpdateWidgetDto) {
     await this.assertWidget(userId, id);
-    return this.db.widget.update({
+    const result = await this.db.widget.update({
       where: { id },
       data: {
         title: data.title,
@@ -110,11 +112,12 @@ export class DashboardService {
         visible: data.visible,
       },
     });
+    return { ...result, message: 'Widget atualizado com sucesso' };
   }
   async deleteWidget(userId: string, id: string) {
     await this.assertWidget(userId, id);
     await this.db.widget.delete({ where: { id } });
-    return { ok: true };
+    return { ok: true, message: 'Widget excluído com sucesso' };
   }
   async saveLayout(userId: string, surface: "WEB" | "MOBILE", items: LayoutItemDto[]) {
     const d = await this.dashboard(userId);
@@ -157,7 +160,7 @@ export class DashboardService {
         });
       }
     });
-    return { ok: true };
+    return { ok: true, message: 'Organização salva com sucesso' };
   }
   async metrics() {
     const base = process.env.PROMETHEUS_URL || "http://127.0.0.1:9090";
