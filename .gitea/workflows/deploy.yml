@@ -7,6 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Ensure Docker CLI and Compose
+        run: |
+          set -eu
+          if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            exit 0
+          fi
+          apt-get update
+          apt-get install -y docker.io docker-compose-plugin 2>/dev/null || \
+            apt-get install -y docker.io docker-compose-v2
       - name: Validate secrets
         env:
           POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
