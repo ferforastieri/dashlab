@@ -164,13 +164,6 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           </button>
         </div>
       </header>
-      <div className="rack-line" aria-hidden="true">
-        <span>DL—01 / PERSONAL NODE</span>
-        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
-        <span className="rack-line-status">
-          <i /> SYSTEM READY
-        </span>
-      </div>
       <main>
         {layoutEdit && <div className="canvas-edit-hint">Arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit ? 'is-editing' : ''}`} style={{ height: canvasHeight }}>
@@ -273,6 +266,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           })}
         </section>
       </main>
+      <footer className="rack-line dashboard-footer" aria-label="Estado do workspace">
+        <span>DL—01 / PERSONAL NODE</span>
+        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
+        <span className="rack-line-status">
+          <i /> SYSTEM READY
+        </span>
+      </footer>
       <button className={cn('add')} onClick={() => setModal('app')} aria-label="Adicionar aplicativo">
         <Plus />
       </button>

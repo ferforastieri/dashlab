@@ -46,7 +46,7 @@ describe('DashboardService tenant isolation', () => {
       range: '15m',
       cpu: [],
       memory: [],
-      disk: [],
+      disks: [],
       download: [],
       upload: [],
     });

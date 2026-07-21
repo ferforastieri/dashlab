@@ -3,7 +3,7 @@ export const dashboardClassNames: Record<string, string> = {
   small: 'brand-mark-small', search: 'dash-search', 'header-tools': 'header-tools',
   'icon-button': 'icon-button', active: 'is-active', 'app-wrap': 'app-wrap', 'app-icon': 'app-icon',
   widget: 'widget-card', 'widget-title': 'widget-title', 'widget-values': 'widget-values',
-  metric: 'metric', 'metric-chart': 'mt-1 block h-5 w-full overflow-visible opacity-90',
+  metric: 'metric', 'metric-chart': 'metric-chart',
   'item-control': 'hidden',
   'item-menu': 'absolute right-1 top-1 h-8 w-8 border-0 bg-transparent text-slate-300',
   context: 'context-menu',

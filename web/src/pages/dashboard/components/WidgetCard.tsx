@@ -20,18 +20,43 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editing
   const remote = widget.type === 'PROMQL' ? prometheusQuery.data : weatherQuery.data;
   const prometheusValue = remote?.data?.result?.[0]?.value?.[1];
   const weatherValue = remote?.current?.temperature_2m != null ? `${Math.round(remote.current.temperature_2m)}°C` : '—';
+  const formatRate = (value: number | null | undefined) => value == null ? '—' : `${(value / 1e6).toFixed(1)} MB/s`;
   const values: any = {
-    SYSTEM: [Activity, 'CPU', metrics.cpu, 'Memória', metrics.memory],
-    STORAGE: [HardDrive, 'Disco', metrics.disk],
-    NETWORK: [Network, 'Download', metrics.download ? `${(metrics.download / 1e6).toFixed(1)} MB/s` : '—', 'Upload', metrics.upload ? `${(metrics.upload / 1e6).toFixed(1)} MB/s` : '—'],
     CLOCK: [Server, 'Agora', new Date().toLocaleTimeString('pt-BR')],
     WEATHER: [CloudSun, 'Temperatura', weatherValue, 'Sensação', remote?.current?.apparent_temperature != null ? `${Math.round(remote.current.apparent_temperature)}°C` : '—'],
     SEARCH: [Search, 'Pesquisa', 'Google'],
     STATUS: [Activity, 'Serviços', 'Veja os indicadores nos aplicativos'],
     PROMQL: [Activity, widget.config?.unit || 'Valor', prometheusValue != null ? `${Number(prometheusValue).toFixed(Number(widget.config?.decimals ?? 1))}${widget.config?.suffix || ''}` : '—'],
   };
-  const data = values[widget.type] || [MemoryStick, widget.title, '—'];
+  const metricIcons: Record<string, typeof Activity> = { SYSTEM: Activity, STORAGE: HardDrive, NETWORK: Network };
+  const data = values[widget.type] || [metricIcons[widget.type] || MemoryStick, widget.title, '—'];
   const Icon = data[0];
+  const diskEntries = new Map<string, any>();
+  for (const disk of history.disks || []) diskEntries.set(`${disk.name}:${disk.device}`, disk);
+  for (const disk of metrics.disks || []) {
+    const key = `${disk.name}:${disk.device}`;
+    diskEntries.set(key, { ...diskEntries.get(key), ...disk });
+  }
+  const disks = [...diskEntries.values()].map((disk: any) => {
+    const points = disk.points || [];
+    return {
+      label: disk.name,
+      detail: disk.device,
+      value: `${Number(disk.value ?? points[points.length - 1]?.value ?? 0).toFixed(0)}%`,
+      points,
+    };
+  });
+  const metricLanes = widget.type === 'SYSTEM'
+    ? [
+        { label: 'CPU', value: metrics.cpu == null ? '—' : `${metrics.cpu.toFixed(0)}%`, points: history.cpu || [] },
+        { label: 'Memória', value: metrics.memory == null ? '—' : `${metrics.memory.toFixed(0)}%`, points: history.memory || [] },
+      ]
+    : widget.type === 'NETWORK'
+      ? [
+          { label: 'Download', value: formatRate(metrics.download), points: history.download || [] },
+          { label: 'Upload', value: formatRate(metrics.upload), points: history.upload || [] },
+        ]
+      : widget.type === 'STORAGE' ? disks : [];
 
   return (
     <div className={dashboardCn('widget')}>
@@ -42,32 +67,52 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editing
         </div>
       )}
       <div className={dashboardCn('widget-title')}><Icon />{widget.title}</div>
-      <div className={dashboardCn('widget-values')}>
-        {data.slice(1).map((value: any, index: number) => (
-          <span key={index} className={typeof value === 'number' ? dashboardClassNames.metric : ''}>
-            {typeof value === 'number' ? `${value.toFixed(0)}%` : value}
-          </span>
-        ))}
-      </div>
-      {['SYSTEM', 'STORAGE', 'NETWORK'].includes(widget.type) && (
-        <MetricChart series={widget.type === 'SYSTEM' ? [history.cpu || [], history.memory || []] : widget.type === 'STORAGE' ? [history.disk || []] : [history.download || [], history.upload || []]} />
+      {metricLanes.length > 0 ? (
+        <MetricLanes lanes={metricLanes} />
+      ) : (
+        <div className={dashboardCn('widget-values')}>
+          {data.slice(1).map((value: any, index: number) => (
+            <span key={index} className={typeof value === 'number' ? dashboardClassNames.metric : ''}>
+              {typeof value === 'number' ? `${value.toFixed(0)}%` : value}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-function MetricChart({ series }: { series: Array<Array<{ timestamp: number; value: number }>> }) {
-  const colors = ['var(--accent)', '#4ad6c8'];
-  const paths = series.map((points) => {
-    if (points.length < 2) return '';
-    const values = points.map((point) => point.value);
-    const min = Math.min(...values);
-    const span = Math.max(...values) - min || 1;
-    return points.map((point, index) => `${index ? 'L' : 'M'} ${(index / (points.length - 1)) * 100} ${32 - ((point.value - min) / span) * 28}`).join(' ');
-  });
+type MetricLane = {
+  label: string;
+  detail?: string;
+  value: string;
+  points: Array<{ timestamp: number; value: number }>;
+};
+
+function MetricLanes({ lanes }: { lanes: MetricLane[] }) {
   return (
-    <svg className={dashboardCn('metric-chart')} viewBox="0 0 100 36" preserveAspectRatio="none">
-      {paths.map((path, index) => <path key={index} d={path} fill="none" stroke={colors[index]} strokeWidth="1.8" vectorEffect="non-scaling-stroke" />)}
-    </svg>
+    <div className="metric-lanes">
+      {lanes.map((lane) => <MetricChart key={`${lane.label}:${lane.detail || ''}`} lane={lane} />)}
+    </div>
+  );
+}
+
+function MetricChart({ lane }: { lane: MetricLane }) {
+  const values = lane.points.map((point) => point.value);
+  const min = values.length ? Math.min(...values) : 0;
+  const span = (values.length ? Math.max(...values) : 1) - min || 1;
+  const path = lane.points.length < 2 ? '' : lane.points.map((point, index) =>
+    `${index ? 'L' : 'M'} ${(index / (lane.points.length - 1)) * 100} ${32 - ((point.value - min) / span) * 28}`,
+  ).join(' ');
+  return (
+    <div className="metric-lane">
+      <div className="metric-lane-head">
+        <span title={lane.detail}>{lane.label}</span>
+        <strong>{lane.value}</strong>
+      </div>
+      <svg className={dashboardCn('metric-chart')} viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true">
+        <path d={path} fill="none" stroke="var(--accent)" strokeWidth="1.8" vectorEffect="non-scaling-stroke" />
+      </svg>
+    </div>
   );
 }
