@@ -16,7 +16,7 @@ export const dashboardClassNames: Record<string, string> = {
   danger: 'ui-danger inline-flex h-11 items-center justify-center rounded-xl border bg-transparent px-3',
   solid: 'ui-danger-solid', link: 'button-link',
   error: 'ui-error text-sm', check: 'flex items-center gap-2 [&>input]:h-4 [&>input]:w-4',
-  'field-row': 'grid grid-cols-2 gap-3', account: 'grid gap-3',
+  'field-row': 'responsive-field-row', account: 'grid gap-3',
   session: 'ui-muted flex items-center justify-between text-xs',
   'confirm-overlay': 'z-40',
   'confirm-modal': 'confirm-modal block max-w-[430px] [&>p]:leading-relaxed',
