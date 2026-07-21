@@ -18,14 +18,6 @@ describe('DashboardService tenant isolation', () => {
       NotFoundException,
     );
   });
-  it('offers the four supported layouts', () => {
-    expect(new DashboardService({} as any).presets().map((x) => x.id)).toEqual([
-      'FREE',
-      'ZIMA',
-      'FOCUS',
-      'COMPACT',
-    ]);
-  });
   it('saves layout changes only in the active preset', async () => {
     const tx: any = { layoutItem: { deleteMany: jest.fn(), create: jest.fn() } };
     const db: any = {

@@ -18,11 +18,8 @@ import {
   BrandingDto,
   CreateApplicationDto,
   CreateWidgetDto,
-  LayoutPresetDto,
   MetricsHistoryDto,
-  ResetLayoutPresetDto,
   SaveLayoutDto,
-  SelectLayoutPresetDto,
   SurfaceDto,
   UpdateApplicationDto,
   UpdateWidgetDto,
@@ -114,27 +111,5 @@ export class DashboardController {
   }
   @UseGuards(JwtAuthGuard) @Get('weather') weather(@Query() q: WeatherQueryDto) {
     return this.service.weather(q.latitude, q.longitude);
-  }
-  @UseGuards(JwtAuthGuard) @Get('layout-presets') presets() {
-    return this.service.presets();
-  }
-  @UseGuards(JwtAuthGuard) @Put('layout-presets/active') selectPreset(
-    @Req() r: AuthRequest,
-    @Body() body: SelectLayoutPresetDto,
-  ) {
-    return this.service.selectPreset(
-      r.user.sub,
-      body.preset as any,
-      body.surface || SurfaceDto.WEB,
-    );
-  }
-  @UseGuards(JwtAuthGuard) @Post('layout-presets/:preset/reset') resetPreset(
-    @Req() r: AuthRequest,
-    @Param('preset') preset: string,
-    @Body() body: ResetLayoutPresetDto,
-  ) {
-    if (!Object.values(LayoutPresetDto).includes(preset as LayoutPresetDto))
-      throw new BadRequestException('Layout inválido');
-    return this.service.resetPreset(r.user.sub, preset as any, body.surface || SurfaceDto.WEB);
   }
 }

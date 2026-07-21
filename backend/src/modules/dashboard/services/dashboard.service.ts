@@ -28,23 +28,17 @@ export class DashboardService {
       include: {
         applications: { orderBy: { createdAt: 'asc' } },
         widgets: { orderBy: { createdAt: 'asc' } },
-        layouts: { where: { surface, preset: 'FREE' }, orderBy: { order: 'asc' } },
+        layouts: { where: { surface, preset: 'ZIMA' }, orderBy: { order: 'asc' } },
       },
     });
-    const effectivePreset = surface === 'MOBILE' ? 'ZIMA' : d.layoutPreset;
-    if (effectivePreset !== 'FREE')
-      d.layouts = await this.db.layoutItem.findMany({
-        where: { dashboardId: d.id, surface, preset: effectivePreset },
-        orderBy: { order: 'asc' },
-      });
     if (!d.layouts.length) {
-      await this.seedPreset(d.id, effectivePreset as any, surface);
+      await this.seedPreset(d.id, surface);
       d.layouts = await this.db.layoutItem.findMany({
-        where: { dashboardId: d.id, surface, preset: effectivePreset },
+        where: { dashboardId: d.id, surface, preset: 'ZIMA' },
         orderBy: { order: 'asc' },
       });
     }
-    if (surface === 'MOBILE') d.layoutPreset = 'ZIMA';
+    d.layoutPreset = 'ZIMA';
     return d;
   }
   async branding(userId: string, data: BrandingDto) {
@@ -141,7 +135,6 @@ export class DashboardService {
   }
   async saveLayout(userId: string, surface: 'WEB' | 'MOBILE', items: LayoutItemDto[]) {
     const d = await this.dashboard(userId);
-    const effectivePreset = surface === 'MOBILE' ? 'ZIMA' : d.layoutPreset;
     const ownedApps = new Set(
       (
         await this.db.application.findMany({
@@ -160,7 +153,7 @@ export class DashboardService {
     );
     await this.db.$transaction(async (tx) => {
       await tx.layoutItem.deleteMany({
-        where: { dashboardId: d.id, surface, preset: effectivePreset },
+        where: { dashboardId: d.id, surface, preset: 'ZIMA' },
       });
       for (const [order, item] of items.entries()) {
         const isApp = item.kind === 'APPLICATION';
@@ -171,7 +164,7 @@ export class DashboardService {
           data: {
             dashboardId: d.id,
             surface,
-            preset: effectivePreset,
+            preset: 'ZIMA',
             kind: item.kind,
             x: +item.x || 0,
             y: +item.y || 0,
@@ -304,47 +297,7 @@ export class DashboardService {
       throw new BadGatewayException('Serviço de clima indisponível');
     }
   }
-  presets() {
-    return [
-      {
-        id: 'FREE',
-        name: 'Livre',
-        description: 'Grade flexível com aplicativos e widgets misturados',
-      },
-      { id: 'ZIMA', name: 'Zima', description: 'Widgets laterais e aplicativos na área principal' },
-      { id: 'FOCUS', name: 'Foco', description: 'Aplicativos em destaque e widgets abaixo' },
-      { id: 'COMPACT', name: 'Compacto', description: 'Mais conteúdo usando menos espaço' },
-    ];
-  }
-  async selectPreset(
-    userId: string,
-    preset: 'FREE' | 'ZIMA' | 'FOCUS' | 'COMPACT',
-    surface: 'WEB' | 'MOBILE',
-  ) {
-    const d = await this.dashboard(userId);
-    if (!(await this.db.layoutItem.count({ where: { dashboardId: d.id, preset, surface } })))
-      await this.seedPreset(d.id, preset, surface);
-    await this.db.dashboard.update({ where: { id: d.id }, data: { layoutPreset: preset } });
-    return {
-      ok: true,
-      message: `Layout ${this.presets().find((x) => x.id === preset)?.name} ativado`,
-    };
-  }
-  async resetPreset(
-    userId: string,
-    preset: 'FREE' | 'ZIMA' | 'FOCUS' | 'COMPACT',
-    surface: 'WEB' | 'MOBILE',
-  ) {
-    const d = await this.dashboard(userId);
-    await this.db.layoutItem.deleteMany({ where: { dashboardId: d.id, preset, surface } });
-    await this.seedPreset(d.id, preset, surface);
-    return { ok: true, message: 'Layout restaurado ao padrão' };
-  }
-  private async seedPreset(
-    dashboardId: string,
-    preset: 'FREE' | 'ZIMA' | 'FOCUS' | 'COMPACT',
-    surface: 'WEB' | 'MOBILE',
-  ) {
+  private async seedPreset(dashboardId: string, surface: 'WEB' | 'MOBILE') {
     const apps = await this.db.application.findMany({
       where: { dashboardId },
       orderBy: { createdAt: 'asc' },
@@ -367,7 +320,7 @@ export class DashboardService {
       items.push({
         dashboardId,
         surface,
-        preset,
+        preset: 'ZIMA',
         kind,
         order,
         x,
@@ -377,58 +330,12 @@ export class DashboardService {
         applicationId: kind === 'APPLICATION' ? id : null,
         widgetId: kind === 'WIDGET' ? id : null,
       });
-    if (preset === 'ZIMA' && !mobile) {
+    if (!mobile) {
       widgets.forEach((w, i) =>
         push('WIDGET', w.id, i, 0, i + (i > 3 ? 1 : 0), 3, i === 3 ? 2 : 1),
       );
       apps.forEach((a, i) =>
         push('APPLICATION', a.id, 100 + i, 3 + (i % 5) * 2, Math.floor(i / 5) * 2, 2, 2),
-      );
-    } else if (preset === 'FOCUS') {
-      apps.forEach((a, i) =>
-        push(
-          'APPLICATION',
-          a.id,
-          i,
-          (i % (mobile ? 3 : 4)) * (mobile ? 2 : 3),
-          Math.floor(i / (mobile ? 3 : 4)) * 2,
-          mobile ? 2 : 3,
-          2,
-        ),
-      );
-      widgets.forEach((w, i) =>
-        push(
-          'WIDGET',
-          w.id,
-          100 + i,
-          (i % (mobile ? 1 : 3)) * (mobile ? 6 : 4),
-          6 + Math.floor(i / (mobile ? 1 : 3)) * 2,
-          mobile ? 6 : 4,
-          2,
-        ),
-      );
-    } else if (preset === 'COMPACT') {
-      apps.forEach((a, i) =>
-        push(
-          'APPLICATION',
-          a.id,
-          i,
-          (i % (mobile ? 4 : 6)) * (mobile ? 1 : 2),
-          Math.floor(i / (mobile ? 4 : 6)),
-          mobile ? 1 : 2,
-          1,
-        ),
-      );
-      widgets.forEach((w, i) =>
-        push(
-          'WIDGET',
-          w.id,
-          100 + i,
-          (i % (mobile ? 2 : 4)) * (mobile ? 2 : 3),
-          4 + Math.floor(i / (mobile ? 2 : 4)),
-          mobile ? 2 : 3,
-          1,
-        ),
       );
     } else {
       apps.forEach((a, i) =>
@@ -475,68 +382,49 @@ export class DashboardService {
   }
   private async addLayouts(dashboardId: string, kind: 'APPLICATION' | 'WIDGET', id: string) {
     const data: any[] = [];
-    for (const preset of ['FREE', 'ZIMA', 'FOCUS', 'COMPACT'] as const)
-      for (const surface of ['WEB', 'MOBILE'] as const) {
-        const n = await this.db.layoutItem.count({ where: { dashboardId, preset, surface, kind } }),
-          mobile = surface === 'MOBILE';
-        let x = 0,
-          y = 0,
-          w = 1,
+    for (const surface of ['WEB', 'MOBILE'] as const) {
+      const n = await this.db.layoutItem.count({
+        where: { dashboardId, preset: 'ZIMA', surface, kind },
+      });
+      const mobile = surface === 'MOBILE';
+      let x: number, y: number, w: number, h: number;
+      if (kind === 'APPLICATION') {
+        if (mobile) {
+          x = n % 3;
+          y = Math.floor(n / 3);
+          w = 1;
           h = 1;
-        if (kind === 'APPLICATION') {
-          if (preset === 'ZIMA' && !mobile) {
-            x = 3 + (n % 5) * 2;
-            y = Math.floor(n / 5) * 2;
-            w = 2;
-            h = 2;
-          } else if (preset === 'FOCUS') {
-            x = (n % (mobile ? 3 : 4)) * (mobile ? 2 : 3);
-            y = Math.floor(n / (mobile ? 3 : 4)) * 2;
-            w = mobile ? 2 : 3;
-            h = 2;
-          } else if (preset === 'COMPACT') {
-            x = (n % (mobile ? 4 : 6)) * (mobile ? 1 : 2);
-            y = Math.floor(n / (mobile ? 4 : 6));
-            w = mobile ? 1 : 2;
-          } else {
-            x = n % (mobile ? 3 : 4);
-            y = Math.floor(n / (mobile ? 3 : 4));
-          }
         } else {
-          if (preset === 'ZIMA' && !mobile) {
-            x = 0;
-            y = n + (n > 3 ? 1 : 0);
-            w = 3;
-            h = n === 3 ? 2 : 1;
-          } else if (preset === 'FOCUS') {
-            x = (n % (mobile ? 1 : 3)) * (mobile ? 6 : 4);
-            y = 6 + Math.floor(n / (mobile ? 1 : 3)) * 2;
-            w = mobile ? 6 : 4;
-            h = 2;
-          } else if (preset === 'COMPACT') {
-            x = (n % (mobile ? 2 : 4)) * (mobile ? 2 : 3);
-            y = 4 + Math.floor(n / (mobile ? 2 : 4));
-            w = mobile ? 2 : 3;
-          } else {
-            x = (n % (mobile ? 1 : 3)) * (mobile ? 3 : 4);
-            y = 3 + Math.floor(n / (mobile ? 1 : 3));
-            w = mobile ? 3 : 4;
-          }
+          x = 3 + (n % 5) * 2;
+          y = Math.floor(n / 5) * 2;
+          w = 2;
+          h = 2;
         }
-        data.push({
-          dashboardId,
-          surface,
-          preset,
-          kind,
-          order: kind === 'APPLICATION' ? n : 100 + n,
-          x,
-          y,
-          w,
-          h,
-          applicationId: kind === 'APPLICATION' ? id : null,
-          widgetId: kind === 'WIDGET' ? id : null,
-        });
+      } else if (mobile) {
+        x = 0;
+        y = 3 + n;
+        w = 3;
+        h = 1;
+      } else {
+        x = 0;
+        y = n + (n > 3 ? 1 : 0);
+        w = 3;
+        h = n === 3 ? 2 : 1;
       }
+      data.push({
+        dashboardId,
+        surface,
+        preset: 'ZIMA',
+        kind,
+        order: kind === 'APPLICATION' ? n : 100 + n,
+        x,
+        y,
+        w,
+        h,
+        applicationId: kind === 'APPLICATION' ? id : null,
+        widgetId: kind === 'WIDGET' ? id : null,
+      });
+    }
     await this.db.layoutItem.createMany({ data });
   }
 }

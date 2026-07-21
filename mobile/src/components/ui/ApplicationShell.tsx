@@ -13,7 +13,6 @@ import {
   Pressable,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -89,8 +88,8 @@ export default function ApplicationShell({ dashboardQuery }: { dashboardQuery: a
     <View className="flex-1">
       {content}
       {toast && (
-        <View style={[s.toast, toast.type === 'error' && s.toastError]}>
-          <Text style={s.toastText}>{toast.message}</Text>
+        <View className={`${s.toast} ${toast.type === 'error' ? s.toastError : ''}`}>
+          <Text className={s.toastText}>{toast.message}</Text>
         </View>
       )}
     </View>
@@ -114,16 +113,16 @@ function ServerSetup({ done }: { done: () => void }) {
     }
   }
   return (
-    <SafeAreaView style={s.page}>
+    <SafeAreaView className={s.page}>
       <KeyboardAvoidingView
-        style={s.center}
+        className={s.center}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Logo />
-        <Text style={s.title}>Conecte ao seu DashLab</Text>
-        <Text style={s.muted}>Digite o endereço do seu servidor para continuar.</Text>
+        <Text className={s.title}>Conecte ao seu DashLab</Text>
+        <Text className={s.muted}>Digite o endereço do seu servidor para continuar.</Text>
         <TextInput
-          style={s.input}
+          className={s.input}
           autoCapitalize="none"
           keyboardType="url"
           value={url}
@@ -157,12 +156,12 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
     }
   }
   return (
-    <SafeAreaView style={s.page}>
-      <View style={s.center}>
+    <SafeAreaView className={s.page}>
+      <View className={s.center}>
         <Logo />
-        <Text style={s.title}>{register ? 'Crie sua conta' : 'Seu homelab, do seu jeito'}</Text>
+        <Text className={s.title}>{register ? 'Crie sua conta' : 'Seu homelab, do seu jeito'}</Text>
         <TextInput
-          style={s.input}
+          className={s.input}
           autoCapitalize="none"
           placeholder="Usuário"
           placeholderTextColor="#617184"
@@ -170,7 +169,7 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
           onChangeText={setUsername}
         />
         <TextInput
-          style={s.input}
+          className={s.input}
           secureTextEntry
           placeholder="Senha"
           placeholderTextColor="#617184"
@@ -179,10 +178,10 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
         />
         <Button title={busy ? 'Aguarde…' : register ? 'Criar conta' : 'Entrar'} onPress={submit} />
         <Pressable onPress={() => setRegister(!register)}>
-          <Text style={s.link}>{register ? 'Já tenho uma conta' : 'Criar uma conta'}</Text>
+          <Text className={s.link}>{register ? 'Já tenho uma conta' : 'Criar uma conta'}</Text>
         </Pressable>
         <Pressable onPress={reset}>
-          <Text style={s.subtle}>Trocar servidor</Text>
+          <Text className={s.subtle}>Trocar servidor</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -314,12 +313,12 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
       </Center>
     );
   return (
-    <SafeAreaView style={s.page}>
+    <SafeAreaView className={s.page}>
       <StatusBar style="light" />
-      <View style={s.header}>
+      <View className={s.header}>
         <View>
-          <Text style={s.brand}>{data.branding?.name || data.name}</Text>
-          <Text style={s.muted}>Seu espaço pessoal</Text>
+          <Text className={s.brand}>{data.branding?.name || data.name}</Text>
+          <Text className={s.muted}>Seu espaço pessoal</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 18 }}>
           <Pressable
@@ -346,11 +345,11 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
           </Pressable>
         </View>
       </View>
-      <ScrollView contentContainerStyle={s.content}>
-        <View style={s.search}>
+      <ScrollView contentContainerClassName={s.content}>
+        <View className={s.search}>
           <Ionicons name="search" color="#8190a2" size={18} />
           <TextInput
-            style={s.searchInput}
+            className={s.searchInput}
             value={query}
             onChangeText={setQuery}
             placeholder="Pesquisar apps ou web"
@@ -366,7 +365,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
             }}
           />
         </View>
-        <Text style={s.section}>Aplicativos</Text>
+        <Text className={s.section}>Aplicativos</Text>
         <FlatList
           scrollEnabled={false}
           data={data.layouts
@@ -379,30 +378,30 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
           keyExtractor={(x: any) => x.id}
           renderItem={({ item }) => (
             <Pressable
-              style={s.app}
+              className={s.app}
               onPress={() => open(item)}
               onLongPress={() => setActionItem({ kind: 'app', item })}
             >
-              <View style={s.appIcon}>
-                <Image source={{ uri: appImage(item) }} style={s.realAppIcon} />
+              <View className={s.appIcon}>
+                <Image source={{ uri: appImage(item) }} className={s.realAppIcon} />
               </View>
-              <Text numberOfLines={1} style={s.appName}>
+              <Text numberOfLines={1} className={s.appName}>
                 {item.name}
               </Text>
             </Pressable>
           )}
         />
-        <Text style={s.section}>Visão geral</Text>
-        <View style={s.widgets}>
+        <Text className={s.section}>Visão geral</Text>
+        <View className={s.widgets}>
           {data.widgets.slice(0, 6).map((w: any) => (
             <Pressable
-              style={s.widget}
+              className={s.widget}
               key={w.id}
               onLongPress={() => setActionItem({ kind: 'widget', item: w })}
             >
               <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
-              <Text style={s.widgetTitle}>{w.title}</Text>
-              <Text style={s.metric}>{widgetValue(w.type, metrics)}</Text>
+              <Text className={s.widgetTitle}>{w.title}</Text>
+              <Text className={s.metric}>{widgetValue(w.type, metrics)}</Text>
               {['SYSTEM', 'STORAGE', 'NETWORK'].includes(w.type) && (
                 <MiniBars values={widgetSeries(w.type, history)} />
               )}
@@ -411,7 +410,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
         </View>
       </ScrollView>
       <Pressable
-        style={s.fab}
+        className={s.fab}
         onPress={() => {
           setMode('app');
           setSelected(null);
@@ -430,9 +429,9 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
         <Ionicons name="add" color="white" size={30} />
       </Pressable>
       <Modal transparent visible={show} animationType="slide" onRequestClose={() => setShow(false)}>
-        <View style={s.modalBack}>
-          <View style={s.sheet}>
-            <Text style={s.title}>
+        <View className={s.modalBack}>
+          <View className={s.sheet}>
+            <Text className={s.title}>
               {mode === 'app'
                 ? selected
                   ? 'Editar aplicativo'
@@ -446,7 +445,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
                     : 'Minha conta'}
             </Text>
             <TextInput
-              style={s.input}
+              className={s.input}
               placeholder={
                 mode === 'account' ? 'Senha atual' : mode === 'widget' ? 'Título' : 'Nome'
               }
@@ -455,7 +454,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
               onChangeText={setName}
             />
             <TextInput
-              style={s.input}
+              className={s.input}
               secureTextEntry={mode === 'account'}
               placeholder={mode === 'account' ? 'Nova senha' : 'https://...'}
               placeholderTextColor="#617184"
@@ -464,7 +463,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
             />
             {mode === 'app' && (
               <TextInput
-                style={s.input}
+                className={s.input}
                 placeholder="Categoria"
                 placeholderTextColor="#617184"
                 value={extra}
@@ -472,7 +471,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
               />
             )}
             {mode === 'widget' && (
-              <View style={s.typeGrid}>
+              <View className={s.typeGrid}>
                 {[
                   'SYSTEM',
                   'STORAGE',
@@ -486,16 +485,16 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
                   <Pressable
                     key={t}
                     onPress={() => setExtra(t)}
-                    style={[s.typeChip, extra === t && s.typeChipActive]}
+                    className={`${s.typeChip} ${extra === t ? s.typeChipActive : ''}`}
                   >
-                    <Text style={s.typeText}>{t}</Text>
+                    <Text className={s.typeText}>{t}</Text>
                   </Pressable>
                 ))}
               </View>
             )}
             {mode === 'brand' && (
               <TextInput
-                style={s.input}
+                className={s.input}
                 placeholder="#ff7a1a"
                 placeholderTextColor="#617184"
                 value={extra}
@@ -505,11 +504,11 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
             <Button title="Salvar" onPress={save} />
             {mode === 'account' && (
               <Pressable onPress={logout}>
-                <Text style={s.link}>Sair desta conta</Text>
+                <Text className={s.link}>Sair desta conta</Text>
               </Pressable>
             )}
             <Pressable onPress={() => setShow(false)}>
-              <Text style={s.link}>Cancelar</Text>
+              <Text className={s.link}>Cancelar</Text>
             </Pressable>
           </View>
         </View>
@@ -610,29 +609,29 @@ function MiniBars({ values }: { values: Array<{ value: number }> }) {
   const points = values.slice(-24),
     max = Math.max(1, ...points.map((x) => x.value));
   return (
-    <View style={s.miniChart}>
+    <View className={s.miniChart}>
       {points.map((x, i) => (
-        <View key={i} style={[s.miniBar, { height: Math.max(2, (x.value / max) * 30) }]} />
+        <View key={i} className={s.miniBar} style={{ height: Math.max(2, (x.value / max) * 30) }} />
       ))}
     </View>
   );
 }
 function Logo() {
   return (
-    <View style={s.logo}>
-      <Text style={s.logoText}>D</Text>
+    <View className={s.logo}>
+      <Text className={s.logoText}>D</Text>
     </View>
   );
 }
 function Button({ title, onPress }: { title: string; onPress: () => void }) {
   return (
-    <Pressable style={s.button} onPress={onPress}>
-      <Text style={s.buttonText}>{title}</Text>
+    <Pressable className={s.button} onPress={onPress}>
+      <Text className={s.buttonText}>{title}</Text>
     </Pressable>
   );
 }
 function Center({ children }: { children: React.ReactNode }) {
-  return <View style={[s.page, s.center]}>{children}</View>;
+  return <View className={`${s.page} ${s.center}`}>{children}</View>;
 }
 function InfoModal({
   title,
@@ -645,10 +644,10 @@ function InfoModal({
 }) {
   return (
     <Modal transparent visible animationType="fade" onRequestClose={close}>
-      <View style={s.dialogBack}>
-        <View style={s.dialog}>
-          <Text style={s.dialogTitle}>{title}</Text>
-          <Text style={s.dialogMessage}>{message}</Text>
+      <View className={s.dialogBack}>
+        <View className={s.dialog}>
+          <Text className={s.dialogTitle}>{title}</Text>
+          <Text className={s.dialogMessage}>{message}</Text>
           <Button title="Entendi" onPress={close} />
         </View>
       </View>
@@ -668,16 +667,16 @@ function ConfirmMobile({
 }) {
   return (
     <Modal transparent visible animationType="fade" onRequestClose={cancel}>
-      <View style={s.dialogBack}>
-        <View style={s.dialog}>
-          <Text style={s.dialogTitle}>{title}</Text>
-          <Text style={s.dialogMessage}>{message}</Text>
-          <View style={s.dialogActions}>
-            <Pressable style={s.dialogSecondary} onPress={cancel}>
-              <Text style={s.dialogSecondaryText}>Cancelar</Text>
+      <View className={s.dialogBack}>
+        <View className={s.dialog}>
+          <Text className={s.dialogTitle}>{title}</Text>
+          <Text className={s.dialogMessage}>{message}</Text>
+          <View className={s.dialogActions}>
+            <Pressable className={s.dialogSecondary} onPress={cancel}>
+              <Text className={s.dialogSecondaryText}>Cancelar</Text>
             </Pressable>
-            <Pressable style={s.dialogDanger} onPress={confirm}>
-              <Text style={s.buttonText}>Excluir</Text>
+            <Pressable className={s.dialogDanger} onPress={confirm}>
+              <Text className={s.buttonText}>Excluir</Text>
             </Pressable>
           </View>
         </View>
@@ -696,256 +695,85 @@ function ActionModal({
 }) {
   return (
     <Modal transparent visible animationType="slide" onRequestClose={close}>
-      <Pressable style={s.modalBack} onPress={close}>
-        <Pressable style={s.actionSheet} onPress={() => {}}>
-          <View style={s.sheetHandle} />
-          <Text style={s.dialogTitle}>{title}</Text>
+      <Pressable className={s.modalBack} onPress={close}>
+        <Pressable className={s.actionSheet} onPress={() => {}}>
+          <View className={s.sheetHandle} />
+          <Text className={s.dialogTitle}>{title}</Text>
           {actions.map((a) => (
             <Pressable
               key={a.label}
-              style={s.actionRow}
+              className={s.actionRow}
               onPress={() => {
                 close();
                 a.run();
               }}
             >
-              <Text style={[s.actionText, a.danger && s.actionDanger]}>{a.label}</Text>
+              <Text className={`${s.actionText} ${a.danger ? s.actionDanger : ''}`}>{a.label}</Text>
             </Pressable>
           ))}
-          <Pressable style={s.actionRow} onPress={close}>
-            <Text style={s.actionText}>Cancelar</Text>
+          <Pressable className={s.actionRow} onPress={close}>
+            <Text className={s.actionText}>Cancelar</Text>
           </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
   );
 }
-const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#091019' },
-  center: { flex: 1, justifyContent: 'center', padding: 28, gap: 16 },
-  logo: {
-    width: 82,
-    height: 82,
-    borderRadius: 25,
-    backgroundColor: '#ff7a1a',
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
-  },
-  logoText: { fontSize: 40, fontWeight: '800', color: 'white' },
-  title: {
-    fontSize: 25,
-    fontWeight: '700',
-    color: '#f6f8fb',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  muted: { color: '#8d9bac', fontSize: 14 },
-  input: {
-    backgroundColor: '#111d2a',
-    borderWidth: 1,
-    borderColor: '#263545',
-    color: 'white',
-    borderRadius: 14,
-    padding: 14,
-    fontSize: 15,
-  },
-  button: {
-    backgroundColor: '#ff7a1a',
-    padding: 15,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  buttonText: { color: 'white', fontWeight: '700', fontSize: 16 },
-  link: { color: '#ff9a50', textAlign: 'center', padding: 8 },
-  subtle: { color: '#647486', textAlign: 'center' },
-  header: {
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  brand: { color: 'white', fontSize: 23, fontWeight: '700' },
-  content: { paddingHorizontal: 18, paddingBottom: 110 },
-  search: {
-    height: 44,
-    borderRadius: 15,
-    backgroundColor: '#ffffff12',
-    borderWidth: 1,
-    borderColor: '#ffffff16',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    paddingHorizontal: 14,
-  },
-  searchText: { color: '#8090a2' },
-  searchInput: { flex: 1, color: '#eef3f8', paddingVertical: 8 },
-  section: {
-    color: '#dbe5ef',
-    fontWeight: '700',
-    fontSize: 17,
-    marginTop: 28,
-    marginBottom: 16,
-  },
-  app: { width: '33.333%', alignItems: 'center', marginBottom: 24 },
-  appIcon: {
-    width: 66,
-    height: 66,
-    borderRadius: 20,
-    backgroundColor: '#ffffff14',
-    borderWidth: 1,
-    borderColor: '#ffffff1c',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emoji: { fontSize: 32 },
-  realAppIcon: { width: 42, height: 42, borderRadius: 10 },
-  appName: { color: '#dbe5ef', fontSize: 12, marginTop: 8, maxWidth: 95 },
-  widgets: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  widget: {
-    width: '100%',
-    minHeight: 105,
-    backgroundColor: '#ffffff10',
-    borderWidth: 1,
-    borderColor: '#ffffff16',
-    borderRadius: 19,
-    padding: 15,
-  },
-  widgetTitle: { color: '#9eacbc', fontSize: 12, marginTop: 7 },
-  metric: { color: 'white', fontSize: 23, fontWeight: '700', marginTop: 5 },
-  miniChart: { height: 34, marginTop: 8, flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
-  miniBar: { flex: 1, backgroundColor: '#ff7a1a', borderRadius: 2, opacity: 0.8 },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 58,
-    height: 58,
-    borderRadius: 19,
-    backgroundColor: '#ff7a1a',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 8,
-  },
-  modalBack: { flex: 1, backgroundColor: '#0009', justifyContent: 'flex-end' },
-  sheet: {
-    backgroundColor: '#101a26',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 24,
-    paddingBottom: 40,
-    gap: 14,
-  },
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  typeChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 10,
-    backgroundColor: '#ffffff0c',
-    borderWidth: 1,
-    borderColor: '#ffffff16',
-  },
-  typeChipActive: { backgroundColor: '#ff7a1a55', borderColor: '#ff7a1a' },
-  typeText: { color: '#dbe5ef', fontSize: 11 },
-  toast: {
-    position: 'absolute',
-    top: 54,
-    left: 20,
-    right: 20,
-    zIndex: 100,
-    elevation: 20,
-    backgroundColor: '#173426',
-    borderColor: '#3bd47b66',
-    borderWidth: 1,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-  },
-  toastError: { backgroundColor: '#3b2023', borderColor: '#ff6b6b77' },
-  toastText: { color: '#f4f8fb', fontWeight: '600', textAlign: 'center' },
-  dialogBack: {
-    flex: 1,
-    backgroundColor: '#000b',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  dialog: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#111d29',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#ffffff1c',
-    padding: 22,
-    gap: 16,
-  },
-  dialogTitle: { color: '#f5f8fb', fontSize: 20, fontWeight: '700' },
-  dialogMessage: { color: '#a9b5c2', fontSize: 15, lineHeight: 21 },
-  dialogActions: { flexDirection: 'row', gap: 10 },
-  dialogSecondary: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: '#ffffff22',
-    alignItems: 'center',
-  },
-  dialogSecondaryText: { color: '#dbe5ef', fontWeight: '700' },
-  dialogDanger: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 13,
-    backgroundColor: '#d84b4b',
-    alignItems: 'center',
-  },
-  actionSheet: {
-    backgroundColor: '#101a26',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 20,
-    paddingBottom: 34,
-    gap: 4,
-  },
-  sheetHandle: {
-    width: 42,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#ffffff33',
-    alignSelf: 'center',
-    marginBottom: 14,
-  },
-  actionRow: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#ffffff0c' },
-  actionText: { color: '#e5ebf1', fontSize: 16, textAlign: 'center' },
-  actionDanger: { color: '#ff7f78' },
-  layoutSheet: {
-    backgroundColor: '#101a26',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    padding: 20,
-    paddingBottom: 30,
-    gap: 10,
-  },
-  mobilePreset: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 13,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#ffffff14',
-    backgroundColor: '#ffffff08',
-  },
-  mobilePresetActive: { borderColor: '#ff7a1a', backgroundColor: '#ff7a1a16' },
-  mobilePresetIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 13,
-    backgroundColor: '#071019',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mobilePresetTitle: { color: '#f2f5f8', fontWeight: '700', fontSize: 15 },
-  mobilePresetDescription: { color: '#8291a2', fontSize: 11, marginTop: 3 },
-});
+const s = {
+  page: 'flex-1 bg-[#091019]',
+  center: 'flex-1 justify-center p-7 gap-4',
+  logo: 'w-[82px] h-[82px] rounded-[25px] bg-accent self-center items-center justify-center mb-[18px]',
+  logoText: 'text-[40px] font-extrabold text-white',
+  title: 'text-[25px] font-bold text-[#f6f8fb] text-center mb-1',
+  muted: 'text-[#8d9bac] text-sm',
+  input: 'h-14 bg-[#111d2a] border border-[#263545] text-white rounded-[14px] px-4 text-[15px]',
+  button: 'h-10 bg-accent px-4 rounded-xl items-center justify-center',
+  buttonText: 'text-white font-bold text-sm',
+  link: 'text-[#ff9a50] text-center p-2',
+  subtle: 'text-[#647486] text-center',
+  header: 'p-5 flex-row justify-between items-center',
+  brand: 'text-white text-[23px] font-bold',
+  content: 'px-[18px] pb-[110px]',
+  search:
+    'h-12 rounded-[15px] bg-white/[0.07] border border-white/[0.09] flex-row items-center gap-2 px-[14px]',
+  searchText: 'text-[#8090a2]',
+  searchInput: 'flex-1 text-[#eef3f8] py-2',
+  section: 'text-[#dbe5ef] font-bold text-[17px] mt-7 mb-4',
+  app: 'w-1/3 items-center mb-6',
+  appIcon:
+    'w-[66px] h-[66px] rounded-[20px] bg-white/[0.08] border border-white/[0.11] items-center justify-center',
+  emoji: 'text-[32px]',
+  realAppIcon: 'w-[42px] h-[42px] rounded-[10px]',
+  appName: 'text-[#dbe5ef] text-xs mt-2 max-w-[95px]',
+  widgets: 'flex-row flex-wrap gap-2.5',
+  widget: 'w-full min-h-[105px] bg-white/[0.06] border border-white/[0.09] rounded-[19px] p-[15px]',
+  widgetTitle: 'text-[#9eacbc] text-xs mt-[7px]',
+  metric: 'text-white text-[23px] font-bold mt-1',
+  miniChart: 'h-[34px] mt-2 flex-row items-end gap-0.5',
+  miniBar: 'flex-1 bg-accent rounded-sm opacity-80',
+  fab: 'absolute right-5 bottom-6 w-[58px] h-[58px] rounded-[19px] bg-accent items-center justify-center shadow-2xl',
+  modalBack: 'flex-1 bg-black/60 justify-end',
+  sheet: 'bg-[#101a26] rounded-t-[28px] p-6 pb-10 gap-[14px]',
+  typeGrid: 'flex-row flex-wrap gap-[7px]',
+  typeChip: 'px-2.5 py-[7px] rounded-[10px] bg-white/[0.05] border border-white/[0.09]',
+  typeChipActive: 'bg-orange-500/30 border-accent',
+  typeText: 'text-[#dbe5ef] text-[11px]',
+  toast:
+    'absolute top-[54px] left-5 right-5 z-50 bg-[#173426] border border-[#3bd47b66] rounded-[14px] px-4 py-[13px]',
+  toastError: 'bg-[#3b2023] border-[#ff6b6b77]',
+  toastText: 'text-[#f4f8fb] font-semibold text-center',
+  dialogBack: 'flex-1 bg-black/70 items-center justify-center p-6',
+  dialog: 'w-full max-w-[420px] bg-[#111d29] rounded-3xl border border-white/[0.11] p-[22px] gap-4',
+  dialogTitle: 'text-[#f5f8fb] text-xl font-bold',
+  dialogMessage: 'text-[#a9b5c2] text-[15px] leading-[21px]',
+  dialogActions: 'flex-row gap-2.5',
+  dialogSecondary:
+    'flex-1 h-10 rounded-[13px] border border-white/[0.13] items-center justify-center',
+  dialogSecondaryText: 'text-[#dbe5ef] font-bold',
+  dialogDanger: 'flex-1 h-10 rounded-[13px] bg-[#d84b4b] items-center justify-center',
+  actionSheet: 'bg-[#101a26] rounded-t-[28px] p-5 pb-[34px] gap-1',
+  sheetHandle: 'w-[42px] h-1 rounded-sm bg-white/20 self-center mb-[14px]',
+  actionRow: 'py-[15px] border-b border-white/[0.05]',
+  actionText: 'text-[#e5ebf1] text-base text-center',
+  actionDanger: 'text-[#ff7f78]',
+};

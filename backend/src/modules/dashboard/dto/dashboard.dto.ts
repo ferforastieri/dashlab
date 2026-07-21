@@ -35,12 +35,6 @@ export enum WidgetTypeDto {
   STATUS = 'STATUS',
   PROMQL = 'PROMQL',
 }
-export enum LayoutPresetDto {
-  FREE = 'FREE',
-  ZIMA = 'ZIMA',
-  FOCUS = 'FOCUS',
-  COMPACT = 'COMPACT',
-}
 
 export class BrandingDto {
   @IsOptional() @IsString() @Length(1, 80) name?: string;
@@ -101,13 +95,6 @@ export class SaveLayoutDto {
 export class WeatherQueryDto {
   @Type(() => Number) @Min(-90) @Max(90) latitude!: number;
   @Type(() => Number) @Min(-180) @Max(180) longitude!: number;
-}
-export class SelectLayoutPresetDto {
-  @IsEnum(LayoutPresetDto) preset!: LayoutPresetDto;
-  @IsOptional() @IsEnum(SurfaceDto) surface?: SurfaceDto;
-}
-export class ResetLayoutPresetDto {
-  @IsOptional() @IsEnum(SurfaceDto) surface?: SurfaceDto;
 }
 export class MetricsHistoryDto {
   @IsOptional() @IsIn(['15m', '1h', '6h', '24h']) range: '15m' | '1h' | '6h' | '24h' = '1h';
