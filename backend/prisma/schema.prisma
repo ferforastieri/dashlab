@@ -118,6 +118,7 @@ model Asset {
   name String
   mimeType String
   path String
+  data Bytes?
   dashboardId String
   dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)
   createdAt DateTime @default(now())
