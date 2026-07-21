@@ -24,9 +24,8 @@ import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.style
 import { DashboardClock } from './DashboardClock';
 import { DashboardEditor } from './DashboardEditor';
 import { WidgetCard } from './WidgetCard';
+import { getApplicationIconUrl, useEmbeddedIconFallback } from '../applicationIcon';
 
-const appImage = (app: AppItem) =>
-  app.icon?.startsWith('http') ? app.icon : `${new URL(app.url).origin}/favicon.ico`;
 export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => void; dashboardQuery: any }) {
   const metricsQuery = useMetricsOverviewQuery(),
     historyQuery = useMetricsHistoryQuery(),
@@ -216,11 +215,9 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                       rel="noreferrer"
                     >
                       <img
-                        src={appImage(app)}
+                        src={getApplicationIconUrl(app)}
                         alt=""
-                        onError={(e) => {
-                          e.currentTarget.src = '/favicon.ico';
-                        }}
+                        onError={useEmbeddedIconFallback}
                       />
                     </a>
                     <b>{app.name}</b>
@@ -286,11 +283,9 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           .map((a) => (
             <a href={a.url} target="_blank" rel="noreferrer" key={a.id}>
               <img
-                src={appImage(a)}
+                src={getApplicationIconUrl(a)}
                 alt=""
-                onError={(e) => {
-                  e.currentTarget.src = '/favicon.ico';
-                }}
+                onError={useEmbeddedIconFallback}
               />
             </a>
           ))}
