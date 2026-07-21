@@ -28,17 +28,11 @@ jobs:
         env:
           POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
           JWT_SECRET: '${{ secrets.JWT_SECRET }}'
-          EXPO_TOKEN: '${{ secrets.EXPO_TOKEN }}'
-          EXPO_OWNER: '${{ secrets.EXPO_OWNER }}'
-          EXPO_PROJECT_ID: '${{ secrets.EXPO_PROJECT_ID }}'
           PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'
         run: |
           set -eu
           test -n "$POSTGRES_PASSWORD"
           test ${#JWT_SECRET} -ge 32
-          test -n "$EXPO_TOKEN"
-          test -n "$EXPO_OWNER"
-          test -n "$EXPO_PROJECT_ID"
           test -n "$PROMETHEUS_URL"
       - name: Test and build
         run: |
@@ -48,8 +42,6 @@ jobs:
           npm --prefix backend test -- --passWithNoTests
           npm --prefix web ci
           npm --prefix web run build
-          npm --prefix mobile ci
-          npm --prefix mobile run build:check
       - name: Deploy containers
         env:
           POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
@@ -73,14 +65,3 @@ jobs:
           $COMPOSE --env-file .env run --rm backend npx prisma migrate status
           $COMPOSE --env-file .env up -d
           $COMPOSE --env-file .env ps
-      - name: Trigger Android build on Expo Cloud
-        working-directory: mobile
-        env:
-          EXPO_TOKEN: '${{ secrets.EXPO_TOKEN }}'
-          EXPO_OWNER: '${{ secrets.EXPO_OWNER }}'
-          EXPO_PROJECT_ID: '${{ secrets.EXPO_PROJECT_ID }}'
-        run: |
-          set -eu
-          npm ci
-          npx eas-cli@latest whoami
-          npx eas-cli@latest build --platform android --profile production --non-interactive --no-wait

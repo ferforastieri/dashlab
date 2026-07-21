@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import {
@@ -15,10 +16,11 @@ import {
   UpdateSectionDto,
   UpdateWidgetDto,
 } from '../dto/dashboard.dto';
+import { PwaService } from './pwa.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private db: PrismaService) {}
+  constructor(private db: PrismaService, @Optional() private pwaService?: PwaService) {}
   private async dashboard(userId: string) {
     const d = await this.db.dashboard.findUnique({ where: { userId } });
     if (!d) throw new NotFoundException();
@@ -52,6 +54,7 @@ export class DashboardService {
       where: { id: d.id },
       data: { name: data.name || d.name, branding: { ...current, ...data } },
     });
+    this.pwaService?.invalidate(d.id);
     return { ...result, message: 'Personalização salva com sucesso' };
   }
   async createApp(userId: string, data: CreateApplicationDto) {

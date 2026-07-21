@@ -23,6 +23,7 @@ import { useDeleteSectionMutation } from '../../../api/sections/useDeleteSection
 import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSectionMutation';
 import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
+import { PwaInstallButton } from '../../../components/ui/PwaInstallButton';
 import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 import { DashboardClock } from './DashboardClock';
@@ -71,6 +72,16 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
     setCanvasHeight((current) => current ?? (Number(dash.branding?.canvasHeight) || Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))));
     document.title = dash.branding?.name || dash.name;
+    let manifest = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
+    if (!manifest) {
+      manifest = document.createElement('link');
+      manifest.rel = 'manifest';
+      document.head.appendChild(manifest);
+    }
+    manifest.href = `/api/pwa/${dash.id}/manifest.webmanifest`;
+    const backgroundColor = dash.branding?.backgroundColor;
+    const themeColor = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
+    if (themeColor && backgroundColor) themeColor.content = backgroundColor;
     if (dash.branding?.favicon) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
       if (!link) {
@@ -79,6 +90,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         document.head.appendChild(link);
       }
       link.href = dash.branding.favicon;
+      let touchIcon = document.querySelector<HTMLLinkElement>("link[rel='apple-touch-icon']");
+      if (!touchIcon) {
+        touchIcon = document.createElement('link');
+        touchIcon.rel = 'apple-touch-icon';
+        document.head.appendChild(touchIcon);
+      }
+      touchIcon.href = `/api/pwa/${dash.id}/icon/192.png`;
     }
   }, [dash]);
 
@@ -156,6 +174,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     );
     if (elementKey === 'ACTIONS') return (
       <div className={`${cn('header-tools')} chrome-actions`}>
+        <PwaInstallButton className={cn('icon-button')} />
         <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
         <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => setLayoutEdit(!layoutEdit)} title="Editar organização"><Pencil /></button>
         <button className={cn('icon-button')} onClick={() => setModal('account')} title="Minha conta"><UserRound /></button>

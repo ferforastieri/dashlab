@@ -15,32 +15,30 @@ Não existe um painel administrativo separado: links, widgets, wallpaper, cores 
 
 - Contas e dashboards privados por usuário.
 - Interface web fullscreen com canvas livre de aplicativos e widgets.
-- Aplicativo Android nativo com Expo.
-- Presets editáveis na web e um layout Zima empilhado otimizado para mobile.
+- PWA instalável em desktop, Android e iOS, com shell disponível offline.
+- Interface web responsiva com layouts independentes para desktop e celular.
 - Cadastro de links, deep links, categorias e ícones.
 - Widgets de CPU, memória, discos, rede, relógio, clima, pesquisa e status.
 - Consultas PromQL personalizadas com acesso controlado ao Prometheus.
 - Tema, nome, wallpaper e cor de destaque por usuário.
 - Deploy em Docker com PostgreSQL, NestJS, React e Nginx.
-- CI/CD pelo Gitea Actions e builds Android pelo Expo Application Services.
+- CI/CD pelo Gitea Actions com build e deploy dos containers.
 
 ## Arquitetura
 
 ```text
-Web React/Vite ─┐
-                ├── NestJS API ── PostgreSQL
-Expo Android ───┘       │
-                        ├── Prometheus
-                        └── Open-Meteo / status dos serviços
+Web React/Vite ── NestJS API ── PostgreSQL
+                         │
+                         ├── Prometheus
+                         └── Open-Meteo / status dos serviços
 ```
 
 | Pasta               | Responsabilidade                                                      |
 | ------------------- | --------------------------------------------------------------------- |
 | `backend/`          | API NestJS, autenticação, Prisma, integrações e regras de isolamento. |
 | `web/`              | Dashboard React/Vite servido pelo Nginx.                              |
-| `mobile/`           | Aplicativo React Native/Expo para Android.                            |
 | `nginx/`            | SPA e proxy interno de `/api` para o backend.                         |
-| `.gitea/workflows/` | Build, testes, deploy Docker e disparo do Expo Cloud.                 |
+| `.gitea/workflows/` | Build, testes, migrations e deploy Docker.                            |
 
 ### Organização do código
 
@@ -48,13 +46,12 @@ Expo Android ───┘       │
   `services/`, `dto/`, `guards/` e `test/` dentro de cada módulo.
 - Banco de dados, composição da aplicação e demais detalhes técnicos ficam isolados em
   `backend/src/infrastructure/`.
-- Web e mobile organizam `api/` por domínio. Cada chamada possui um hook React Query próprio,
+- A web organiza `api/` por domínio. Cada chamada possui um hook React Query próprio,
   enquanto o cliente Axios compartilhado permanece em `api/http/`.
-- Na web, `pages/` compõe hooks e componentes globais de `components/ui/`; no mobile, essa mesma
-  responsabilidade pertence a `screens/`.
+- Na web, `pages/` compõe hooks e componentes globais de `components/ui/`.
 - Os pontos de entrada ficam em `bootstrap/`, sem arquivos `App` ou `main` misturados à raiz do
   código-fonte.
-- Tailwind CSS atende a web e NativeWind fornece a mesma base utilitária no Expo.
+- Tailwind CSS atende a interface web.
 
 ## Desenvolvimento
 
@@ -77,14 +74,6 @@ Em outro terminal:
 cd web
 npm ci
 npm run dev
-```
-
-Para o Android:
-
-```bash
-cd mobile
-npm ci
-npm start
 ```
 
 ## Produção
@@ -111,7 +100,7 @@ Somente o Nginx é publicado na LAN. PostgreSQL e NestJS permanecem na rede inte
 | `PROMETHEUS_URL`    | Endereço interno do Prometheus.  |
 | `WEB_PORT`          | Porta publicada pelo Nginx.      |
 
-O workflow do Gitea também exige `EXPO_TOKEN` para iniciar builds no Expo Cloud. Segredos nunca devem ser versionados.
+Segredos nunca devem ser versionados.
 
 ## Segurança
 
