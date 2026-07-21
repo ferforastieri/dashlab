@@ -43,7 +43,7 @@ export function ImageUpload({ label, value, onChange, hint }: ImageUploadProps) 
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-slate-200"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 text-sm text-slate-200"
             onClick={() => input.current?.click()}
             disabled={upload.isPending}
           >

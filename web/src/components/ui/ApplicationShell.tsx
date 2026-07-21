@@ -102,13 +102,13 @@ const ui: Record<string, string> = {
   'app-icon':
     'grid h-[62px] w-[62px] place-items-center overflow-hidden rounded-[17px] border border-white/10 bg-gradient-to-br from-white/15 to-white/5 shadow-none transition duration-200 hover:-translate-y-[7px] hover:scale-[1.04] hover:border-white/30 [&>img]:h-12 [&>img]:w-12 [&>img]:rounded-xl [&>img]:object-contain',
   widget:
-    'relative h-full min-h-[112px] overflow-hidden rounded-xl border border-white/[0.11] bg-gradient-to-br from-white/[0.11] to-white/[0.03] p-[17px] pb-2.5 shadow-[0_18px_40px_#0005] backdrop-blur-xl',
+    'relative h-full min-h-0 overflow-hidden rounded-xl border border-white/[0.11] bg-gradient-to-br from-white/[0.11] to-white/[0.03] p-3 shadow-[0_18px_40px_#0005] backdrop-blur-xl',
   'widget-title':
     'flex items-center gap-2 text-[13px] text-[#c8d2de] [&>svg]:w-[17px] [&>svg]:text-accent',
   'widget-values':
-    'mt-[17px] flex flex-wrap items-baseline gap-[9px] [&>span]:text-xs [&>span]:text-[#93a2b5]',
-  metric: '!text-[25px] font-bold !text-white',
-  'metric-chart': 'mt-2 block h-[42px] w-full overflow-visible opacity-90',
+    'mt-1.5 flex flex-wrap items-baseline gap-[9px] [&>span]:text-xs [&>span]:text-[#93a2b5]',
+  metric: '!text-xl font-bold !text-white',
+  'metric-chart': 'mt-1 block h-5 w-full overflow-visible opacity-90',
   'item-control': 'hidden',
   'item-menu': 'absolute right-1 top-1 h-8 w-8 border-0 bg-transparent text-slate-300',
   context:
@@ -124,19 +124,19 @@ const ui: Record<string, string> = {
   'auth-shell':
     'grid min-h-screen place-items-center bg-[radial-gradient(circle_at_50%_0,#283d55,#091019_65%)] p-5',
   'auth-card':
-    'w-full max-w-[420px] rounded-[28px] border border-white/[0.11] bg-white/[0.06] p-[38px] text-center shadow-[0_35px_80px_#0008] backdrop-blur-2xl [&_.brand-mark]:mx-auto [&_h1]:mb-[7px] [&_h1]:mt-[18px] [&_p]:mb-7 [&_p]:text-[#9ba9b9] [&_form]:grid [&_form]:gap-[15px]',
+    'w-full max-w-[420px] rounded-[28px] border border-white/[0.11] bg-white/[0.06] p-[38px] text-center shadow-[0_35px_80px_#0008] backdrop-blur-2xl [&_.brand-mark]:mx-auto [&_h1]:mb-[7px] [&_h1]:mt-[18px] [&_p]:mb-7 [&_p]:text-[#9ba9b9] [&_form]:grid [&_form]:gap-[15px] [&_input]:h-11 [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-[#07111d] [&_input]:px-4 [&_input]:text-white',
   overlay: 'fixed inset-0 z-20 grid place-items-center bg-black/70 p-5',
   modal:
-    'relative grid max-h-[90vh] w-full max-w-[480px] gap-4 overflow-auto rounded-[25px] border border-white/10 bg-[#111b27] p-7 text-left shadow-2xl [&_label]:grid [&_label]:gap-2 [&_label]:text-sm [&_label]:text-slate-300 [&_input]:h-14 [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-[#07111d] [&_input]:px-4 [&_input]:text-white [&_select]:h-14 [&_select]:rounded-xl [&_select]:border [&_select]:border-white/10 [&_select]:bg-[#07111d] [&_select]:px-4 [&_select]:text-white [&_textarea]:min-h-28 [&_textarea]:rounded-xl [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:bg-[#07111d] [&_textarea]:p-4 [&_textarea]:text-white',
+    'relative grid max-h-[90vh] w-full max-w-[480px] gap-4 overflow-auto rounded-[25px] border border-white/10 bg-[#111b27] p-7 text-left shadow-2xl [&_label]:grid [&_label]:gap-2 [&_label]:text-sm [&_label]:text-slate-300 [&_input]:h-11 [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-[#07111d] [&_input]:px-4 [&_input]:text-white [&_select]:h-11 [&_select]:rounded-xl [&_select]:border [&_select]:border-white/10 [&_select]:bg-[#07111d] [&_select]:px-4 [&_select]:text-white [&_textarea]:min-h-24 [&_textarea]:rounded-xl [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:bg-[#07111d] [&_textarea]:p-4 [&_textarea]:text-white',
   close:
     'absolute right-4 top-4 grid h-8 w-8 place-items-center border-0 bg-transparent text-slate-300',
   tabs: 'flex gap-1 rounded-xl bg-white/5 p-1 [&>button]:flex-1 [&>button]:rounded-lg [&>button]:border-0 [&>button]:bg-transparent [&>button]:p-2 [&>button]:text-slate-400',
   primary:
-    'inline-flex min-h-9 items-center justify-center rounded-xl border-0 bg-accent px-4 py-2 font-bold text-white disabled:opacity-50',
+    'inline-flex h-11 items-center justify-center rounded-xl border-0 bg-accent px-4 font-bold text-white disabled:opacity-50',
   secondary:
-    'inline-flex min-h-9 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-200',
+    'inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 text-slate-200',
   danger:
-    'inline-flex min-h-9 items-center justify-center rounded-xl border border-red-400/30 bg-transparent px-3 py-2 text-red-300',
+    'inline-flex h-11 items-center justify-center rounded-xl border border-red-400/30 bg-transparent px-3 text-red-300',
   solid: 'bg-red-500 text-white',
   link: 'border-0 bg-transparent p-2 text-orange-300',
   error: 'text-sm text-red-300',
@@ -732,26 +732,41 @@ function Editor({
     setBusy(true);
     setError('');
     try {
-      if (mode === 'app')
+      if (mode === 'app') {
+        const application = {
+          name: form.name,
+          url: form.url,
+          description: form.description || undefined,
+          deepLink: form.deepLink || undefined,
+          icon: form.icon || undefined,
+          category: form.category || undefined,
+          statusUrl: form.statusUrl || undefined,
+          inDock: Boolean(form.inDock),
+          visible: form.visible,
+        };
         await (editing
-          ? updateApplication.mutateAsync({ id: editing.id, data: form })
-          : createApplication.mutateAsync(form));
-      else if (mode === 'widget')
+          ? updateApplication.mutateAsync({ id: editing.id, data: application })
+          : createApplication.mutateAsync(application));
+      } else if (mode === 'widget') {
+        const widget = {
+          title: form.title,
+          type: form.type,
+          visible: form.visible,
+          config: form.type === 'PROMQL' ? { ...form.config, query: form.query } : form.config,
+        };
         await (editing
-          ? updateWidget.mutateAsync({
-              id: editing.id,
-              data: {
-                ...form,
-                config:
-                  form.type === 'PROMQL' ? { ...form.config, query: form.query } : form.config,
-              },
-            })
-          : createWidget.mutateAsync({
-              ...form,
-              config: form.type === 'PROMQL' ? { ...form.config, query: form.query } : form.config,
-            }));
-      else if (mode === 'brand') await updateBranding.mutateAsync(form);
-      else return;
+          ? updateWidget.mutateAsync({ id: editing.id, data: widget })
+          : createWidget.mutateAsync(widget));
+      } else if (mode === 'brand') {
+        await updateBranding.mutateAsync({
+          name: form.name,
+          wallpaper: form.wallpaper || '',
+          logo: form.logo || '',
+          favicon: form.favicon || '',
+          accent: form.accent,
+          theme: form.theme,
+        });
+      } else return;
       done();
     } catch {
     } finally {

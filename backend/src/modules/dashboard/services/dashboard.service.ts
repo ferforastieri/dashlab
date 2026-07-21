@@ -31,6 +31,15 @@ export class DashboardService {
         layouts: { where: { surface, preset: 'ZIMA' }, orderBy: { order: 'asc' } },
       },
     });
+    const legacyZima =
+      surface === 'WEB' &&
+      d.layouts.some((item) => item.kind === 'APPLICATION' && item.w === 2 && item.x >= 3);
+    if (legacyZima || d.layouts.some((item) => item.x + item.w > 12)) {
+      await this.db.layoutItem.deleteMany({
+        where: { dashboardId: d.id, surface, preset: 'ZIMA' },
+      });
+      d.layouts = [];
+    }
     if (!d.layouts.length) {
       await this.seedPreset(d.id, surface);
       d.layouts = await this.db.layoutItem.findMany({
@@ -335,7 +344,7 @@ export class DashboardService {
         push('WIDGET', w.id, i, 0, i + (i > 3 ? 1 : 0), 3, i === 3 ? 2 : 1),
       );
       apps.forEach((a, i) =>
-        push('APPLICATION', a.id, 100 + i, 3 + (i % 5) * 2, Math.floor(i / 5) * 2, 2, 2),
+        push('APPLICATION', a.id, 100 + i, 3 + (i % 3) * 3, Math.floor(i / 3) * 2, 3, 2),
       );
     } else {
       apps.forEach((a, i) =>
@@ -395,9 +404,9 @@ export class DashboardService {
           w = 1;
           h = 1;
         } else {
-          x = 3 + (n % 5) * 2;
-          y = Math.floor(n / 5) * 2;
-          w = 2;
+          x = 3 + (n % 3) * 3;
+          y = Math.floor(n / 3) * 2;
+          w = 3;
           h = 2;
         }
       } else if (mobile) {
