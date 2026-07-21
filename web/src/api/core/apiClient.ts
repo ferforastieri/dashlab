@@ -1,10 +1,20 @@
 import axios from 'axios';
+
+type SessionResponse = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 let access =
   sessionStorage.getItem('dashlab_access') || localStorage.getItem('dashlab_access') || '';
-const refresh = () => localStorage.getItem('dashlab_refresh') || '';
+let refreshPromise: Promise<void> | null = null;
+
+const getRefreshToken = () => localStorage.getItem('dashlab_refresh') || '';
 const notify = (message: string, type: 'success' | 'error' = 'success') =>
   window.dispatchEvent(new CustomEvent('dashlab:toast', { detail: { message, type } }));
+
 export const apiClient = axios.create({ baseURL: '/api', timeout: 10000 });
+
 apiClient.interceptors.request.use((config) => {
   if (access) config.headers.Authorization = `Bearer ${access}`;
   return config;
@@ -21,16 +31,24 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && refresh() && !original._retry) {
+    const isAuthenticationRequest = ['/auth/login', '/auth/register', '/auth/refresh'].some(
+      (path) => original?.url?.includes(path),
+    );
+
+    if (
+      error.response?.status === 401 &&
+      getRefreshToken() &&
+      original &&
+      !original._retry &&
+      !isAuthenticationRequest
+    ) {
       original._retry = true;
       try {
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken: refresh() });
-        setSession(data);
+        await refreshSession();
         original.headers.Authorization = `Bearer ${access}`;
         return apiClient(original);
       } catch {
-        clearSession();
-        location.reload();
+        return Promise.reject(error);
       }
     }
     if ((original?.method || 'get') !== 'get') {
@@ -40,15 +58,43 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-export function setSession(data: any) {
+
+export function setSession(data: SessionResponse) {
   access = data.accessToken;
   sessionStorage.setItem('dashlab_access', access);
   localStorage.setItem('dashlab_refresh', data.refreshToken);
 }
+
 export function clearSession() {
   access = '';
   sessionStorage.removeItem('dashlab_access');
   localStorage.removeItem('dashlab_access');
   localStorage.removeItem('dashlab_refresh');
 }
+
+export function hasRefreshToken() {
+  return Boolean(getRefreshToken());
+}
+
+export function refreshSession() {
+  if (refreshPromise) return refreshPromise;
+
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return Promise.reject(new Error('Refresh token ausente'));
+
+  refreshPromise = axios
+    .post<SessionResponse>('/api/auth/refresh', { refreshToken })
+    .then(({ data }) => setSession(data))
+    .catch((error) => {
+      clearSession();
+      window.dispatchEvent(new Event('dashlab:session-expired'));
+      throw error;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+}
+
 export const isAuthenticated = () => !!access;
