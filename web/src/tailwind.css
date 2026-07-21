@@ -216,17 +216,17 @@ a {
 .canvas-item > * { height: 100%; }
 .chrome-canvas-item { container-type: size; }
 .dashboard-element { position: relative; width: 100%; height: 100%; min-width: 0; overflow: hidden; }
-.chrome-drag-handle { position: absolute; z-index: 50; top: 0; right: 0; left: 0; height: 10px; cursor: move; background: color-mix(in srgb, var(--accent) 72%, transparent); }
+.chrome-drag-handle { position: absolute; z-index: 50; top: 0; right: 0; left: 0; height: 3px; cursor: move; background: color-mix(in srgb, var(--accent) 72%, transparent); }
 .chrome-brand { display: flex; width: 100%; height: 100%; min-width: 0; align-items: center; gap: 10px; }
 .chrome-brand .brand-mark { width: auto; height: min(100%, 64px); aspect-ratio: 1; flex: none; font-size: clamp(16px, 36cqh, 32px); }
 .chrome-brand .brand-copy { min-width: 0; }
-.chrome-brand .brand-copy strong { overflow: hidden; font-size: clamp(13px, 28cqh, 25px); text-overflow: ellipsis; white-space: nowrap; }
-.chrome-brand .brand-copy span { font-size: clamp(7px, 13cqh, 10px); }
-.chrome-clock, .chrome-weather { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font: 600 clamp(16px, 38cqh, 30px)/1 'IBM Plex Mono', monospace; }
+.chrome-brand .brand-copy strong { overflow: hidden; font-size: clamp(8px, 28cqh, 25px); text-overflow: ellipsis; white-space: nowrap; }
+.chrome-brand .brand-copy span { font-size: clamp(5px, 13cqh, 10px); }
+.chrome-clock, .chrome-weather { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font: 600 clamp(9px, 38cqh, 30px)/1 'IBM Plex Mono', monospace; }
 .chrome-weather .header-weather { width: 100%; justify-content: center; gap: clamp(5px, 2cqw, 12px); }
-.chrome-weather .header-weather > svg { width: clamp(18px, 34cqh, 30px); height: auto; }
+.chrome-weather .header-weather > svg { width: clamp(10px, 34cqh, 30px); height: auto; }
 .chrome-weather .header-weather > strong { font-size: inherit; }
-.chrome-weather .header-weather > span { font-size: clamp(9px, 18cqh, 14px); }
+.chrome-weather .header-weather > span { font-size: clamp(6px, 18cqh, 14px); }
 .dashboard-element-search .dash-search { width: 100%; height: 100%; }
 .chrome-actions { width: 100%; height: 100%; justify-content: space-evenly; gap: 2px; }
 .chrome-actions .icon-button { width: min(24cqw, 46px); height: min(84cqh, 46px); }
@@ -234,6 +234,7 @@ a {
 .chrome-add-button { display: grid; width: 100%; height: 100%; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 72%, white); border-radius: var(--element-radius); background: var(--accent); color: #151819; }
 .chrome-add-button svg { width: min(54cqw, 54cqh); height: min(54cqw, 54cqh); }
 .chrome-footer { width: 100%; height: 100%; min-height: 0; padding-inline: 8px; }
+.layout-edit-done { position: fixed; z-index: 70; bottom: 22px; left: 50%; min-height: 42px; transform: translateX(-50%); border: 1px solid color-mix(in srgb, var(--accent) 72%, white); border-radius: var(--element-radius); background: var(--accent); padding: 0 18px; color: #151819; font: 600 12px/1 'IBM Plex Mono', monospace; box-shadow: 0 9px 28px rgb(0 0 0 / 38%); }
 .canvas-resize-handle { position: absolute; z-index: 30; display: block !important; }
 .handle-n, .handle-s { right: 12px !important; left: 12px !important; height: 10px !important; }
 .handle-e, .handle-w { top: 12px !important; bottom: 12px !important; width: 10px !important; }
@@ -418,7 +419,7 @@ a {
 .image-upload-hint { flex-basis: 100%; color: #737d81; font: 400 10px/1.4 'IBM Plex Mono', monospace; letter-spacing: .02em; }
 .image-upload-spinner { animation: equipment-spin 900ms linear infinite; }
 
-.toast-stack { position: fixed; z-index: 50; top: 18px; right: 18px; display: grid; width: min(390px, calc(100vw - 28px)); gap: 7px; }
+.toast-stack { position: fixed; z-index: 100; top: 50%; left: 50%; display: grid; width: min(390px, calc(100vw - 28px)); transform: translate(-50%, -50%); gap: 7px; }
 .system-toast {
   position: relative;
   display: grid;
@@ -476,7 +477,7 @@ a {
   .free-canvas { min-width: 100%; }
   .add-button { right: 14px; bottom: 17px; }
   .auth-card, .modal-panel { padding: 24px; }
-  .toast-stack { top: 10px; right: 10px; }
+  .toast-stack { top: 50%; left: 50%; }
   .image-upload-field { grid-template-columns: 68px 1fr; gap: 10px; }
   .image-upload-preview { width: 64px; height: 64px; }
 }

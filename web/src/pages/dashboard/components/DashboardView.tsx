@@ -163,13 +163,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
                 size={{ width: layout.w, height: layout.h }}
-                minWidth={72}
-                minHeight={72}
+                minWidth={dashboardElement ? 32 : 72}
+                minHeight={dashboardElement ? 20 : 72}
                 disableDragging={!layoutEdit}
                 enableResizing={layoutEdit}
-                dragHandleClassName={dashboardElement ? 'chrome-drag-handle' : undefined}
+                dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
                 resizeHandleClasses={resizeHandleClasses}
-                cancel="button,a,input,select,textarea"
+                cancel={dashboardElement ? undefined : 'button,a,input,select,textarea'}
                 onDragStop={(_event, position) => {
                   void updateLayout(layout.id, { x: position.x, y: position.y });
                 }}
@@ -183,7 +183,14 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 }}
               >
                 {dashboardElement ? (
-                  <div className={`dashboard-element dashboard-element-${dashboardElement.toLowerCase()}`}>
+                  <div
+                    className={`dashboard-element dashboard-element-${dashboardElement.toLowerCase()}`}
+                    onClickCapture={(event) => {
+                      if (!layoutEdit) return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                  >
                     {layoutEdit && <div className="chrome-drag-handle" aria-hidden="true" />}
                     {renderDashboardElement(dashboardElement)}
                   </div>
@@ -253,6 +260,11 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           })}
         </section>
       </main>
+      {layoutEdit && (
+        <button className="layout-edit-done" onClick={() => setLayoutEdit(false)}>
+          Concluir edição
+        </button>
+      )}
       {modal && (
         <DashboardEditor
           type={modal}
