@@ -1,0 +1,1 @@
+import {useQuery} from '@tanstack/react-query';import {client} from '../client';import {keys} from '../keys';export const useSessions=()=>useQuery({queryKey:keys.sessions,queryFn:async()=>(await client.get('/auth/sessions')).data});

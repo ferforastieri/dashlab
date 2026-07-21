@@ -1,0 +1,1 @@
+import {useMutation,useQueryClient} from '@tanstack/react-query';import {client} from '../client';import {keys} from '../keys';export const useRevokeSession=()=>{const q=useQueryClient();return useMutation({mutationFn:async(id:string)=>(await client.delete(`/auth/sessions/${id}`)).data,onSuccess:()=>q.invalidateQueries({queryKey:keys.sessions})})};

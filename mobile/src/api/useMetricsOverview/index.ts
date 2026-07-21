@@ -1,0 +1,1 @@
+import {useQuery} from '@tanstack/react-query';import {client} from '../client';import {keys} from '../keys';export const useMetricsOverview=()=>useQuery({queryKey:keys.metrics,queryFn:async()=>(await client.get('/metrics/overview')).data,refetchInterval:10000});

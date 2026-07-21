@@ -16,7 +16,7 @@ Não existe um painel administrativo separado: links, widgets, wallpaper, cores 
 - Contas e dashboards privados por usuário.
 - Interface web fullscreen com grade de apps, widgets e dock.
 - Aplicativo Android nativo com Expo.
-- Layouts independentes para web e mobile.
+- Presets editáveis na web e um layout Zima empilhado otimizado para mobile.
 - Cadastro de links, deep links, categorias e ícones.
 - Widgets de CPU, memória, discos, rede, relógio, clima, pesquisa e status.
 - Consultas PromQL personalizadas com acesso controlado ao Prometheus.
@@ -41,6 +41,13 @@ Expo Android ───┘       │
 | `mobile/` | Aplicativo React Native/Expo para Android. |
 | `nginx/` | SPA e proxy interno de `/api` para o backend. |
 | `.gitea/workflows/` | Build, testes, deploy Docker e disparo do Expo Cloud. |
+
+### Organização do código
+
+- O backend separa `controllers/`, `services/`, `dto/`, `guards/`, `prisma/` e `test/`.
+- Web e mobile centralizam o Axios em `api/client.ts`.
+- Cada endpoint consumido possui sua própria pasta e hook React Query, como `api/useLogin/` e `api/useMetricsHistory/`.
+- Tailwind CSS atende a web e NativeWind fornece a mesma base utilitária no Expo.
 
 ## Desenvolvimento
 

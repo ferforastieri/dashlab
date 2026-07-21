@@ -19,7 +19,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { api, auth, clearAuth, isLogged } from "./api";
+import {clearSession,isAuthenticated} from './api/client';
+import {useLogin} from './api/useLogin';import {useRegister} from './api/useRegister';import {useDashboard} from './api/useDashboard';import {useMetricsOverview} from './api/useMetricsOverview';import {useMetricsHistory} from './api/useMetricsHistory';import {useApplicationStatuses} from './api/useApplicationStatuses';import {useLayoutPresets} from './api/useLayoutPresets';import {useSaveLayout} from './api/useSaveLayout';import {useSelectLayoutPreset} from './api/useSelectLayoutPreset';import {useResetLayoutPreset} from './api/useResetLayoutPreset';import {useDeleteApplication} from './api/useDeleteApplication';import {useDeleteWidget} from './api/useDeleteWidget';import {useWidgetData} from './api/useWidgetData';import {useWeather} from './api/useWeather';import {useCreateApplication} from './api/useCreateApplication';import {useUpdateApplication} from './api/useUpdateApplication';import {useCreateWidget} from './api/useCreateWidget';import {useUpdateWidget} from './api/useUpdateWidget';import {useUpdateBranding} from './api/useUpdateBranding';import {useUploadAsset} from './api/useUploadAsset';import {useSessions} from './api/useSessions';import {useChangePassword} from './api/useChangePassword';import {useLogoutAll} from './api/useLogoutAll';import {useDeleteAccount} from './api/useDeleteAccount';import {useRevokeSession} from './api/useRevokeSession';
 type AppItem = {
   id: string;
   name: string;
@@ -51,22 +52,13 @@ type Dash = {
   layoutPreset: 'FREE'|'ZIMA'|'FOCUS'|'COMPACT';
 };
 type Preset={id:'FREE'|'ZIMA'|'FOCUS'|'COMPACT';name:string;description:string};
-const icons: any = {
-  nextcloud: "☁️",
-  immich: "🌄",
-  jellyfin: "▶️",
-  "shield-checkmark": "🔐",
-  "git-branch": "⑂",
-  "stats-chart": "📊",
-  shield: "🛡️",
-  server: "▦",
-};
+const appImage=(app:AppItem)=>app.icon?.startsWith('http')?app.icon:`${new URL(app.url).origin}/favicon.ico`;
 export function App() {
-  const [logged, setLogged] = useState(isLogged());
+  const [logged, setLogged] = useState(isAuthenticated());
   return <><ToastHost />{!logged ? <Auth onDone={() => setLogged(true)} /> :
     <Dashboard
       onLogout={() => {
-        clearAuth();
+        clearSession();
         setLogged(false);
       }}
     />
@@ -78,6 +70,7 @@ function ToastHost(){
   return <div className="toast-stack">{items.map(x=><div className={`toast ${x.type}`} key={x.id}>{x.message}</div>)}</div>
 }
 function Auth({ onDone }: { onDone: () => void }) {
+  const login=useLogin(),createAccount=useRegister();
   const [register, setRegister] = useState(false),
     [username, setUser] = useState(""),
     [password, setPass] = useState(""),
@@ -88,7 +81,7 @@ function Auth({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError("");
     try {
-      await auth(register ? "register" : "login", { username, password });
+      await (register?createAccount:login).mutateAsync({ username, password });
       onDone();
     } catch {} finally {
       setBusy(false);
@@ -136,31 +129,17 @@ function Auth({ onDone }: { onDone: () => void }) {
   );
 }
 function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [dash, setDash] = useState<Dash | null>(null),
-    [metrics, setMetrics] = useState<any>({}),
-    [query, setQuery] = useState(""),
+  const dashboardQuery=useDashboard(),metricsQuery=useMetricsOverview(),historyQuery=useMetricsHistory(),statusesQuery=useApplicationStatuses(),presetsQuery=useLayoutPresets(),saveLayout=useSaveLayout(),selectPreset=useSelectLayoutPreset(),resetLayout=useResetLayoutPreset(),deleteApp=useDeleteApplication(),deleteWidget=useDeleteWidget();
+  const dash=(dashboardQuery.data||null) as Dash|null,metrics=metricsQuery.data||{},history=historyQuery.data||{},presets=(presetsQuery.data||[]) as Preset[],statuses=Object.fromEntries(((statusesQuery.data||[]) as any[]).map(x=>[x.id,x]));
+  const [query, setQuery] = useState(""),
     [modal, setModal] = useState<"app" | "widget" | "brand" | "account" | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | null>(null),
     [layoutEdit,setLayoutEdit]=useState(false),
     [showLayouts,setShowLayouts]=useState(false),
-    [presets,setPresets]=useState<Preset[]>([]),
     [drag, setDrag] = useState<number | null>(null),
     [menu, setMenu] = useState<string | null>(null),
-    [statuses, setStatuses] = useState<Record<string, any>>({}),
     [confirmDelete,setConfirmDelete] = useState<{kind:string,id:string,name:string}|null>(null);
-  const load = () => api("/dashboard?surface=web").then(setDash);
-  useEffect(() => {
-    load();
-    api('/layout-presets').then(setPresets).catch(()=>{});
-    const tick = () =>
-      api("/metrics/overview")
-        .then(setMetrics)
-        .catch(() => {});
-    tick();
-    api('/applications/status').then((xs:any[]) => setStatuses(Object.fromEntries(xs.map(x => [x.id,x])))).catch(()=>{});
-    const i = setInterval(tick, 10000);
-    return () => clearInterval(i);
-  }, []);
+  const load=()=>dashboardQuery.refetch();
   useEffect(() => {
     if (!dash) return;
     document.title = dash.branding?.name || dash.name;
@@ -184,33 +163,25 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     if (dash.layoutPreset === 'FREE') { const [m] = next.splice(drag, 1); next.splice(at, 0, m); }
     else { const a=next[drag],b=next[at];[a.x,b.x]=[b.x,a.x];[a.y,b.y]=[b.y,a.y]; }
     setDrag(null);
-    await api("/layouts/web", {
-      method: "PUT",
-      body: JSON.stringify({ items:
-        next.map((x, i) => ({
+    await saveLayout.mutateAsync(next.map((x, i) => ({
           ...x,
           order: i,
           x: dash.layoutPreset === 'FREE' ? i % 4 : x.x,
           y: dash.layoutPreset === 'FREE' ? Math.floor(i / 4) : x.y,
           w: x.w || (x.kind === 'WIDGET' ? 2 : 1),
           h: x.h || 1,
-        })),
-      }),
-    });
-    load();
+        })));
   }
   async function resize(layout: Layout, axis:'w'|'h', delta: number) {
     const max=axis==='w'?(dash?.layoutPreset==='FREE'?4:12):6;
     const next = ordered.map(x => x.id === layout.id ? { ...x, [axis]: Math.max(1, Math.min(max, (x[axis] || 1) + delta)) } : x);
-    await api('/layouts/web', { method:'PUT', body: JSON.stringify({ items: next.map(({kind,applicationId,widgetId,x,y,w,h}) => ({kind,applicationId,widgetId,x,y,w,h})) }) });
-    load();
+    await saveLayout.mutateAsync(next.map(({kind,applicationId,widgetId,x,y,w,h}) => ({kind,applicationId,widgetId,x,y,w,h})));
   }
-  async function choosePreset(preset:Preset['id']){await api('/layout-presets/active',{method:'PUT',body:JSON.stringify({preset,surface:'WEB'})});setShowLayouts(false);load()}
-  async function resetPreset(){if(!dash)return;await api(`/layout-presets/${dash.layoutPreset}/reset`,{method:'POST',body:JSON.stringify({surface:'WEB'})});load()}
+  async function choosePreset(preset:Preset['id']){await selectPreset.mutateAsync(preset);setShowLayouts(false)}
+  async function resetPreset(){if(dash)await resetLayout.mutateAsync(dash.layoutPreset)}
   async function remove(kind: string, id: string) {
-    await api(`/${kind}/${id}`, { method: "DELETE" });
+    await (kind==='applications'?deleteApp.mutateAsync(id):deleteWidget.mutateAsync(id));
     setMenu(null);
-    load();
   }
   if (!dash) return <div className="loading">Carregando seu DashLab…</div>;
   const branding = dash.branding || {};
@@ -266,7 +237,6 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           </button>
         </div>
       </header>
-      <div className="layout-bar"><div><LayoutGrid/><strong>{presets.find(x=>x.id===dash.layoutPreset)?.name || dash.layoutPreset}</strong></div>{layoutEdit&&<><span>Arraste os cards e ajuste seus tamanhos</span><button onClick={resetPreset}><RotateCcw/> Restaurar</button><button className="primary" onClick={()=>setLayoutEdit(false)}>Concluir</button></>}</div>
       <main>
         <section className="app-grid">
           {ordered.map((layout, index) => {
@@ -297,13 +267,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <span>
-                        {app.icon?.startsWith("http") ? (
-                          <img src={app.icon} />
-                        ) : (
-                          icons[app.icon || ""] || "◉"
-                        )}
-                      </span>
+                      <img src={appImage(app)} alt="" onError={e=>{e.currentTarget.src='/favicon.ico'}} />
                     </a>
                     <b>{app.name}</b>
                     <i className={`status-dot ${statuses[app.id]?.online ? 'online' : statuses[app.id] ? 'offline' : ''}`} title={statuses[app.id] ? `${statuses[app.id].online?'Online':'Offline'} · ${statuses[app.id].latency} ms` : 'Verificando'} />
@@ -326,6 +290,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                   <WidgetCard
                     widget={widget!}
                     metrics={metrics}
+                    history={history}
                     onEdit={() => { setEditing(widget!); setModal('widget'); }}
                     onResize={(axis,d) => resize(layout,axis,d)}
                     editingLayout={layoutEdit}
@@ -342,7 +307,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           .filter((a) => a.inDock)
           .map((a) => (
             <a href={a.url} target="_blank" rel="noreferrer" key={a.id}>
-              <span>{a.icon?.startsWith('http') ? <img src={a.icon} /> : icons[a.icon || ""] || "◉"}</span>
+              <img src={appImage(a)} alt="" onError={e=>{e.currentTarget.src='/favicon.ico'}} />
             </a>
           ))}
       </div>
@@ -363,7 +328,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         />
       )}
       {confirmDelete&&<ConfirmModal title="Excluir item" message={`Deseja excluir “${confirmDelete.name}”? Esta ação não pode ser desfeita.`} confirmLabel="Excluir" danger onCancel={()=>setConfirmDelete(null)} onConfirm={async()=>{const x=confirmDelete;setConfirmDelete(null);await remove(x.kind,x.id)}}/>}
-      {showLayouts&&<LayoutPicker presets={presets} active={dash.layoutPreset} close={()=>setShowLayouts(false)} choose={choosePreset}/>}
+      {showLayouts&&<LayoutPicker presets={presets} active={dash.layoutPreset} close={()=>setShowLayouts(false)} choose={choosePreset} reset={resetPreset}/>}
     </div>
   );
 }
@@ -382,6 +347,7 @@ function Clock() {
 function WidgetCard({
   widget,
   metrics,
+  history,
   onDelete,
   onEdit,
   onResize,
@@ -389,19 +355,13 @@ function WidgetCard({
 }: {
   widget: Widget;
   metrics: any;
+  history:any;
   onDelete: () => void;
   onEdit: () => void;
   onResize: (axis:'w'|'h',delta:number) => void;
   editingLayout:boolean;
 }) {
-  const [remote, setRemote] = useState<any>(null);
-  useEffect(() => {
-    if (widget.type === 'PROMQL') api(`/widgets/${widget.id}/data`).then(setRemote).catch(()=>setRemote(null));
-    if (widget.type === 'WEATHER') {
-      const { latitude = -23.55, longitude = -46.63 } = widget.config || {};
-      api(`/weather?latitude=${latitude}&longitude=${longitude}`).then(setRemote).catch(()=>setRemote(null));
-    }
-  }, [widget.id, widget.type, widget.config]);
+  const {latitude=-23.55,longitude=-46.63}=widget.config||{},promQuery=useWidgetData(widget.id,widget.type==='PROMQL'),weatherQuery=useWeather(latitude,longitude,widget.type==='WEATHER'),remote=widget.type==='PROMQL'?promQuery.data:weatherQuery.data;
   const promValue = remote?.data?.result?.[0]?.value?.[1];
   const weatherValue = remote?.current?.temperature_2m != null ? `${Math.round(remote.current.temperature_2m)}°C` : '—';
   const map: any = {
@@ -439,9 +399,11 @@ function WidgetCard({
           </span>
         ))}
       </div>
+      {['SYSTEM','STORAGE','NETWORK'].includes(widget.type)&&<MetricChart series={widget.type==='SYSTEM'?[history.cpu||[],history.memory||[]]:widget.type==='STORAGE'?[history.disk||[]]:[history.download||[],history.upload||[]]}/>}
     </div>
   );
 }
+function MetricChart({series}:{series:Array<Array<{timestamp:number,value:number}>>}){const colors=['var(--accent)','#4ad6c8'];const paths=series.map(points=>{if(points.length<2)return'';const values=points.map(x=>x.value),min=Math.min(...values),max=Math.max(...values),span=max-min||1;return points.map((p,i)=>`${i?'L':'M'} ${(i/(points.length-1))*100} ${32-((p.value-min)/span)*28}`).join(' ')});return <svg className="metric-chart" viewBox="0 0 100 36" preserveAspectRatio="none">{paths.map((d,i)=><path key={i} d={d} fill="none" stroke={colors[i]} strokeWidth="1.8" vectorEffect="non-scaling-stroke"/>)}</svg>}
 function Editor({
   type,
   dash,
@@ -455,6 +417,7 @@ function Editor({
   close: () => void;
   done: () => void;
 }) {
+  const createApplication=useCreateApplication(),updateApplication=useUpdateApplication(),createWidget=useCreateWidget(),updateWidget=useUpdateWidget(),updateBranding=useUpdateBranding(),uploadAsset=useUploadAsset();
   const [mode, setMode] = useState(type),
     [form, setForm] = useState<any>({
       name: "",
@@ -474,27 +437,20 @@ function Editor({
     setBusy(true); setError('');
     try {
     if (mode === "app")
-      await api(editing ? `/applications/${editing.id}` : "/applications", {
-        method: editing ? "PATCH" : "POST",
-        body: JSON.stringify(form),
-      });
+      await (editing?updateApplication.mutateAsync({id:editing.id,data:form}):createApplication.mutateAsync(form));
     else if (mode === "widget")
-      await api(editing ? `/widgets/${editing.id}` : "/widgets", {
-        method: editing ? "PATCH" : "POST",
-        body: JSON.stringify({
+      await (editing?updateWidget.mutateAsync({id:editing.id,data:{
           ...form,
           config: form.type === "PROMQL" ? { ...form.config, query: form.query } : form.config,
-        }),
-      });
-    else if (mode === 'brand') await api("/branding", { method: "PUT", body: JSON.stringify(form) });
+        }}):createWidget.mutateAsync({...form,config:form.type==='PROMQL'?{...form.config,query:form.query}:form.config}));
+    else if (mode === 'brand') await updateBranding.mutateAsync(form);
     else return;
     done();
     } catch {} finally { setBusy(false); }
   }
   async function upload(field:string, file?:File) {
     if (!file) return;
-    const body = new FormData(); body.append('file',file);
-    const asset = await api('/assets',{method:'POST',body});
+    const asset = await uploadAsset.mutateAsync(file);
     setForm((x:any)=>({...x,[field]:asset.url}));
   }
   return (
@@ -654,15 +610,14 @@ function Editor({
   );
 }
 function Account({close}:{close:()=>void}) {
-  const [currentPassword,setCurrent]=useState(''),[newPassword,setNew]=useState(''),[sessions,setSessions]=useState<any[]>([]),[confirmAccount,setConfirmAccount]=useState(false);
-  useEffect(()=>{api('/auth/sessions').then(setSessions).catch(()=>{})},[]);
-  async function change(){try{await api('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword,newPassword})});setTimeout(()=>{clearAuth();location.reload()},900)}catch{}}
-  async function logoutAll(){await api('/auth/logout-all',{method:'POST'});clearAuth();location.reload()}
-  async function remove(){try{await api('/auth/account',{method:'DELETE',body:JSON.stringify({password:currentPassword})});setTimeout(()=>{clearAuth();location.reload()},900)}catch{}}
-  return <><div className="account"><label>Senha atual<input type="password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/></label><label>Nova senha<input type="password" minLength={8} value={newPassword} onChange={e=>setNew(e.target.value)}/></label><button type="button" className="primary" onClick={change}>Alterar senha</button><h3>Sessões ativas ({sessions.length})</h3>{sessions.map(x=><div className="session" key={x.id}><span>{new Date(x.createdAt).toLocaleString('pt-BR')}</span><button type="button" onClick={async()=>{await api(`/auth/sessions/${x.id}`,{method:'DELETE'});setSessions(sessions.filter(s=>s.id!==x.id))}}>Revogar</button></div>)}<button type="button" className="secondary" onClick={logoutAll}>Encerrar todas as sessões</button><button type="button" className="danger" onClick={()=>setConfirmAccount(true)}>Excluir minha conta</button><button type="button" className="link" onClick={close}>Fechar</button></div>{confirmAccount&&<ConfirmModal title="Excluir conta" message="Todo o dashboard, aplicativos, widgets e imagens serão excluídos permanentemente." confirmLabel="Excluir permanentemente" danger onCancel={()=>setConfirmAccount(false)} onConfirm={()=>{setConfirmAccount(false);remove()}}/>}</>
+  const [currentPassword,setCurrent]=useState(''),[newPassword,setNew]=useState(''),[confirmAccount,setConfirmAccount]=useState(false);const sessionsQuery=useSessions(),changePassword=useChangePassword(),logoutAllMutation=useLogoutAll(),deleteAccount=useDeleteAccount(),revokeSession=useRevokeSession(),sessions=(sessionsQuery.data||[]) as any[];
+  async function change(){try{await changePassword.mutateAsync({currentPassword,newPassword});setTimeout(()=>{clearSession();location.reload()},900)}catch{}}
+  async function logoutAll(){await logoutAllMutation.mutateAsync();location.reload()}
+  async function remove(){try{await deleteAccount.mutateAsync(currentPassword);setTimeout(()=>location.reload(),900)}catch{}}
+  return <><div className="account"><label>Senha atual<input type="password" value={currentPassword} onChange={e=>setCurrent(e.target.value)}/></label><label>Nova senha<input type="password" minLength={8} value={newPassword} onChange={e=>setNew(e.target.value)}/></label><button type="button" className="primary" onClick={change}>Alterar senha</button><h3>Sessões ativas ({sessions.length})</h3>{sessions.map(x=><div className="session" key={x.id}><span>{new Date(x.createdAt).toLocaleString('pt-BR')}</span><button type="button" onClick={()=>revokeSession.mutate(x.id)}>Revogar</button></div>)}<button type="button" className="secondary" onClick={logoutAll}>Encerrar todas as sessões</button><button type="button" className="danger" onClick={()=>setConfirmAccount(true)}>Excluir minha conta</button><button type="button" className="link" onClick={close}>Fechar</button></div>{confirmAccount&&<ConfirmModal title="Excluir conta" message="Todo o dashboard, aplicativos, widgets e imagens serão excluídos permanentemente." confirmLabel="Excluir permanentemente" danger onCancel={()=>setConfirmAccount(false)} onConfirm={()=>{setConfirmAccount(false);remove()}}/>}</>
 }
-function LayoutPicker({presets,active,close,choose}:{presets:Preset[],active:string,close:()=>void,choose:(id:Preset['id'])=>void}){
+function LayoutPicker({presets,active,close,choose,reset}:{presets:Preset[],active:string,close:()=>void,choose:(id:Preset['id'])=>void,reset:()=>void}){
   const icons:Record<string,string>={FREE:'▦',ZIMA:'◫',FOCUS:'▤',COMPACT:'▦'};
-  return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><div className="modal layout-picker"><button className="close" onClick={close}><X/></button><h2>Escolha um layout</h2><p>As posições de cada layout ficam salvas separadamente.</p><div className="preset-grid">{presets.map(p=><button key={p.id} className={`preset-card ${active===p.id?'selected':''}`} onClick={()=>choose(p.id)}><span className="preset-preview">{icons[p.id]}</span><strong>{p.name}</strong><small>{p.description}</small>{active===p.id&&<i>Ativo</i>}</button>)}</div></div></div>
+  return <div className="overlay" onMouseDown={e=>e.target===e.currentTarget&&close()}><div className="modal layout-picker"><button className="close" onClick={close}><X/></button><h2>Escolha um layout</h2><p>As posições de cada layout ficam salvas separadamente.</p><div className="preset-grid">{presets.map(p=><button key={p.id} className={`preset-card ${active===p.id?'selected':''}`} onClick={()=>choose(p.id)}><span className="preset-preview">{icons[p.id]}</span><strong>{p.name}</strong><small>{p.description}</small>{active===p.id&&<i>Ativo</i>}</button>)}</div><button className="secondary reset-layout" onClick={reset}><RotateCcw/> Restaurar layout atual</button></div></div>
 }
 function ConfirmModal({title,message,confirmLabel,onCancel,onConfirm,danger=false}:{title:string,message:string,confirmLabel:string,onCancel:()=>void,onConfirm:()=>void|Promise<void>,danger?:boolean}){return <div className="overlay confirm-overlay"><div className="modal confirm-modal" role="dialog" aria-modal="true"><h2>{title}</h2><p>{message}</p><div className="confirm-actions"><button className="secondary" onClick={onCancel}>Cancelar</button><button className={danger?'danger solid':'primary'} onClick={onConfirm}>{confirmLabel}</button></div></div></div>}

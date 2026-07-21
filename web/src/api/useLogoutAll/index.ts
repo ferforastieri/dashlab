@@ -1,0 +1,1 @@
+import {useMutation} from '@tanstack/react-query';import {client,clearSession} from '../client';export const useLogoutAll=()=>useMutation({mutationFn:async()=>(await client.post('/auth/logout-all')).data,onSuccess:clearSession});

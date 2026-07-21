@@ -1,12 +1,12 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import * as Linking from "expo-linking";
-import * as SecureStore from "expo-secure-store";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {clearSession,initializeApi,setToastSink} from './src/api/client';import {useConnectServer} from './src/api/useConnectServer';import {useLogin} from './src/api/useLogin';import {useRegister} from './src/api/useRegister';import {useDashboard} from './src/api/useDashboard';import {useMetricsOverview} from './src/api/useMetricsOverview';import {useMetricsHistory} from './src/api/useMetricsHistory';import {useCreateApplication} from './src/api/useCreateApplication';import {useUpdateApplication} from './src/api/useUpdateApplication';import {useCreateWidget} from './src/api/useCreateWidget';import {useUpdateWidget} from './src/api/useUpdateWidget';import {useUpdateBranding} from './src/api/useUpdateBranding';import {useDeleteApplication} from './src/api/useDeleteApplication';import {useDeleteWidget} from './src/api/useDeleteWidget';import {useSaveLayout} from './src/api/useSaveLayout';import {useChangePassword} from './src/api/useChangePassword';
 type Phase = "loading" | "server" | "auth" | "dashboard";
 type AppItem = {
   id: string;
@@ -27,37 +28,7 @@ type AppItem = {
   icon?: string;
   inDock: boolean;
 };
-const STORE = "dashlab_server",
-  TOKEN = "dashlab_token", REFRESH = 'dashlab_refresh';
-let server = "";
-let token = "";
-let toastSink: (message:string,type:'success'|'error')=>void = ()=>{};
-async function request(path: string, options: RequestInit = {}) {
-  let r = await fetch(`${server}${path}`, {
-    ...options,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-  if (r.status === 401 && path !== '/auth/refresh') {
-    const refreshToken = await SecureStore.getItemAsync(REFRESH);
-    if (refreshToken) {
-      const rr = await fetch(`${server}/auth/refresh`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({refreshToken})});
-      if (rr.ok) { const session=await rr.json(); token=session.accessToken; await SecureStore.setItemAsync(TOKEN,token); await SecureStore.setItemAsync(REFRESH,session.refreshToken); r=await fetch(`${server}${path}`,{...options,headers:{'content-type':'application/json',authorization:`Bearer ${token}`,...options.headers}}); }
-    }
-  }
-  const d = await r.json().catch(() => ({}));
-  const method=(options.method||'GET').toUpperCase();
-  if (!r.ok) {
-    const message=Array.isArray(d.message)?d.message[0]:d.message || 'Não foi possível continuar';
-    if(method!=='GET') toastSink(message,'error');
-    throw new Error(message);
-  }
-  if(method!=='GET'&&path!=='/auth/refresh'&&d.message) toastSink(d.message,'success');
-  return d;
-}
+const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 function normalize(value: string) {
   const url = new URL(value.trim());
   if (!["http:", "https:"].includes(url.protocol))
@@ -68,17 +39,9 @@ function normalize(value: string) {
 export default function App() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [toast,setToast]=useState<{message:string,type:'success'|'error'}|null>(null);
-  useEffect(()=>{toastSink=(message,type)=>{setToast({message,type});setTimeout(()=>setToast(null),3500)};return()=>{toastSink=()=>{}}},[]);
+  useEffect(()=>{setToastSink((message,type)=>{setToast({message,type});setTimeout(()=>setToast(null),3500)});return()=>setToastSink(()=>{})},[]);
   useEffect(() => {
-    Promise.all([
-      AsyncStorage.getItem(STORE),
-      SecureStore.getItemAsync(TOKEN),
-    ]).then(async ([s, t]) => {
-      if (!s) return setPhase("server");
-      server = s;
-      token = t || "";
-      setPhase(t ? "dashboard" : "auth");
-    });
+    initializeApi().then(({hasServer,authenticated})=>setPhase(!hasServer?'server':authenticated?'dashboard':'auth'));
   }, []);
   let content:React.ReactNode;
   if (phase === "loading")
@@ -98,26 +61,22 @@ export default function App() {
   else content = (
     <Dashboard
       logout={async () => {
-        await SecureStore.deleteItemAsync(TOKEN);
-        await SecureStore.deleteItemAsync(REFRESH);
-        token = "";
+        await clearSession();queryClient.clear();
         setPhase("auth");
       }}
     />
   );
-  return <View style={{flex:1}}>{content}{toast&&<View style={[s.toast,toast.type==='error'&&s.toastError]}><Text style={s.toastText}>{toast.message}</Text></View>}</View>;
+  return <QueryClientProvider client={queryClient}><View className="flex-1">{content}{toast&&<View style={[s.toast,toast.type==='error'&&s.toastError]}><Text style={s.toastText}>{toast.message}</Text></View>}</View></QueryClientProvider>;
 }
 function ServerSetup({ done }: { done: () => void }) {
+  const connectServer=useConnectServer();
   const [url, setUrl] = useState("https://dashboard.example.invalid"),
     [busy, setBusy] = useState(false),[error,setError]=useState('');
   async function connect() {
     setBusy(true);
     try {
       const normalized = normalize(url);
-      const r = await fetch(`${normalized}/health`);
-      if (!r.ok) throw new Error();
-      server = normalized;
-      await AsyncStorage.setItem(STORE, normalized);
+      await connectServer.mutateAsync(normalized);
       done();
     } catch {
       setError('Não foi possível conectar ao endereço informado.');
@@ -152,6 +111,7 @@ function ServerSetup({ done }: { done: () => void }) {
   );
 }
 function Auth({ done, reset }: { done: () => void; reset: () => void }) {
+  const login=useLogin(),createAccount=useRegister();
   const [register, setRegister] = useState(false),
     [username, setUsername] = useState(""),
     [password, setPassword] = useState(""),
@@ -159,13 +119,7 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
   async function submit() {
     setBusy(true);
     try {
-      const d = await request(`/auth/${register ? "register" : "login"}`, {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
-      token = d.accessToken;
-      await SecureStore.setItemAsync(TOKEN, token);
-      await SecureStore.setItemAsync(REFRESH, d.refreshToken);
+      await (register?createAccount:login).mutateAsync({username,password});
       done();
     } catch {} finally {
       setBusy(false);
@@ -211,11 +165,8 @@ function Auth({ done, reset }: { done: () => void; reset: () => void }) {
   );
 }
 function Dashboard({ logout }: { logout: () => void }) {
-  const [data, setData] = useState<any>(null),
-    [metrics, setMetrics] = useState<Record<string, number | null>>({}),
-    [show, setShow] = useState(false),
-    [showLayouts,setShowLayouts]=useState(false),
-    [presets,setPresets]=useState<any[]>([]),
+  const dashboardQuery=useDashboard(),metricsQuery=useMetricsOverview(),historyQuery=useMetricsHistory(),createApplication=useCreateApplication(),updateApplication=useUpdateApplication(),createWidget=useCreateWidget(),updateWidget=useUpdateWidget(),updateBranding=useUpdateBranding(),deleteApplication=useDeleteApplication(),deleteWidget=useDeleteWidget(),saveLayout=useSaveLayout(),changePassword=useChangePassword(),data=dashboardQuery.data,metrics=(metricsQuery.data||{}) as Record<string,number|null>,history=historyQuery.data||{};
+  const [show, setShow] = useState(false),
     [mode,setMode] = useState<'app'|'widget'|'brand'|'account'>('app'),
     [selected,setSelected] = useState<any>(null),
     [actionItem,setActionItem] = useState<{kind:'app'|'widget',item:any}|null>(null),
@@ -225,36 +176,22 @@ function Dashboard({ logout }: { logout: () => void }) {
     [name, setName] = useState(""),
     [url, setUrl] = useState("https://"),
     [extra,setExtra] = useState('');
-  const load = () =>
-    request("/dashboard?surface=mobile")
-      .then(setData)
-      .catch((e) => setInfo({title:'Não foi possível carregar',message:e.message}));
-  useEffect(() => {
-    load();
-    request('/layout-presets').then(setPresets).catch(()=>{});
-    const loadMetrics = () =>
-      request("/metrics/overview")
-        .then(setMetrics)
-        .catch(() => undefined);
-    loadMetrics();
-    const timer = setInterval(loadMetrics, 10000);
-    return () => clearInterval(timer);
-  }, []);
   function edit(kind:'app'|'widget', item:any) { setMode(kind);setSelected(item);setName(item.name || item.title);setUrl(item.url || 'https://');setExtra(item.category || item.type || 'SYSTEM');setShow(true); }
   async function save() {
     try {
-      if(mode==='app') await request(selected?`/applications/${selected.id}`:"/applications", { method:selected?'PATCH':'POST', body:JSON.stringify({ name, url, category:extra || undefined }) });
-      if(mode==='widget') await request(selected?`/widgets/${selected.id}`:'/widgets',{method:selected?'PATCH':'POST',body:JSON.stringify({title:name,type:extra||'SYSTEM',config:selected?.config||{}})});
-      if(mode==='brand') await request('/branding',{method:'PUT',body:JSON.stringify({name,accent:extra || '#ff7a1a',wallpaper:url==='https://'?'':url})});
-      if(mode==='account') await request('/auth/change-password',{method:'POST',body:JSON.stringify({currentPassword:name,newPassword:url})});
+      if(mode==='app') await(selected?updateApplication.mutateAsync({id:selected.id,data:{name,url,category:extra||undefined}}):createApplication.mutateAsync({name,url,category:extra||undefined}));
+      if(mode==='widget') await(selected
+        ?updateWidget.mutateAsync({id:selected.id,data:{title:name,type:extra||'SYSTEM',config:selected.config||{}}})
+        :createWidget.mutateAsync({title:name,type:extra||'SYSTEM',config:{}}));
+      if(mode==='brand') await updateBranding.mutateAsync({name,accent:extra||'#ff7a1a',wallpaper:url==='https://'?'':url});
+      if(mode==='account') await changePassword.mutateAsync({currentPassword:name,newPassword:url});
       setShow(false);
       setName("");
       setSelected(null); setExtra(''); setUrl('https://');
-      load();
     } catch {}
   }
-  async function remove(){if(!confirmDelete)return;const x=confirmDelete;setConfirmDelete(null);try{await request(`/${x.kind}/${x.id}`,{method:'DELETE'});load()}catch{}}
-  async function saveLayouts(layouts:any[]){await request('/layouts/mobile',{method:'PUT',body:JSON.stringify({items:layouts.map((x:any)=>({kind:x.kind,applicationId:x.applicationId,widgetId:x.widgetId,x:x.x||0,y:x.y||0,w:x.w||1,h:x.h||1}))})});load()}
+  async function remove(){if(!confirmDelete)return;const x=confirmDelete;setConfirmDelete(null);try{await(x.kind==='applications'?deleteApplication.mutateAsync(x.id):deleteWidget.mutateAsync(x.id))}catch{}}
+  async function saveLayouts(layouts:any[]){await saveLayout.mutateAsync(layouts.map((x:any)=>({kind:x.kind,applicationId:x.applicationId,widgetId:x.widgetId,x:x.x||0,y:x.y||0,w:x.w||1,h:x.h||1})))}
   async function moveItem(kind:'APPLICATION'|'WIDGET',id:string,delta:number){const layouts=[...data.layouts],same=layouts.filter((x:any)=>x.kind===kind),field=kind==='APPLICATION'?'applicationId':'widgetId',at=same.findIndex((x:any)=>x[field]===id),to=Math.max(0,Math.min(same.length-1,at+delta));if(at===to)return;const a=same[at],b=same[to],ai=layouts.indexOf(a),bi=layouts.indexOf(b);[layouts[ai],layouts[bi]]=[layouts[bi],layouts[ai]];await saveLayouts(layouts)}
   async function resizeItem(id:string,delta:number){await saveLayouts(data.layouts.map((x:any)=>x.widgetId===id?{...x,w:Math.max(1,Math.min(6,(x.w||1)+delta))}:x))}
   async function open(app: AppItem) {
@@ -264,7 +201,6 @@ function Dashboard({ logout }: { logout: () => void }) {
     }
     Linking.openURL(app.url);
   }
-  async function selectPreset(preset:string){try{await request('/layout-presets/active',{method:'PUT',body:JSON.stringify({preset,surface:'MOBILE'})});setShowLayouts(false);load()}catch{}}
   if (!data)
     return (
       <Center>
@@ -279,7 +215,7 @@ function Dashboard({ logout }: { logout: () => void }) {
           <Text style={s.brand}>{data.branding?.name || data.name}</Text>
           <Text style={s.muted}>Seu espaço pessoal</Text>
         </View>
-        <View style={{flexDirection:'row',gap:18}}><Pressable onPress={()=>setShowLayouts(true)}><Ionicons name="grid-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onPress={()=>{setMode('brand');setName(data.branding?.name||data.name);setUrl(data.branding?.wallpaper||'https://');setExtra(data.branding?.accent||'#ff7a1a');setShow(true)}}><Ionicons name="settings-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onLongPress={logout} onPress={()=>{setMode('account');setName('');setUrl('');setShow(true)}}><Ionicons name="person-circle-outline" color="#dbe5ef" size={25} /></Pressable></View>
+        <View style={{flexDirection:'row',gap:18}}><Pressable onPress={()=>{setMode('brand');setName(data.branding?.name||data.name);setUrl(data.branding?.wallpaper||'https://');setExtra(data.branding?.accent||'#ff7a1a');setShow(true)}}><Ionicons name="settings-outline" color="#dbe5ef" size={23}/></Pressable><Pressable onLongPress={logout} onPress={()=>{setMode('account');setName('');setUrl('');setShow(true)}}><Ionicons name="person-circle-outline" color="#dbe5ef" size={25} /></Pressable></View>
       </View>
       <ScrollView contentContainerStyle={s.content}>
         <View style={s.search}>
@@ -295,7 +231,7 @@ function Dashboard({ logout }: { logout: () => void }) {
           renderItem={({ item }) => (
             <Pressable style={s.app} onPress={() => open(item)} onLongPress={()=>setActionItem({kind:'app',item})}>
               <View style={s.appIcon}>
-                <Text style={s.emoji}>{icon(item.icon)}</Text>
+                <Image source={{uri:appImage(item)}} style={s.realAppIcon}/>
               </View>
               <Text numberOfLines={1} style={s.appName}>
                 {item.name}
@@ -310,6 +246,7 @@ function Dashboard({ logout }: { logout: () => void }) {
               <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
               <Text style={s.widgetTitle}>{w.title}</Text>
               <Text style={s.metric}>{widgetValue(w.type, metrics)}</Text>
+              {['SYSTEM','STORAGE','NETWORK'].includes(w.type)&&<MiniBars values={widgetSeries(w.type,history)}/>}
             </Pressable>
           ))}
         </View>
@@ -352,26 +289,13 @@ function Dashboard({ logout }: { logout: () => void }) {
           </View>
         </View>
       </Modal>
-      <Modal transparent visible={showLayouts} animationType="slide" onRequestClose={()=>setShowLayouts(false)}><Pressable style={s.modalBack} onPress={()=>setShowLayouts(false)}><Pressable style={s.layoutSheet} onPress={()=>{}}><View style={s.sheetHandle}/><Text style={s.dialogTitle}>Escolha um layout</Text><Text style={s.dialogMessage}>Cada opção mantém sua própria organização.</Text>{presets.map(p=><Pressable key={p.id} style={[s.mobilePreset,data.layoutPreset===p.id&&s.mobilePresetActive]} onPress={()=>selectPreset(p.id)}><View style={s.mobilePresetIcon}><Ionicons name={p.id==='ZIMA'?'albums-outline':p.id==='FOCUS'?'browsers-outline':'grid-outline'} color="#ff8b35" size={25}/></View><View style={{flex:1}}><Text style={s.mobilePresetTitle}>{p.name}</Text><Text style={s.mobilePresetDescription}>{p.description}</Text></View>{data.layoutPreset===p.id&&<Ionicons name="checkmark-circle" color="#ff8b35" size={22}/>}</Pressable>)}<Pressable style={s.actionRow} onPress={()=>setShowLayouts(false)}><Text style={s.actionText}>Cancelar</Text></Pressable></Pressable></Pressable></Modal>
       {!!actionItem&&<ActionModal title={actionItem.item.name||actionItem.item.title} close={()=>setActionItem(null)} actions={actionItem.kind==='app'?[{label:'Mover antes',run:()=>moveItem('APPLICATION',actionItem.item.id,-1)},{label:'Mover depois',run:()=>moveItem('APPLICATION',actionItem.item.id,1)},{label:'Editar',run:()=>edit('app',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'applications',id:actionItem.item.id,name:actionItem.item.name})}]:[{label:'Mover antes',run:()=>moveItem('WIDGET',actionItem.item.id,-1)},{label:'Mover depois',run:()=>moveItem('WIDGET',actionItem.item.id,1)},{label:'Diminuir',run:()=>resizeItem(actionItem.item.id,-1)},{label:'Aumentar',run:()=>resizeItem(actionItem.item.id,1)},{label:'Editar',run:()=>edit('widget',actionItem.item)},{label:'Excluir',danger:true,run:()=>setConfirmDelete({kind:'widgets',id:actionItem.item.id,name:actionItem.item.title})}]}/>}
       {!!confirmDelete&&<ConfirmMobile title="Excluir item" message={`Deseja excluir “${confirmDelete.name}”?`} cancel={()=>setConfirmDelete(null)} confirm={remove}/>}
       {!!info&&<InfoModal title={info.title} message={info.message} close={()=>setInfo(null)}/>}
     </SafeAreaView>
   );
 }
-const icon = (x?: string) =>
-  (
-    ({
-      nextcloud: "☁️",
-      immich: "🌄",
-      jellyfin: "▶️",
-      "shield-checkmark": "🔐",
-      "git-branch": "⑂",
-      "stats-chart": "📊",
-      shield: "🛡️",
-      server: "▦",
-    }) as any
-  )[x || ""] || "◉";
+const appImage=(app:AppItem)=>app.icon?.startsWith('http')?app.icon:`${new URL(app.url).origin}/favicon.ico`;
 const widgetIcon = (x: string): any =>
   (
     ({
@@ -394,6 +318,8 @@ const widgetValue = (type: string, metrics: Record<string, number | null>) => {
   if (type === "CLOCK") return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   return "—";
 };
+const widgetSeries=(type:string,history:any)=>type==='SYSTEM'?(history.cpu||[]):type==='STORAGE'?(history.disk||[]):(history.download||[]);
+function MiniBars({values}:{values:Array<{value:number}>}){const points=values.slice(-24),max=Math.max(1,...points.map(x=>x.value));return <View style={s.miniChart}>{points.map((x,i)=><View key={i} style={[s.miniBar,{height:Math.max(2,(x.value/max)*30)}]}/>)}</View>}
 function Logo() {
   return (
     <View style={s.logo}>
@@ -500,10 +426,11 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   emoji: { fontSize: 32 },
+  realAppIcon:{width:42,height:42,borderRadius:10},
   appName: { color: "#dbe5ef", fontSize: 12, marginTop: 8, maxWidth: 95 },
   widgets: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   widget: {
-    width: "48%",
+    width: "100%",
     minHeight: 105,
     backgroundColor: "#ffffff10",
     borderWidth: 1,
@@ -513,6 +440,8 @@ const s = StyleSheet.create({
   },
   widgetTitle: { color: "#9eacbc", fontSize: 12, marginTop: 7 },
   metric: { color: "white", fontSize: 23, fontWeight: "700", marginTop: 5 },
+  miniChart:{height:34,marginTop:8,flexDirection:'row',alignItems:'flex-end',gap:2},
+  miniBar:{flex:1,backgroundColor:'#ff7a1a',borderRadius:2,opacity:.8},
   fab: {
     position: "absolute",
     right: 20,

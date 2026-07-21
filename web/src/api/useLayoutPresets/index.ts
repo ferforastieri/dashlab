@@ -1,0 +1,1 @@
+import {useQuery} from '@tanstack/react-query';import {client} from '../client';import {keys} from '../keys';export const useLayoutPresets=()=>useQuery({queryKey:keys.presets,queryFn:async()=>(await client.get('/layout-presets')).data});

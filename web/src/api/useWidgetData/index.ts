@@ -1,0 +1,1 @@
+import {useQuery} from '@tanstack/react-query';import {client} from '../client';export const useWidgetData=(id:string,enabled:boolean)=>useQuery({queryKey:['widget-data',id],queryFn:async()=>(await client.get(`/widgets/${id}/data`)).data,enabled,refetchInterval:30000});
