@@ -8,9 +8,15 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-dashlab}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes: [postgres_data:/var/lib/postgresql/data]
-    healthcheck: {test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"], interval: 10s, timeout: 5s, retries: 8}
+    healthcheck:
+      {
+        test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}'],
+        interval: 10s,
+        timeout: 5s,
+        retries: 8,
+      }
   backend:
-    build: {context: ., dockerfile: Dockerfile.backend}
+    build: { context: ., dockerfile: Dockerfile.backend }
     container_name: home-backend
     restart: unless-stopped
     environment:
@@ -20,13 +26,19 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       PORT: 3001
       UPLOAD_DIR: /app/uploads
-    depends_on: {postgres: {condition: service_healthy}}
+    depends_on: { postgres: { condition: service_healthy } }
     volumes: [uploads:/app/uploads]
-    healthcheck: {test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/health"], interval: 20s, timeout: 5s, retries: 6}
+    healthcheck:
+      {
+        test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/api/health'],
+        interval: 20s,
+        timeout: 5s,
+        retries: 6,
+      }
   web:
-    build: {context: ., dockerfile: Dockerfile.web}
+    build: { context: ., dockerfile: Dockerfile.web }
     container_name: home-web
     restart: unless-stopped
-    ports: ["${WEB_PORT:-3000}:80"]
+    ports: ['${WEB_PORT:-3000}:80']
     depends_on: [backend]
-volumes: {postgres_data: {}, uploads: {}}
+volumes: { postgres_data: {}, uploads: {} }

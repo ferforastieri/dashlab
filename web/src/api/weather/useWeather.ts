@@ -1,0 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
+import { client } from '../http/client';
+export const useWeather = (latitude: number, longitude: number, enabled: boolean) =>
+  useQuery({
+    queryKey: ['weather', latitude, longitude],
+    queryFn: async () =>
+      (await client.get(`/weather?latitude=${latitude}&longitude=${longitude}`)).data,
+    enabled,
+    staleTime: 600000,
+  });

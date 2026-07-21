@@ -26,9 +26,9 @@ jobs:
           docker compose version
       - name: Validate secrets
         env:
-          POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
-          JWT_SECRET: "${{ secrets.JWT_SECRET }}"
-          EXPO_TOKEN: "${{ secrets.EXPO_TOKEN }}"
+          POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
+          JWT_SECRET: '${{ secrets.JWT_SECRET }}'
+          EXPO_TOKEN: '${{ secrets.EXPO_TOKEN }}'
         run: |
           set -eu
           test -n "$POSTGRES_PASSWORD"
@@ -46,9 +46,9 @@ jobs:
           npm --prefix mobile run build:check
       - name: Deploy containers
         env:
-          POSTGRES_PASSWORD: "${{ secrets.POSTGRES_PASSWORD }}"
-          JWT_SECRET: "${{ secrets.JWT_SECRET }}"
-          PROMETHEUS_URL: "${{ secrets.PROMETHEUS_URL }}"
+          POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
+          JWT_SECRET: '${{ secrets.JWT_SECRET }}'
+          PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'
         run: |
           set -eu
           if docker compose version >/dev/null 2>&1; then
@@ -69,7 +69,7 @@ jobs:
       - name: Trigger Android build on Expo Cloud
         working-directory: mobile
         env:
-          EXPO_TOKEN: "${{ secrets.EXPO_TOKEN }}"
+          EXPO_TOKEN: '${{ secrets.EXPO_TOKEN }}'
         run: |
           set -eu
           npm ci

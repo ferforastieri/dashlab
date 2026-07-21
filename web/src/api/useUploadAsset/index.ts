@@ -1,1 +1,0 @@
-import {useMutation} from '@tanstack/react-query';import {client} from '../client';export const useUploadAsset=()=>useMutation({mutationFn:async(file:File)=>{const body=new FormData();body.append('file',file);return(await client.post('/assets',body)).data}});

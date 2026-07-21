@@ -1,1 +1,0 @@
-import {useMutation,useQueryClient} from '@tanstack/react-query';import {client} from '../client';import {keys} from '../keys';export const useCreateWidget=()=>{const q=useQueryClient();return useMutation({mutationFn:async(data:any)=>(await client.post('/widgets',data)).data,onSuccess:()=>q.invalidateQueries({queryKey:keys.dashboard})})};

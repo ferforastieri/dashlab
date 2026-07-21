@@ -1,2 +1,5 @@
-import{registerRootComponent}from'expo';import App from'./App';registerRootComponent(App);
 import './global.css';
+import { registerRootComponent } from 'expo';
+import AppRoot from './src/bootstrap/AppRoot';
+
+registerRootComponent(AppRoot);

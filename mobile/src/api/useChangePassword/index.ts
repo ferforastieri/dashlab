@@ -1,1 +1,0 @@
-import {useMutation} from '@tanstack/react-query';import {client} from '../client';export const useChangePassword=()=>useMutation({mutationFn:async(data:{currentPassword:string,newPassword:string})=>(await client.post('/auth/change-password',data)).data});

@@ -34,19 +34,26 @@ Expo Android ───┘       │
                         └── Open-Meteo / status dos serviços
 ```
 
-| Pasta | Responsabilidade |
-| --- | --- |
-| `backend/` | API NestJS, autenticação, Prisma, integrações e regras de isolamento. |
-| `web/` | Dashboard React/Vite servido pelo Nginx. |
-| `mobile/` | Aplicativo React Native/Expo para Android. |
-| `nginx/` | SPA e proxy interno de `/api` para o backend. |
-| `.gitea/workflows/` | Build, testes, deploy Docker e disparo do Expo Cloud. |
+| Pasta               | Responsabilidade                                                      |
+| ------------------- | --------------------------------------------------------------------- |
+| `backend/`          | API NestJS, autenticação, Prisma, integrações e regras de isolamento. |
+| `web/`              | Dashboard React/Vite servido pelo Nginx.                              |
+| `mobile/`           | Aplicativo React Native/Expo para Android.                            |
+| `nginx/`            | SPA e proxy interno de `/api` para o backend.                         |
+| `.gitea/workflows/` | Build, testes, deploy Docker e disparo do Expo Cloud.                 |
 
 ### Organização do código
 
-- O backend separa `controllers/`, `services/`, `dto/`, `guards/`, `prisma/` e `test/`.
-- Web e mobile centralizam o Axios em `api/client.ts`.
-- Cada endpoint consumido possui sua própria pasta e hook React Query, como `api/useLogin/` e `api/useMetricsHistory/`.
+- O backend é organizado por domínio em `src/modules/<modulo>/`, com `controllers/`,
+  `services/`, `dto/`, `guards/` e `test/` dentro de cada módulo.
+- Banco de dados, composição da aplicação e demais detalhes técnicos ficam isolados em
+  `backend/src/infrastructure/`.
+- Web e mobile organizam `api/` por domínio. Cada chamada possui um hook React Query próprio,
+  enquanto o cliente Axios compartilhado permanece em `api/http/`.
+- Na web, `pages/` compõe hooks e componentes globais de `components/ui/`; no mobile, essa mesma
+  responsabilidade pertence a `screens/`.
+- Os pontos de entrada ficam em `bootstrap/`, sem arquivos `App` ou `main` misturados à raiz do
+  código-fonte.
 - Tailwind CSS atende a web e NativeWind fornece a mesma base utilitária no Expo.
 
 ## Desenvolvimento
@@ -95,14 +102,14 @@ Somente o Nginx é publicado na LAN. PostgreSQL e NestJS permanecem na rede inte
 
 ## Variáveis de ambiente
 
-| Variável | Uso |
-| --- | --- |
-| `POSTGRES_DB` | Nome do banco. |
-| `POSTGRES_USER` | Usuário do PostgreSQL. |
-| `POSTGRES_PASSWORD` | Senha do PostgreSQL. |
-| `JWT_SECRET` | Assinatura dos tokens de acesso. |
-| `PROMETHEUS_URL` | Endereço interno do Prometheus. |
-| `WEB_PORT` | Porta publicada pelo Nginx. |
+| Variável            | Uso                              |
+| ------------------- | -------------------------------- |
+| `POSTGRES_DB`       | Nome do banco.                   |
+| `POSTGRES_USER`     | Usuário do PostgreSQL.           |
+| `POSTGRES_PASSWORD` | Senha do PostgreSQL.             |
+| `JWT_SECRET`        | Assinatura dos tokens de acesso. |
+| `PROMETHEUS_URL`    | Endereço interno do Prometheus.  |
+| `WEB_PORT`          | Porta publicada pelo Nginx.      |
 
 O workflow do Gitea também exige `EXPO_TOKEN` para iniciar builds no Expo Cloud. Segredos nunca devem ser versionados.
 
