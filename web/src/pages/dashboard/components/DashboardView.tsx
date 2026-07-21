@@ -1,7 +1,6 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import {
-  CloudSun,
   LogOut,
   MoreVertical,
   Plus,
@@ -25,6 +24,7 @@ import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.style
 import { DashboardClock } from './DashboardClock';
 import { DashboardEditor } from './DashboardEditor';
 import { WidgetCard } from './WidgetCard';
+import { HeaderWeather } from './HeaderWeather';
 
 const resizeHandleClasses = {
   top: 'canvas-resize-handle handle-n',
@@ -88,6 +88,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   }
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
   const branding = dash.branding || {};
+  const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
   const canvasHeight = Math.max(620, ...layouts.map((layout) => layout.y + layout.h + 120));
   const visualTokens = {
     '--accent': branding.accent,
@@ -105,21 +106,20 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   } as CSSProperties;
   return (
     <div className={cn('desktop')} style={visualTokens}>
-      <div className="rack-line" aria-hidden="true">
-        <span>DL—01 / PERSONAL NODE</span>
-        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
-        <span className="rack-line-status">
-          <i /> SYSTEM READY
-        </span>
-      </div>
       <header className="dash-header">
-        <div className={cn('brand')}>
-          <div className={cn('brand-mark small')}>
-            {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
+        <div className="brand-zone">
+          <div className={cn('brand')}>
+            <div className={cn('brand-mark small')}>
+              {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
+            </div>
+            <div className="brand-copy">
+              <span>WORKSPACE</span>
+              <strong>{branding.name || dash.name}</strong>
+            </div>
           </div>
-          <div className="brand-copy">
-            <span>WORKSPACE</span>
-            <strong>{branding.name || dash.name}</strong>
+          <div className="header-glance">
+            <DashboardClock />
+            <HeaderWeather widget={weatherWidget} />
           </div>
         </div>
         <form
@@ -138,10 +138,6 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           />
         </form>
         <div className={cn('header-tools')}>
-          <span>
-            <CloudSun size={19} /> Clima
-          </span>
-          <DashboardClock />
           <button
             className={cn('icon-button')}
             onClick={() => setModal('brand')}
@@ -168,6 +164,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           </button>
         </div>
       </header>
+      <div className="rack-line" aria-hidden="true">
+        <span>DL—01 / PERSONAL NODE</span>
+        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
+        <span className="rack-line-status">
+          <i /> SYSTEM READY
+        </span>
+      </div>
       <main>
         {layoutEdit && <div className="canvas-edit-hint">Arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit ? 'is-editing' : ''}`} style={{ height: canvasHeight }}>
