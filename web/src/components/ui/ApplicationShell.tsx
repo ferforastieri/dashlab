@@ -75,66 +75,47 @@ type Dash = {
 const appImage = (app: AppItem) =>
   app.icon?.startsWith('http') ? app.icon : `${new URL(app.url).origin}/favicon.ico`;
 const ui: Record<string, string> = {
-  desktop:
-    'min-h-screen bg-[radial-gradient(circle_at_70%_15%,#293b52_0,#101b29_32%,#071019_72%)] bg-cover bg-center px-[22px] pb-[110px] pt-[18px] text-[#f7f8fb] max-[800px]:px-[14px] max-[800px]:pb-[105px] max-[800px]:pt-[14px]',
+  desktop: 'dash-desktop',
   brand: 'flex items-center gap-2.5',
-  'brand-mark':
-    'grid h-16 w-16 place-items-center overflow-hidden rounded-[20px] bg-gradient-to-br from-[#ff9f45] to-accent text-3xl font-extrabold shadow-[0_14px_40px_#ff791a35] [&>img]:h-full [&>img]:w-full [&>img]:object-cover',
-  small: 'h-[38px] w-[38px] rounded-xl text-lg',
-  search:
-    'flex h-[42px] items-center gap-2.5 rounded-[15px] border border-white/[0.09] bg-white/[0.07] px-[14px] shadow-[0_8px_30px_#0003] backdrop-blur-xl max-[800px]:col-span-full max-[800px]:row-start-2 [&>input]:min-h-0 [&>input]:flex-1 [&>input]:border-0 [&>input]:bg-transparent [&>input]:p-0 [&>input]:text-white [&>input]:outline-none',
-  'header-tools':
-    'flex items-center justify-end gap-2.5 text-sm text-slate-200 max-[800px]:[&>span]:hidden',
-  'icon-button':
-    'grid h-9 w-9 place-items-center rounded-xl border-0 bg-transparent p-2 text-inherit transition hover:bg-white/10 [&>svg]:w-[18px]',
-  active: 'bg-white/[0.07] text-accent',
-  'app-grid':
-    'mx-auto grid max-w-[1460px] grid-flow-dense grid-cols-12 auto-rows-[92px] items-stretch gap-[14px] py-7 max-[800px]:grid-cols-6 max-[800px]:auto-rows-[85px] max-[800px]:py-[52px]',
+  'brand-mark': 'brand-mark',
+  small: 'brand-mark-small',
+  search: 'dash-search',
+  'header-tools': 'header-tools',
+  'icon-button': 'icon-button',
+  active: 'is-active',
+  'app-grid': 'app-grid',
   'layout-item': 'relative min-h-0 min-w-0',
   'mobile-app':
     'max-[800px]:!col-span-2 max-[800px]:!row-span-2 max-[800px]:!col-start-auto max-[800px]:!row-start-auto',
   'mobile-widget':
     'max-[800px]:!col-span-6 max-[800px]:!row-span-2 max-[800px]:!col-start-auto max-[800px]:!row-start-auto',
-  'layout-editing':
-    'cursor-grab rounded-[18px] outline outline-1 outline-offset-4 outline-white/15 active:cursor-grabbing active:opacity-70',
-  'app-wrap':
-    'relative flex h-full flex-col items-center justify-center rounded-xl border border-white/[0.09] bg-gradient-to-br from-white/[0.09] to-white/[0.03] p-3 text-center [&>b]:mt-2.5 [&>b]:block [&>b]:text-xs [&>b]:drop-shadow-md',
-  'app-icon':
-    'grid h-[62px] w-[62px] place-items-center overflow-hidden rounded-[17px] border border-white/10 bg-gradient-to-br from-white/15 to-white/5 shadow-none transition duration-200 hover:-translate-y-[7px] hover:scale-[1.04] hover:border-white/30 [&>img]:h-12 [&>img]:w-12 [&>img]:rounded-xl [&>img]:object-contain',
-  widget:
-    'relative h-full min-h-0 overflow-hidden rounded-xl border border-white/[0.11] bg-gradient-to-br from-white/[0.11] to-white/[0.03] p-3 shadow-[0_18px_40px_#0005] backdrop-blur-xl',
-  'widget-title':
-    'flex items-center gap-2 text-[13px] text-[#c8d2de] [&>svg]:w-[17px] [&>svg]:text-accent',
-  'widget-values':
-    'mt-1.5 flex flex-wrap items-baseline gap-[9px] [&>span]:text-xs [&>span]:text-[#93a2b5]',
-  metric: '!text-xl font-bold !text-white',
+  'layout-editing': 'layout-editing',
+  'app-wrap': 'app-wrap',
+  'app-icon': 'app-icon',
+  widget: 'widget-card',
+  'widget-title': 'widget-title',
+  'widget-values': 'widget-values',
+  metric: 'metric',
   'metric-chart': 'mt-1 block h-5 w-full overflow-visible opacity-90',
   'item-control': 'hidden',
   'item-menu': 'absolute right-1 top-1 h-8 w-8 border-0 bg-transparent text-slate-300',
-  context:
-    'absolute right-1 top-10 z-20 grid min-w-32 gap-1 rounded-xl border border-white/10 bg-[#111b27] p-2 shadow-2xl [&>button]:flex [&>button]:items-center [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-3 [&>button]:py-2 [&>button]:text-left [&>button]:text-sm',
+  context: 'context-menu',
   'widget-actions':
     'absolute right-[7px] top-[5px] z-10 flex [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-[5px] [&_button]:text-[#aeb9c7] [&_svg]:w-[14px]',
   'widget-delete':
     'absolute left-[5px] top-[5px] z-10 border-0 bg-transparent p-2 text-inherit [&_svg]:w-[15px]',
-  dock: 'fixed bottom-5 left-1/2 z-10 flex min-h-[72px] -translate-x-1/2 gap-3 rounded-[25px] border border-white/[0.14] bg-white/[0.09] px-[14px] py-2.5 shadow-[0_16px_50px_#0008] backdrop-blur-2xl max-[800px]:bottom-[14px] [&>a]:grid [&>a]:h-[51px] [&>a]:w-[51px] [&>a]:place-items-center [&>a]:rounded-2xl [&>a]:bg-white/[0.09] [&>a]:transition [&>a:hover]:-translate-y-[9px] [&_img]:h-8 [&_img]:w-8 [&_img]:rounded-lg [&_img]:object-contain',
-  add: 'fixed bottom-7 right-[26px] grid h-[58px] w-[58px] place-items-center rounded-[19px] border-0 bg-accent text-white shadow-[0_14px_35px_#ff791a66] max-[800px]:bottom-[22px] max-[800px]:right-4',
-  loading:
-    'grid min-h-screen place-items-center bg-[radial-gradient(circle_at_50%_0,#283d55,#091019_65%)] text-[#aeb9c7]',
-  'auth-shell':
-    'grid min-h-screen place-items-center bg-[radial-gradient(circle_at_50%_0,#283d55,#091019_65%)] p-5',
-  'auth-card':
-    'w-full max-w-[420px] rounded-[28px] border border-white/[0.11] bg-white/[0.06] p-[38px] text-center shadow-[0_35px_80px_#0008] backdrop-blur-2xl [&_.brand-mark]:mx-auto [&_h1]:mb-[7px] [&_h1]:mt-[18px] [&_p]:mb-7 [&_p]:text-[#9ba9b9] [&_form]:grid [&_form]:gap-[15px] [&_input]:h-11 [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-[#07111d] [&_input]:px-4 [&_input]:text-white',
-  overlay: 'fixed inset-0 z-20 grid place-items-center bg-black/70 p-5',
-  modal:
-    'relative grid max-h-[90vh] w-full max-w-[480px] gap-4 overflow-auto rounded-[25px] border border-white/10 bg-[#111b27] p-7 text-left shadow-2xl [&_label]:grid [&_label]:gap-2 [&_label]:text-sm [&_label]:text-slate-300 [&_input]:h-11 [&_input]:rounded-xl [&_input]:border [&_input]:border-white/10 [&_input]:bg-[#07111d] [&_input]:px-4 [&_input]:text-white [&_select]:h-11 [&_select]:rounded-xl [&_select]:border [&_select]:border-white/10 [&_select]:bg-[#07111d] [&_select]:px-4 [&_select]:text-white [&_textarea]:min-h-24 [&_textarea]:rounded-xl [&_textarea]:border [&_textarea]:border-white/10 [&_textarea]:bg-[#07111d] [&_textarea]:p-4 [&_textarea]:text-white',
+  dock: 'dash-dock',
+  add: 'add-button',
+  loading: 'loading-screen',
+  'auth-shell': 'auth-shell',
+  'auth-card': 'auth-card',
+  overlay: 'modal-overlay',
+  modal: 'modal-panel',
   close:
     'absolute right-4 top-4 grid h-8 w-8 place-items-center border-0 bg-transparent text-slate-300',
-  tabs: 'flex gap-1 rounded-xl bg-white/5 p-1 [&>button]:flex-1 [&>button]:rounded-lg [&>button]:border-0 [&>button]:bg-transparent [&>button]:p-2 [&>button]:text-slate-400',
-  primary:
-    'inline-flex h-11 items-center justify-center rounded-xl border-0 bg-accent px-4 font-bold text-white disabled:opacity-50',
-  secondary:
-    'inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 text-slate-200',
+  tabs: 'tab-list',
+  primary: 'button-primary',
+  secondary: 'button-secondary',
   danger:
     'inline-flex h-11 items-center justify-center rounded-xl border border-red-400/30 bg-transparent px-3 text-red-300',
   solid: 'bg-red-500 text-white',
@@ -348,12 +329,22 @@ function Dashboard({ onLogout, dashboardQuery }: { onLogout: () => void; dashboa
           : undefined,
       }}
     >
-      <header className="grid min-h-[58px] grid-cols-[1fr_minmax(260px,520px)_1fr] items-center gap-5 max-[800px]:h-auto max-[800px]:grid-cols-[1fr_auto]">
+      <div className="rack-line" aria-hidden="true">
+        <span>DL—01 / PERSONAL NODE</span>
+        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
+        <span className="rack-line-status">
+          <i /> SYSTEM READY
+        </span>
+      </div>
+      <header className="dash-header">
         <div className={cn('brand')}>
           <div className={cn('brand-mark small')}>
             {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
           </div>
-          <strong>{branding.name || dash.name}</strong>
+          <div className="brand-copy">
+            <span>WORKSPACE</span>
+            <strong>{branding.name || dash.name}</strong>
+          </div>
         </div>
         <form
           className={cn('search')}
@@ -516,7 +507,7 @@ function Dashboard({ onLogout, dashboardQuery }: { onLogout: () => void; dashboa
             </a>
           ))}
       </div>
-      <button className={cn('add')} onClick={() => setModal('app')}>
+      <button className={cn('add')} onClick={() => setModal('app')} aria-label="Adicionar aplicativo">
         <Plus />
       </button>
       {modal && (
