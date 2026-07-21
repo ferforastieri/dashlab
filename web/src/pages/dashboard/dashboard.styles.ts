@@ -9,7 +9,7 @@ export const dashboardClassNames: Record<string, string> = {
   context: 'context-menu',
   'widget-actions': 'absolute right-[7px] top-[5px] z-10 flex [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-[5px] [&_button]:text-[#aeb9c7] [&_svg]:w-[14px]',
   'widget-delete': 'absolute left-[5px] top-[5px] z-10 border-0 bg-transparent p-2 text-inherit [&_svg]:w-[15px]',
-  dock: 'dash-dock', add: 'add-button', loading: 'loading-screen', overlay: 'modal-overlay',
+  add: 'add-button', loading: 'loading-screen', overlay: 'modal-overlay',
   modal: 'modal-panel',
   close: 'absolute right-4 top-4 grid h-8 w-8 place-items-center border-0 bg-transparent text-slate-300',
   tabs: 'tab-list', primary: 'button-primary', secondary: 'button-secondary',

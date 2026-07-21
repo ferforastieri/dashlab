@@ -270,15 +270,6 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           })}
         </section>
       </main>
-      <div className={cn('dock')}>
-        {dash.applications
-          .filter((a) => a.inDock)
-          .map((a) => (
-            <a href={a.url} target="_blank" rel="noreferrer" key={a.id}>
-              {a.icon && <img src={a.icon} alt="" />}
-            </a>
-          ))}
-      </div>
       <button className={cn('add')} onClick={() => setModal('app')} aria-label="Adicionar aplicativo">
         <Plus />
       </button>

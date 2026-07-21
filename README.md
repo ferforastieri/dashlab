@@ -14,7 +14,7 @@ Não existe um painel administrativo separado: links, widgets, wallpaper, cores 
 ## Recursos
 
 - Contas e dashboards privados por usuário.
-- Interface web fullscreen com grade de apps, widgets e dock.
+- Interface web fullscreen com canvas livre de aplicativos e widgets.
 - Aplicativo Android nativo com Expo.
 - Presets editáveis na web e um layout Zima empilhado otimizado para mobile.
 - Cadastro de links, deep links, categorias e ícones.

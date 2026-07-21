@@ -71,7 +71,6 @@ model Application {
   icon String?
   category String?
   statusUrl String?
-  inDock Boolean @default(false)
   visible Boolean @default(true)
   dashboardId String
   dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)

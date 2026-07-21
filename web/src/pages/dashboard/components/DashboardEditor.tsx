@@ -34,7 +34,6 @@ export function DashboardEditor({
       name: '',
       url: 'https://',
       icon: '',
-      inDock: false,
       title: '',
       type: 'SYSTEM',
       config: {},
@@ -58,7 +57,6 @@ export function DashboardEditor({
           icon: form.icon || undefined,
           category: form.category || undefined,
           statusUrl: form.statusUrl || undefined,
-          inDock: Boolean(form.inDock),
           visible: form.visible,
         };
         await (editing
@@ -149,13 +147,6 @@ export function DashboardEditor({
                 onChange={(e) => setForm({ ...form, url: e.target.value })}
               />
             </label>
-            <label>
-              Ícone (URL ou nome)
-              <input
-                value={form.icon}
-                onChange={(e) => setForm({ ...form, icon: e.target.value })}
-              />
-            </label>
             <ImageUpload
               label="Ícone do aplicativo"
               value={form.icon}
@@ -188,14 +179,6 @@ export function DashboardEditor({
                 value={form.statusUrl || ''}
                 onChange={(e) => setForm({ ...form, statusUrl: e.target.value })}
               />
-            </label>
-            <label className={cn('check')}>
-              <input
-                type="checkbox"
-                checked={form.inDock}
-                onChange={(e) => setForm({ ...form, inDock: e.target.checked })}
-              />{' '}
-              Colocar no dock
             </label>
           </>
         )}
@@ -301,25 +284,11 @@ export function DashboardEditor({
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </label>
-            <label>
-              Wallpaper (URL)
-              <input
-                value={form.wallpaper || ''}
-                onChange={(e) => setForm({ ...form, wallpaper: e.target.value })}
-              />
-            </label>
             <ImageUpload
               label="Wallpaper"
               value={form.wallpaper}
               onChange={(wallpaper) => setForm({ ...form, wallpaper })}
             />
-            <label>
-              Logo (URL)
-              <input
-                value={form.logo || ''}
-                onChange={(e) => setForm({ ...form, logo: e.target.value })}
-              />
-            </label>
             <ImageUpload
               label="Logo"
               value={form.logo}

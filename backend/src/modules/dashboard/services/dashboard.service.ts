@@ -63,7 +63,6 @@ export class DashboardService {
         icon: data.icon,
         category: data.category,
         statusUrl: data.statusUrl,
-        inDock: !!data.inDock,
       },
     });
     await this.addLayouts(d.id, 'APPLICATION', app.id);
@@ -81,7 +80,6 @@ export class DashboardService {
         icon: data.icon,
         category: data.category,
         statusUrl: data.statusUrl,
-        inDock: data.inDock,
         visible: data.visible,
       },
     });

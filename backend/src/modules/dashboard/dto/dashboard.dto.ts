@@ -65,7 +65,6 @@ export class CreateApplicationDto {
   @IsUrl({ require_tld: false, protocols: ['http', 'https'], require_protocol: true })
   @MaxLength(2048)
   statusUrl?: string;
-  @IsOptional() @IsBoolean() inDock?: boolean;
   @IsOptional() @IsBoolean() visible?: boolean;
 }
 export class UpdateApplicationDto extends CreateApplicationDto {

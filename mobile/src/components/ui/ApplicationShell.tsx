@@ -39,7 +39,6 @@ type AppItem = {
   url: string;
   deepLink?: string;
   icon?: string;
-  inDock: boolean;
 };
 function normalize(value: string) {
   const url = new URL(value.trim());

@@ -5,7 +5,6 @@ export type DashboardApplication = {
   description?: string;
   icon?: string;
   category?: string;
-  inDock: boolean;
   statusUrl?: string;
   deepLink?: string;
   visible?: boolean;
