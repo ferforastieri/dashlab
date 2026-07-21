@@ -213,6 +213,8 @@ a {
 }
 .canvas-item { z-index: 1; }
 .canvas-item.is-editing { z-index: 2; cursor: move !important; outline: 1px solid var(--accent); outline-offset: 3px; }
+.application-canvas-item.is-editing { outline: 0; }
+.application-canvas-item.is-editing .app-icon { outline: 1px solid var(--accent); outline-offset: 3px; }
 .canvas-item > * { height: 100%; }
 .canvas-height-handle { position: absolute; z-index: 45; right: 0; bottom: -8px; left: 0; display: flex; height: 16px; align-items: center; justify-content: center; cursor: ns-resize; touch-action: none; }
 .canvas-height-handle::before { content: ''; position: absolute; right: 0; left: 0; height: 2px; background: var(--accent); }
@@ -270,7 +272,7 @@ a {
   text-align: center;
   transition: border-color 150ms ease, background 150ms ease;
 }
-.app-wrap:hover { border-color: var(--border-color); background: color-mix(in srgb, var(--panel-color) 72%, transparent); }
+.app-wrap:hover .app-icon { border-color: var(--accent); background: color-mix(in srgb, var(--panel-color) 88%, transparent); }
 .app-wrap > b { display: block; margin-top: 8px; color: #c9ced0; font-size: 12px; font-weight: 400; letter-spacing: .02em; }
 .app-icon {
   display: grid;
@@ -348,6 +350,8 @@ a {
 .metric-lanes { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 7px; margin-top: 9px; overflow: auto; }
 .metric-lane { display: flex; min-height: 36px; flex: 1; flex-direction: column; gap: 3px; }
 .metric-lane-head { display: flex; flex: none; align-items: baseline; justify-content: space-between; gap: 10px; color: var(--muted); font: 600 9px/1 'IBM Plex Mono', monospace; letter-spacing: .07em; text-transform: uppercase; }
+.metric-lane-head > span { display: flex; min-width: 0; align-items: baseline; gap: 7px; }
+.metric-lane-head small { overflow: hidden; color: color-mix(in srgb, var(--muted) 72%, transparent); font-size: 8px; font-weight: 400; letter-spacing: 0; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
 .metric-lane-head strong { color: var(--text-color); font-size: 11px; letter-spacing: 0; }
 .metric-chart { display: block; width: 100%; min-height: 18px; flex: 1; overflow: visible; opacity: .92; }
 

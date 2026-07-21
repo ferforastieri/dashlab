@@ -189,7 +189,6 @@ export class DashboardService {
       cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
       memory:
         '(1-node_memory_MemAvailable_bytes{tipo="Servidor"}/node_memory_MemTotal_bytes{tipo="Servidor"})*100',
-      disks: '(1-node_filesystem_avail_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"}/node_filesystem_size_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"})*100',
       download: 'sum(rate(node_network_receive_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
       upload: 'sum(rate(node_network_transmit_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
     };
@@ -205,19 +204,59 @@ export class DashboardService {
           );
           const json: any = await response.json();
           clearTimeout(timer);
-          result[key] = key === 'disks'
-            ? (json?.data?.result || []).map((entry: any) => ({
-                name: entry.metric?.mountpoint || entry.metric?.device || 'Disco',
-                device: entry.metric?.device || '',
-                instance: entry.metric?.instance || entry.metric?.nodename || '',
-                value: Number(entry.value?.[1] || 0),
-              }))
-            : Number(json?.data?.result?.[0]?.value?.[1] || 0);
+          result[key] = Number(json?.data?.result?.[0]?.value?.[1] || 0);
         } catch {
-          result[key] = key === 'disks' ? [] : null;
+          result[key] = null;
         }
       }),
     );
+    const physical = 'device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"';
+    const diskQueries = {
+      info: `node_disk_info{tipo="Servidor",${physical}}`,
+      utilization: `rate(node_disk_io_time_seconds_total{tipo="Servidor",${physical}}[5m])*100`,
+      read: `rate(node_disk_read_bytes_total{tipo="Servidor",${physical}}[5m])`,
+      write: `rate(node_disk_written_bytes_total{tipo="Servidor",${physical}}[5m])`,
+      temperature: 'smartmon_temperature_celsius_raw_value{tipo="Servidor"}',
+      health: 'smartmon_device_smart_healthy{tipo="Servidor"}',
+    };
+    try {
+      const entries = await Promise.all(Object.entries(diskQueries).map(async ([key, query]) => {
+        const json: any = await this.fetchJson(
+          `${base}/api/v1/query?query=${encodeURIComponent(query)}`,
+          4000,
+        );
+        return [key, json?.data?.result || []] as const;
+      }));
+      const series = Object.fromEntries(entries) as Record<string, any[]>;
+      const normalize = (value: string) => value.replace('/dev/', '').replace(/^nvme(\d+)$/, 'nvme$1n1');
+      const byDevice = (items: any[]) => new Map(items.map((entry) => [
+        normalize(String(entry.metric?.device || entry.metric?.disk || '')),
+        entry,
+      ]));
+      const utilization = byDevice(series.utilization);
+      const read = byDevice(series.read);
+      const write = byDevice(series.write);
+      const temperature = byDevice(series.temperature);
+      const health = byDevice(series.health);
+      result.disks = series.info.map((entry) => {
+        const device = String(entry.metric.device);
+        return {
+          device,
+          model: entry.metric.model || device,
+          value: Number(utilization.get(device)?.value?.[1] || 0),
+          read: Number(read.get(device)?.value?.[1] || 0),
+          write: Number(write.get(device)?.value?.[1] || 0),
+          temperature: temperature.has(device)
+            ? Number(temperature.get(device)?.value?.[1])
+            : null,
+          healthy: health.has(device)
+            ? Number(health.get(device)?.value?.[1]) === 1
+            : null,
+        };
+      });
+    } catch {
+      result.disks = [];
+    }
     return result;
   }
   async metricsHistory(range: '15m' | '1h' | '6h' | '24h' = '1h') {
@@ -232,7 +271,7 @@ export class DashboardService {
       cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
       memory:
         '(1-node_memory_MemAvailable_bytes{tipo="Servidor"}/node_memory_MemTotal_bytes{tipo="Servidor"})*100',
-      disks: '(1-node_filesystem_avail_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"}/node_filesystem_size_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"})*100',
+      disks: 'rate(node_disk_io_time_seconds_total{tipo="Servidor",device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"}[5m])*100',
       download: 'sum(rate(node_network_receive_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
       upload: 'sum(rate(node_network_transmit_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
     };
@@ -246,7 +285,7 @@ export class DashboardService {
           );
           result[key] = key === 'disks'
             ? (json?.data?.result || []).map((entry: any) => ({
-                name: entry.metric?.mountpoint || entry.metric?.device || 'Disco',
+                name: entry.metric?.device || 'Disco',
                 device: entry.metric?.device || '',
                 instance: entry.metric?.instance || entry.metric?.nodename || '',
                 points: (entry.values || []).map(([timestamp, value]: [number, string]) => ({
@@ -289,10 +328,11 @@ export class DashboardService {
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), 3500);
           const response = await fetch(app.statusUrl || app.url, {
-            method: 'HEAD',
+            method: 'GET',
             redirect: 'manual',
             signal: controller.signal,
           });
+          await response.body?.cancel();
           clearTimeout(timer);
           return {
             id: app.id,

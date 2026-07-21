@@ -21,6 +21,9 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editing
   const prometheusValue = remote?.data?.result?.[0]?.value?.[1];
   const weatherValue = remote?.current?.temperature_2m != null ? `${Math.round(remote.current.temperature_2m)}°C` : '—';
   const formatRate = (value: number | null | undefined) => value == null ? '—' : `${(value / 1e6).toFixed(1)} MB/s`;
+  const formatDiskRate = (value: number | null | undefined) => value == null
+    ? '—'
+    : value >= 1e6 ? `${(value / 1e6).toFixed(1)} MB/s` : `${(value / 1e3).toFixed(0)} KB/s`;
   const values: any = {
     CLOCK: [Server, 'Agora', new Date().toLocaleTimeString('pt-BR')],
     WEATHER: [CloudSun, 'Temperatura', weatherValue, 'Sensação', remote?.current?.apparent_temperature != null ? `${Math.round(remote.current.apparent_temperature)}°C` : '—'],
@@ -32,16 +35,22 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editing
   const data = values[widget.type] || [metricIcons[widget.type] || MemoryStick, widget.title, '—'];
   const Icon = data[0];
   const diskEntries = new Map<string, any>();
-  for (const disk of history.disks || []) diskEntries.set(`${disk.instance}:${disk.name}:${disk.device}`, disk);
+  for (const disk of history.disks || []) diskEntries.set(disk.device || disk.name, disk);
   for (const disk of metrics.disks || []) {
-    const key = `${disk.instance}:${disk.name}:${disk.device}`;
+    const key = disk.device;
     diskEntries.set(key, { ...diskEntries.get(key), ...disk });
   }
   const disks = [...diskEntries.values()].map((disk: any) => {
     const points = disk.points || [];
     return {
-      label: disk.instance ? `${disk.instance.replace(/:\d+$/, '')} · ${disk.name}` : disk.name,
-      detail: disk.device,
+      label: disk.device || disk.name,
+      detail: [
+        disk.model,
+        `↓ ${formatDiskRate(disk.read)}`,
+        `↑ ${formatDiskRate(disk.write)}`,
+        disk.temperature == null ? null : `${disk.temperature.toFixed(0)}°C`,
+        disk.healthy == null ? null : disk.healthy ? 'SMART OK' : 'SMART ALERTA',
+      ].filter(Boolean).join(' · '),
       value: `${Number(disk.value ?? points[points.length - 1]?.value ?? 0).toFixed(0)}%`,
       points,
     };
@@ -121,7 +130,7 @@ function MetricChart({ lane }: { lane: MetricLane }) {
   return (
     <div className="metric-lane">
       <div className="metric-lane-head">
-        <span title={lane.detail}>{lane.label}</span>
+        <span title={lane.detail}>{lane.label}{lane.detail && <small>{lane.detail}</small>}</span>
         <strong>{lane.value}</strong>
       </div>
       <svg className={dashboardCn('metric-chart')} viewBox="0 0 100 36" preserveAspectRatio="none" aria-hidden="true">

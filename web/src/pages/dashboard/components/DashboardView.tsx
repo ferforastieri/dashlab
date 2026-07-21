@@ -180,7 +180,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
             return (
               <Rnd
                 key={layout.id}
-                className={`canvas-item ${dashboardElement ? 'chrome-canvas-item' : ''} ${layoutEdit ? 'is-editing' : ''}`}
+                className={`canvas-item ${dashboardElement ? 'chrome-canvas-item' : ''} ${app ? 'application-canvas-item' : ''} ${layoutEdit ? 'is-editing' : ''}`}
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
                 size={{ width: layout.w, height: layout.h }}
