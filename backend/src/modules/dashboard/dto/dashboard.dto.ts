@@ -43,6 +43,14 @@ export class BrandingDto {
   @IsOptional() @IsString() @MaxLength(2048) favicon?: string;
   @IsOptional() @IsString() @MaxLength(16) accent?: string;
   @IsOptional() @IsIn(['dark', 'light']) theme?: 'dark' | 'light';
+  @IsOptional() @IsString() @MaxLength(16) backgroundColor?: string;
+  @IsOptional() @IsString() @MaxLength(16) panelColor?: string;
+  @IsOptional() @IsString() @MaxLength(16) textColor?: string;
+  @IsOptional() @IsString() @MaxLength(16) borderColor?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(40) radius?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(10) @Max(100) panelOpacity?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) wallpaperOverlay?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(75) @Max(140) fontScale?: number;
 }
 export class CreateApplicationDto {
   @IsString() @Length(1, 80) name!: string;
@@ -80,10 +88,10 @@ export class LayoutItemDto {
   @IsEnum(KindDto) kind!: KindDto;
   @IsOptional() @IsString() applicationId?: string;
   @IsOptional() @IsString() widgetId?: string;
-  @Type(() => Number) @IsInt() @Min(0) @Max(100) x!: number;
-  @Type(() => Number) @IsInt() @Min(0) @Max(1000) y!: number;
-  @Type(() => Number) @IsInt() @Min(1) @Max(12) w!: number;
-  @Type(() => Number) @IsInt() @Min(1) @Max(12) h!: number;
+  @Type(() => Number) @IsInt() @Min(0) @Max(10000) x!: number;
+  @Type(() => Number) @IsInt() @Min(0) @Max(10000) y!: number;
+  @Type(() => Number) @IsInt() @Min(1) @Max(4000) w!: number;
+  @Type(() => Number) @IsInt() @Min(1) @Max(4000) h!: number;
 }
 export class SaveLayoutDto {
   @IsArray()

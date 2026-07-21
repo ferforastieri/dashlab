@@ -32,5 +32,5 @@ export type DashboardData = {
   applications: DashboardApplication[];
   widgets: DashboardWidget[];
   layouts: DashboardLayout[];
-  layoutPreset: 'ZIMA';
+  layoutPreset: 'FREE';
 };

@@ -97,7 +97,7 @@ export default function ApplicationShell({ dashboardQuery }: { dashboardQuery: a
 }
 function ServerSetup({ done }: { done: () => void }) {
   const connectServer = useConnectServer();
-  const [url, setUrl] = useState('https://dashboard.example.invalid'),
+  const [url, setUrl] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   async function connect() {

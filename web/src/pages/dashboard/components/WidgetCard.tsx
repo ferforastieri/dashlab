@@ -10,11 +10,10 @@ type WidgetCardProps = {
   history: any;
   onDelete: () => void;
   onEdit: () => void;
-  onResize: (axis: 'w' | 'h', delta: number) => void;
   editingLayout: boolean;
 };
 
-export function WidgetCard({ widget, metrics, history, onDelete, onEdit, onResize, editingLayout }: WidgetCardProps) {
+export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editingLayout }: WidgetCardProps) {
   const { latitude = -23.55, longitude = -46.63 } = widget.config || {};
   const prometheusQuery = useWidgetDataQuery(widget.id, widget.type === 'PROMQL');
   const weatherQuery = useWeatherQuery(latitude, longitude, widget.type === 'WEATHER');
@@ -40,10 +39,6 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, onResiz
       {editingLayout && (
         <div className={dashboardCn('widget-actions')}>
           <button onClick={onEdit} title="Editar"><Edit3 /></button>
-          <button onClick={() => onResize('w', -1)} title="Menos largura">−W</button>
-          <button onClick={() => onResize('w', 1)} title="Mais largura">+W</button>
-          <button onClick={() => onResize('h', -1)} title="Menos altura">−H</button>
-          <button onClick={() => onResize('h', 1)} title="Mais altura">+H</button>
         </div>
       )}
       <div className={dashboardCn('widget-title')}><Icon />{widget.title}</div>

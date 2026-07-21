@@ -14,7 +14,7 @@ describe('Dashboard DTO security boundaries', () => {
       await validate(
         plainToInstance(CreateApplicationDto, {
           name: 'Proxmox',
-          url: 'https://127.0.0.1:8006',
+          url: 'https://homelab.local:8006',
         }),
       ),
     ).toHaveLength(0);
@@ -26,7 +26,7 @@ describe('Dashboard DTO security boundaries', () => {
   });
   it('caps layout dimensions and number of items', async () => {
     const dto = plainToInstance(SaveLayoutDto, {
-      items: [{ kind: 'APPLICATION', applicationId: 'x', x: 0, y: 0, w: 99, h: 1 }],
+      items: [{ kind: 'APPLICATION', applicationId: 'x', x: 0, y: 0, w: 4001, h: 1 }],
     });
     expect(await validate(dto)).not.toHaveLength(0);
   });

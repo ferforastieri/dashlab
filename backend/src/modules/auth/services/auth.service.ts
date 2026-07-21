@@ -12,17 +12,15 @@ const branding = {
   wallpaper: '',
   logo: '',
   favicon: '',
+  backgroundColor: '#101416',
+  panelColor: '#181d20',
+  textColor: '#e7eaec',
+  borderColor: '#343b3f',
+  radius: 5,
+  panelOpacity: 100,
+  wallpaperOverlay: 55,
+  fontScale: 100,
 };
-const apps = [
-  ['Nextcloud', 'https://nextcloud.example.invalid', 'nextcloud'],
-  ['Immich', 'https://immich.example.invalid', 'immich'],
-  ['Jellyfin', 'https://jellyfin.example.invalid', 'jellyfin'],
-  ['Atacte', 'https://atacte.example.invalid', 'shield-checkmark'],
-  ['Gitea', 'https://gitea.example.invalid', 'git-branch'],
-  ['Grafana', 'https://grafana.example.invalid', 'stats-chart'],
-  ['AdGuard', 'https://adguard.example.invalid', 'shield'],
-  ['Proxmox', 'https://proxmox.example.invalid', 'server'],
-];
 
 @Injectable()
 export class AuthService {
@@ -43,45 +41,6 @@ export class AuthService {
       include: { dashboards: true },
     });
     const dashboardId = user.dashboards[0].id;
-    for (let i = 0; i < apps.length; i++) {
-      const [name, url, icon] = apps[i];
-      const app = await this.db.application.create({
-        data: {
-          name,
-          url,
-          icon,
-          dashboardId,
-          inDock: i < 4,
-          category: i < 4 ? 'Aplicativos' : 'Administração',
-        },
-      });
-      await this.db.layoutItem.createMany({
-        data: [
-          {
-            surface: 'WEB',
-            kind: 'APPLICATION',
-            x: i % 4,
-            y: Math.floor(i / 4),
-            w: 1,
-            h: 1,
-            order: i,
-            dashboardId,
-            applicationId: app.id,
-          },
-          {
-            surface: 'MOBILE',
-            kind: 'APPLICATION',
-            x: i % 3,
-            y: Math.floor(i / 3),
-            w: 1,
-            h: 1,
-            order: i,
-            dashboardId,
-            applicationId: app.id,
-          },
-        ],
-      });
-    }
     const presets: any[] = [
       ['Relógio', 'CLOCK', {}],
       ['Clima', 'WEATHER', {}],
@@ -100,10 +59,11 @@ export class AuthService {
           {
             surface: 'WEB',
             kind: 'WIDGET',
-            x: i % 3,
-            y: 3 + Math.floor(i / 3),
-            w: 2,
-            h: 1,
+            preset: 'FREE',
+            x: 0,
+            y: i * 132,
+            w: 340,
+            h: 116,
             order: 100 + i,
             dashboardId,
             widgetId: widget.id,
@@ -111,6 +71,7 @@ export class AuthService {
           {
             surface: 'MOBILE',
             kind: 'WIDGET',
+            preset: 'ZIMA',
             x: 0,
             y: 4 + i,
             w: 3,

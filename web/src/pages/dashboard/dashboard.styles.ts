@@ -1,11 +1,7 @@
 export const dashboardClassNames: Record<string, string> = {
   desktop: 'dash-desktop', brand: 'flex items-center gap-2.5', 'brand-mark': 'brand-mark',
   small: 'brand-mark-small', search: 'dash-search', 'header-tools': 'header-tools',
-  'icon-button': 'icon-button', active: 'is-active', 'app-grid': 'app-grid',
-  'layout-item': 'relative min-h-0 min-w-0',
-  'mobile-app': 'max-[800px]:!col-span-2 max-[800px]:!row-span-2 max-[800px]:!col-start-auto max-[800px]:!row-start-auto',
-  'mobile-widget': 'max-[800px]:!col-span-6 max-[800px]:!row-span-2 max-[800px]:!col-start-auto max-[800px]:!row-start-auto',
-  'layout-editing': 'layout-editing', 'app-wrap': 'app-wrap', 'app-icon': 'app-icon',
+  'icon-button': 'icon-button', active: 'is-active', 'app-wrap': 'app-wrap', 'app-icon': 'app-icon',
   widget: 'widget-card', 'widget-title': 'widget-title', 'widget-values': 'widget-values',
   metric: 'metric', 'metric-chart': 'mt-1 block h-5 w-full overflow-visible opacity-90',
   'item-control': 'hidden',

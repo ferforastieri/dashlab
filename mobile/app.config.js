@@ -2,16 +2,16 @@ export default {
   expo: {
     name: 'DashLab',
     slug: 'dashlab',
-    owner: 'fernandoexpodev',
+    owner: process.env.EXPO_OWNER,
     version: '1.0.0',
     orientation: 'portrait',
     userInterfaceStyle: 'dark',
     android: {
-      package: 'br.com.fertec.dashlab',
+      package: 'app.dashlab.mobile',
       permissions: ['INTERNET'],
       adaptiveIcon: { backgroundColor: '#0b1119' },
     },
     plugins: ['expo-secure-store'],
-    extra: { eas: { projectId: 'd22ae48f-1471-41f3-ae65-e38f06e17a98' } },
+    extra: { eas: { projectId: process.env.EXPO_PROJECT_ID } },
   },
 };

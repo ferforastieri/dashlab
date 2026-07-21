@@ -23,31 +23,23 @@ export class DashboardService {
     return d;
   }
   async get(userId: string, surface: 'WEB' | 'MOBILE') {
+    const preset = surface === 'WEB' ? 'FREE' : 'ZIMA';
     const d = await this.db.dashboard.findUniqueOrThrow({
       where: { userId },
       include: {
         applications: { orderBy: { createdAt: 'asc' } },
         widgets: { orderBy: { createdAt: 'asc' } },
-        layouts: { where: { surface, preset: 'ZIMA' }, orderBy: { order: 'asc' } },
+        layouts: { where: { surface, preset }, orderBy: { order: 'asc' } },
       },
     });
-    const legacyZima =
-      surface === 'WEB' &&
-      d.layouts.some((item) => item.kind === 'APPLICATION' && item.w === 2 && item.x >= 3);
-    if (legacyZima || d.layouts.some((item) => item.x + item.w > 12)) {
-      await this.db.layoutItem.deleteMany({
-        where: { dashboardId: d.id, surface, preset: 'ZIMA' },
-      });
-      d.layouts = [];
-    }
     if (!d.layouts.length) {
       await this.seedPreset(d.id, surface);
       d.layouts = await this.db.layoutItem.findMany({
-        where: { dashboardId: d.id, surface, preset: 'ZIMA' },
+        where: { dashboardId: d.id, surface, preset },
         orderBy: { order: 'asc' },
       });
     }
-    d.layoutPreset = 'ZIMA';
+    d.layoutPreset = preset;
     return d;
   }
   async branding(userId: string, data: BrandingDto) {
@@ -144,6 +136,7 @@ export class DashboardService {
   }
   async saveLayout(userId: string, surface: 'WEB' | 'MOBILE', items: LayoutItemDto[]) {
     const d = await this.dashboard(userId);
+    const preset = surface === 'WEB' ? 'FREE' : 'ZIMA';
     const ownedApps = new Set(
       (
         await this.db.application.findMany({
@@ -162,7 +155,7 @@ export class DashboardService {
     );
     await this.db.$transaction(async (tx) => {
       await tx.layoutItem.deleteMany({
-        where: { dashboardId: d.id, surface, preset: 'ZIMA' },
+        where: { dashboardId: d.id, surface, preset },
       });
       for (const [order, item] of items.entries()) {
         const isApp = item.kind === 'APPLICATION';
@@ -173,7 +166,7 @@ export class DashboardService {
           data: {
             dashboardId: d.id,
             surface,
-            preset: 'ZIMA',
+            preset,
             kind: item.kind,
             x: +item.x || 0,
             y: +item.y || 0,
@@ -189,7 +182,8 @@ export class DashboardService {
     return { ok: true, message: 'Organização salva com sucesso' };
   }
   async metrics() {
-    const base = process.env.PROMETHEUS_URL || 'http://127.0.0.1:9090';
+    const base = process.env.PROMETHEUS_URL;
+    if (!base) throw new BadGatewayException('Prometheus não configurado');
     const queries: any = {
       cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
       memory:
@@ -219,7 +213,9 @@ export class DashboardService {
     return result;
   }
   async metricsHistory(range: '15m' | '1h' | '6h' | '24h' = '1h') {
-    const base = process.env.PROMETHEUS_URL || 'http://127.0.0.1:9090',
+    const base = process.env.PROMETHEUS_URL;
+    if (!base) throw new BadGatewayException('Prometheus não configurado');
+    const
       seconds = { '15m': 900, '1h': 3600, '6h': 21600, '24h': 86400 }[range],
       end = Math.floor(Date.now() / 1000),
       start = end - seconds,
@@ -329,7 +325,7 @@ export class DashboardService {
       items.push({
         dashboardId,
         surface,
-        preset: 'ZIMA',
+        preset: surface === 'WEB' ? 'FREE' : 'ZIMA',
         kind,
         order,
         x,
@@ -340,11 +336,9 @@ export class DashboardService {
         widgetId: kind === 'WIDGET' ? id : null,
       });
     if (!mobile) {
-      widgets.forEach((w, i) =>
-        push('WIDGET', w.id, i, 0, i + (i > 3 ? 1 : 0), 3, i === 3 ? 2 : 1),
-      );
+      widgets.forEach((w, i) => push('WIDGET', w.id, i, 0, i * 132, 340, 116));
       apps.forEach((a, i) =>
-        push('APPLICATION', a.id, 100 + i, 3 + (i % 3) * 3, Math.floor(i / 3) * 2, 3, 2),
+        push('APPLICATION', a.id, 100 + i, 380 + (i % 4) * 126, Math.floor(i / 4) * 126, 112, 112),
       );
     } else {
       apps.forEach((a, i) =>
@@ -393,7 +387,7 @@ export class DashboardService {
     const data: any[] = [];
     for (const surface of ['WEB', 'MOBILE'] as const) {
       const n = await this.db.layoutItem.count({
-        where: { dashboardId, preset: 'ZIMA', surface, kind },
+        where: { dashboardId, preset: surface === 'WEB' ? 'FREE' : 'ZIMA', surface, kind },
       });
       const mobile = surface === 'MOBILE';
       let x: number, y: number, w: number, h: number;
@@ -404,10 +398,10 @@ export class DashboardService {
           w = 1;
           h = 1;
         } else {
-          x = 3 + (n % 3) * 3;
-          y = Math.floor(n / 3) * 2;
-          w = 3;
-          h = 2;
+          x = 380 + (n % 4) * 126;
+          y = Math.floor(n / 4) * 126;
+          w = 112;
+          h = 112;
         }
       } else if (mobile) {
         x = 0;
@@ -416,14 +410,14 @@ export class DashboardService {
         h = 1;
       } else {
         x = 0;
-        y = n + (n > 3 ? 1 : 0);
-        w = 3;
-        h = n === 3 ? 2 : 1;
+        y = n * 132;
+        w = 340;
+        h = 116;
       }
       data.push({
         dashboardId,
         surface,
-        preset: 'ZIMA',
+        preset: surface === 'WEB' ? 'FREE' : 'ZIMA',
         kind,
         order: kind === 'APPLICATION' ? n : 100 + n,
         x,

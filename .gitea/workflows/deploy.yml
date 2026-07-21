@@ -29,11 +29,15 @@ jobs:
           POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
           JWT_SECRET: '${{ secrets.JWT_SECRET }}'
           EXPO_TOKEN: '${{ secrets.EXPO_TOKEN }}'
+          EXPO_OWNER: '${{ secrets.EXPO_OWNER }}'
+          EXPO_PROJECT_ID: '${{ secrets.EXPO_PROJECT_ID }}'
         run: |
           set -eu
           test -n "$POSTGRES_PASSWORD"
           test ${#JWT_SECRET} -ge 32
           test -n "$EXPO_TOKEN"
+          test -n "$EXPO_OWNER"
+          test -n "$EXPO_PROJECT_ID"
       - name: Test and build
         run: |
           npm --prefix backend ci
@@ -60,7 +64,7 @@ jobs:
             exit 1
           fi
           umask 077
-          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "${PROMETHEUS_URL:-http://127.0.0.1:9090}" > .env
+          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "$PROMETHEUS_URL" > .env
           $COMPOSE --env-file .env build --pull
           $COMPOSE --env-file .env up -d postgres
           $COMPOSE --env-file .env run --rm backend npx prisma migrate deploy
@@ -70,6 +74,8 @@ jobs:
         working-directory: mobile
         env:
           EXPO_TOKEN: '${{ secrets.EXPO_TOKEN }}'
+          EXPO_OWNER: '${{ secrets.EXPO_OWNER }}'
+          EXPO_PROJECT_ID: '${{ secrets.EXPO_PROJECT_ID }}'
         run: |
           set -eu
           npm ci

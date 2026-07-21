@@ -21,7 +21,7 @@ describe('DashboardService tenant isolation', () => {
   it('saves layout changes only in the active preset', async () => {
     const tx: any = { layoutItem: { deleteMany: jest.fn(), create: jest.fn() } };
     const db: any = {
-      dashboard: { findUnique: jest.fn().mockResolvedValue({ id: 'd1', layoutPreset: 'ZIMA' }) },
+      dashboard: { findUnique: jest.fn().mockResolvedValue({ id: 'd1', layoutPreset: 'FREE' }) },
       application: { findMany: jest.fn().mockResolvedValue([{ id: 'a1' }]) },
       widget: { findMany: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn((fn: any) => fn(tx)),
@@ -30,14 +30,16 @@ describe('DashboardService tenant isolation', () => {
       { kind: 'APPLICATION', applicationId: 'a1', x: 3, y: 0, w: 2, h: 2 } as any,
     ]);
     expect(tx.layoutItem.deleteMany).toHaveBeenCalledWith({
-      where: { dashboardId: 'd1', surface: 'WEB', preset: 'ZIMA' },
+      where: { dashboardId: 'd1', surface: 'WEB', preset: 'FREE' },
     });
     expect(tx.layoutItem.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ preset: 'ZIMA', applicationId: 'a1' }),
+      data: expect.objectContaining({ preset: 'FREE', applicationId: 'a1' }),
     });
   });
   it('returns stable empty series when Prometheus history is unavailable', async () => {
     const previous = global.fetch;
+    const previousPrometheusUrl = process.env.PROMETHEUS_URL;
+    process.env.PROMETHEUS_URL = 'http://prometheus.test';
     global.fetch = jest.fn().mockRejectedValue(new Error('offline')) as any;
     const result = await new DashboardService({} as any).metricsHistory('15m');
     expect(result).toMatchObject({
@@ -49,5 +51,7 @@ describe('DashboardService tenant isolation', () => {
       upload: [],
     });
     global.fetch = previous;
+    if (previousPrometheusUrl) process.env.PROMETHEUS_URL = previousPrometheusUrl;
+    else delete process.env.PROMETHEUS_URL;
   });
 });

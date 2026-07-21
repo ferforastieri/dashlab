@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { CSSProperties, useEffect, useState } from 'react';
+import { Rnd } from 'react-rnd';
 import {
   CloudSun,
   LogOut,
@@ -24,7 +25,17 @@ import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.style
 import { DashboardClock } from './DashboardClock';
 import { DashboardEditor } from './DashboardEditor';
 import { WidgetCard } from './WidgetCard';
-import { getApplicationIconUrl, useEmbeddedIconFallback } from '../applicationIcon';
+
+const resizeHandleClasses = {
+  top: 'canvas-resize-handle handle-n',
+  right: 'canvas-resize-handle handle-e',
+  bottom: 'canvas-resize-handle handle-s',
+  left: 'canvas-resize-handle handle-w',
+  topRight: 'canvas-resize-handle handle-ne',
+  bottomRight: 'canvas-resize-handle handle-se',
+  bottomLeft: 'canvas-resize-handle handle-sw',
+  topLeft: 'canvas-resize-handle handle-nw',
+};
 
 export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => void; dashboardQuery: any }) {
   const metricsQuery = useMetricsOverviewQuery(),
@@ -41,7 +52,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     [modal, setModal] = useState<'app' | 'widget' | 'brand' | 'account' | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
-    [drag, setDrag] = useState<number | null>(null),
+    [layouts, setLayouts] = useState<Layout[]>([]),
     [menu, setMenu] = useState<string | null>(null),
     [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string } | null>(
       null,
@@ -49,8 +60,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   const load = () => dashboardQuery.refetch();
   useEffect(() => {
     if (!dash) return;
+    setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
     document.title = dash.branding?.name || dash.name;
-    document.documentElement.style.setProperty('--accent', dash.branding?.accent || '#ff7a1a');
     if (dash.branding?.favicon) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
       if (!link) {
@@ -61,43 +72,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
       link.href = dash.branding.favicon;
     }
   }, [dash]);
-  const ordered = useMemo(() => {
-    if (!dash) return [];
-    return [...dash.layouts].sort((a, b) => a.order - b.order);
-  }, [dash]);
-  async function drop(at: number) {
-    if (drag === null || !dash) return;
-    const next = [...ordered];
-    const a = next[drag],
-      b = next[at];
-    [a.x, b.x] = [b.x, a.x];
-    [a.y, b.y] = [b.y, a.y];
-    setDrag(null);
-    await saveLayout.mutateAsync(
-      next.map((x, i) => ({
-        ...x,
-        order: i,
-        x: x.x,
-        y: x.y,
-        w: x.w || (x.kind === 'WIDGET' ? 2 : 1),
-        h: x.h || 1,
-      })),
-    );
-  }
-  async function resize(layout: Layout, axis: 'w' | 'h', delta: number) {
-    const max = axis === 'w' ? 12 : 6;
-    const next = ordered.map((x) =>
-      x.id === layout.id ? { ...x, [axis]: Math.max(1, Math.min(max, (x[axis] || 1) + delta)) } : x,
-    );
+
+  async function updateLayout(id: string, values: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) {
+    const next = layouts.map((layout) => (layout.id === id ? { ...layout, ...values } : layout));
+    setLayouts(next);
     await saveLayout.mutateAsync(
       next.map(({ kind, applicationId, widgetId, x, y, w, h }) => ({
-        kind,
-        applicationId,
-        widgetId,
-        x,
-        y,
-        w,
-        h,
+        kind, applicationId, widgetId, x, y, w, h,
       })),
     );
   }
@@ -107,15 +88,23 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   }
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
   const branding = dash.branding || {};
+  const canvasHeight = Math.max(620, ...layouts.map((layout) => layout.y + layout.h + 120));
+  const visualTokens = {
+    '--accent': branding.accent,
+    '--surface-bg': branding.backgroundColor,
+    '--panel-color': branding.panelColor,
+    '--text-color': branding.textColor,
+    '--border-color': branding.borderColor,
+    '--element-radius': `${branding.radius}px`,
+    '--panel-opacity': `${branding.panelOpacity}%`,
+    '--wallpaper-overlay': `${branding.wallpaperOverlay}%`,
+    '--ui-scale': branding.fontScale / 100,
+    backgroundImage: branding.wallpaper
+      ? `linear-gradient(color-mix(in srgb, #000 var(--wallpaper-overlay), transparent), color-mix(in srgb, #000 var(--wallpaper-overlay), transparent)), url(${branding.wallpaper})`
+      : undefined,
+  } as CSSProperties;
   return (
-    <div
-      className={cn('desktop')}
-      style={{
-        backgroundImage: branding.wallpaper
-          ? `linear-gradient(#07101aaa,#07101aaa),url(${branding.wallpaper})`
-          : undefined,
-      }}
-    >
+    <div className={cn('desktop')} style={visualTokens}>
       <div className="rack-line" aria-hidden="true">
         <span>DL—01 / PERSONAL NODE</span>
         <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
@@ -180,8 +169,9 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         </div>
       </header>
       <main>
-        <section className={cn('app-grid')}>
-          {ordered.map((layout, index) => {
+        {layoutEdit && <div className="canvas-edit-hint">Arraste para mover · use as alças para redimensionar</div>}
+        <section className={`free-canvas ${layoutEdit ? 'is-editing' : ''}`} style={{ height: canvasHeight }}>
+          {layouts.map((layout) => {
             const app =
               layout.kind === 'APPLICATION'
                 ? dash.applications.find((a) => a.id === layout.applicationId)
@@ -190,21 +180,29 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
               layout.kind === 'WIDGET' ? dash.widgets.find((w) => w.id === layout.widgetId) : null;
             if (!app && !widget) return null;
             return (
-              <div
+              <Rnd
                 key={layout.id}
-                className={cn(
-                  'layout-item',
-                  layout.kind === 'WIDGET' ? 'mobile-widget' : 'mobile-app',
-                  layoutEdit && 'layout-editing',
-                )}
-                style={{
-                  gridColumn: `${layout.x + 1} / span ${layout.w}`,
-                  gridRow: `${layout.y + 1} / span ${layout.h}`,
+                className={`canvas-item ${layoutEdit ? 'is-editing' : ''}`}
+                bounds="parent"
+                position={{ x: layout.x, y: layout.y }}
+                size={{ width: layout.w, height: layout.h }}
+                minWidth={72}
+                minHeight={72}
+                disableDragging={!layoutEdit}
+                enableResizing={layoutEdit}
+                resizeHandleClasses={resizeHandleClasses}
+                cancel="button,a,input,select,textarea"
+                onDragStop={(_event, position) => {
+                  void updateLayout(layout.id, { x: position.x, y: position.y });
                 }}
-                draggable={layoutEdit}
-                onDragStart={() => setDrag(index)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => drop(index)}
+                onResizeStop={(_event, _direction, element, _delta, position) => {
+                  void updateLayout(layout.id, {
+                    x: position.x,
+                    y: position.y,
+                    w: element.offsetWidth,
+                    h: element.offsetHeight,
+                  });
+                }}
               >
                 {app ? (
                   <div className={cn('app-wrap')}>
@@ -214,11 +212,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                       target="_blank"
                       rel="noreferrer"
                     >
-                      <img
-                        src={getApplicationIconUrl(app)}
-                        alt=""
-                        onError={useEmbeddedIconFallback}
-                      />
+                      {app.icon && <img src={app.icon} alt="" />}
                     </a>
                     <b>{app.name}</b>
                     <i
@@ -265,14 +259,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                       setEditing(widget!);
                       setModal('widget');
                     }}
-                    onResize={(axis, d) => resize(layout, axis, d)}
                     editingLayout={layoutEdit}
                     onDelete={() =>
                       setConfirmDelete({ kind: 'widgets', id: widget!.id, name: widget!.title })
                     }
                   />
                 )}
-              </div>
+              </Rnd>
             );
           })}
         </section>
@@ -282,11 +275,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           .filter((a) => a.inDock)
           .map((a) => (
             <a href={a.url} target="_blank" rel="noreferrer" key={a.id}>
-              <img
-                src={getApplicationIconUrl(a)}
-                alt=""
-                onError={useEmbeddedIconFallback}
-              />
+              {a.icon && <img src={a.icon} alt="" />}
             </a>
           ))}
       </div>

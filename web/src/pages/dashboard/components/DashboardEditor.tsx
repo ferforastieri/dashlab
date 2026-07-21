@@ -82,6 +82,14 @@ export function DashboardEditor({
           favicon: form.favicon || '',
           accent: form.accent,
           theme: form.theme,
+          backgroundColor: form.backgroundColor,
+          panelColor: form.panelColor,
+          textColor: form.textColor,
+          borderColor: form.borderColor,
+          radius: Number(form.radius),
+          panelOpacity: Number(form.panelOpacity),
+          wallpaperOverlay: Number(form.wallpaperOverlay),
+          fontScale: Number(form.fontScale),
         });
       } else return;
       done();
@@ -325,6 +333,56 @@ export function DashboardEditor({
                 value={form.accent || '#ff7a1a'}
                 onChange={(e) => setForm({ ...form, accent: e.target.value })}
               />
+            </label>
+            <div className="visual-color-grid">
+              <label>
+                Fundo
+                <input
+                  type="color"
+                  value={form.backgroundColor}
+                  onChange={(e) => setForm({ ...form, backgroundColor: e.target.value })}
+                />
+              </label>
+              <label>
+                Painéis
+                <input
+                  type="color"
+                  value={form.panelColor}
+                  onChange={(e) => setForm({ ...form, panelColor: e.target.value })}
+                />
+              </label>
+              <label>
+                Texto
+                <input
+                  type="color"
+                  value={form.textColor}
+                  onChange={(e) => setForm({ ...form, textColor: e.target.value })}
+                />
+              </label>
+              <label>
+                Bordas
+                <input
+                  type="color"
+                  value={form.borderColor}
+                  onChange={(e) => setForm({ ...form, borderColor: e.target.value })}
+                />
+              </label>
+            </div>
+            <label className="range-field">
+              <span>Arredondamento <output>{form.radius}px</output></span>
+              <input type="range" min="0" max="40" value={form.radius} onChange={(e) => setForm({ ...form, radius: Number(e.target.value) })} />
+            </label>
+            <label className="range-field">
+              <span>Opacidade dos painéis <output>{form.panelOpacity}%</output></span>
+              <input type="range" min="10" max="100" value={form.panelOpacity} onChange={(e) => setForm({ ...form, panelOpacity: Number(e.target.value) })} />
+            </label>
+            <label className="range-field">
+              <span>Escurecer wallpaper <output>{form.wallpaperOverlay}%</output></span>
+              <input type="range" min="0" max="100" value={form.wallpaperOverlay} onChange={(e) => setForm({ ...form, wallpaperOverlay: Number(e.target.value) })} />
+            </label>
+            <label className="range-field">
+              <span>Escala da interface <output>{form.fontScale}%</output></span>
+              <input type="range" min="75" max="140" value={form.fontScale} onChange={(e) => setForm({ ...form, fontScale: Number(e.target.value) })} />
             </label>
           </>
         )}
