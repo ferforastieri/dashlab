@@ -160,7 +160,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   } as CSSProperties;
   const renderDashboardElement = (elementKey: Layout['elementKey']) => {
     if (elementKey === 'BRAND') return (
-      <div className="chrome-brand">
+      <div className={`chrome-brand ${branding.logo ? 'has-logo' : ''}`}>
         <div className={cn('brand-mark small')}>
           {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
         </div>

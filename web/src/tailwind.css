@@ -588,12 +588,12 @@ a {
   .header-weather > span { display: none; }
   .header-tools > span { display: none; }
   .free-canvas {
-    display: flex;
+    display: grid;
     width: 100%;
     height: auto !important;
     min-width: 0;
     min-height: 0;
-    flex-direction: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     padding-block: 8px;
   }
@@ -605,11 +605,12 @@ a {
     min-width: 0 !important;
     max-width: 100% !important;
     transform: none !important;
+    grid-column: 1 / -1;
   }
   .free-canvas > .canvas-item > * { width: 100%; height: auto; }
-  .free-canvas > .mobile-brand { order: 1; min-height: 58px !important; }
-  .free-canvas > .mobile-clock { order: 2; min-height: 44px !important; }
-  .free-canvas > .mobile-weather { order: 3; min-height: 48px !important; }
+  .free-canvas > .mobile-brand { order: 1; min-height: 56px !important; }
+  .free-canvas > .mobile-clock { order: 2; min-height: 46px !important; grid-column: 1; }
+  .free-canvas > .mobile-weather { order: 3; min-height: 46px !important; grid-column: 2; }
   .free-canvas > .mobile-search { order: 4; min-height: 46px !important; }
   .free-canvas > .mobile-actions { order: 5; min-height: 48px !important; }
   .free-canvas > .mobile-add { order: 6; min-height: 48px !important; }
@@ -621,6 +622,33 @@ a {
   .free-canvas > .mobile-application { order: 30; min-height: 152px !important; }
   .free-canvas > .mobile-footer { order: 100; min-height: 34px !important; }
   .dashboard-element { min-height: inherit; overflow: visible; }
+  .mobile-brand .dashboard-element { overflow: hidden; }
+  .mobile-brand .chrome-brand { min-height: 56px; gap: 11px; padding-inline: 2px; }
+  .mobile-brand .chrome-brand .brand-mark {
+    width: 48px;
+    height: 48px;
+    max-width: 48px;
+    flex: 0 0 48px;
+    aspect-ratio: 1;
+    font-size: 20px;
+  }
+  .mobile-brand .chrome-brand.has-logo .brand-mark { border-color: transparent; background: transparent; }
+  .mobile-brand .chrome-brand .brand-mark img { width: 100%; height: 100%; padding: 2px; object-fit: contain; }
+  .mobile-brand .brand-copy { min-width: 0; gap: 3px; }
+  .mobile-brand .brand-copy span { font-size: 8px; }
+  .mobile-brand .brand-copy strong { max-width: calc(100vw - 100px); font-size: clamp(15px, 4.5vw, 20px); }
+  .mobile-clock .dashboard-element,
+  .mobile-weather .dashboard-element {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    border-block: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--panel-color) 36%, transparent);
+  }
+  .mobile-clock .chrome-clock,
+  .mobile-weather .chrome-weather { min-height: 44px; font-size: clamp(13px, 4vw, 17px); }
+  .mobile-weather .header-weather { gap: 5px; }
+  .mobile-weather .header-weather > svg { width: 18px; }
   .dashboard-element-search .dash-search { min-height: 46px; }
   .dash-search input { font-size: 16px; }
   .chrome-actions { min-height: 48px; justify-content: center; gap: clamp(6px, 3vw, 14px); }
