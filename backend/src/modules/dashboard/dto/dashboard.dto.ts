@@ -25,6 +25,7 @@ export enum KindDto {
   APPLICATION = 'APPLICATION',
   WIDGET = 'WIDGET',
   DASHBOARD_ELEMENT = 'DASHBOARD_ELEMENT',
+  SECTION = 'SECTION',
 }
 export enum WidgetTypeDto {
   SYSTEM = 'SYSTEM',
@@ -69,10 +70,17 @@ export class CreateApplicationDto {
   @MaxLength(2048)
   statusUrl?: string;
   @IsOptional() @IsBoolean() visible?: boolean;
+  @IsOptional() @IsString() sectionId?: string;
 }
 export class UpdateApplicationDto extends CreateApplicationDto {
   @IsOptional() declare name: string;
   @IsOptional() declare url: string;
+}
+export class CreateSectionDto {
+  @IsString() @Length(1, 80) name!: string;
+}
+export class UpdateSectionDto {
+  @IsOptional() @IsString() @Length(1, 80) name?: string;
 }
 export class CreateWidgetDto {
   @IsString() @Length(1, 80) title!: string;
@@ -90,6 +98,7 @@ export class LayoutItemDto {
   @IsEnum(KindDto) kind!: KindDto;
   @IsOptional() @IsString() applicationId?: string;
   @IsOptional() @IsString() widgetId?: string;
+  @IsOptional() @IsString() sectionId?: string;
   @IsOptional() @IsIn(['BRAND', 'CLOCK', 'WEATHER', 'SEARCH', 'ACTIONS', 'ADD', 'FOOTER']) elementKey?: string;
   @Type(() => Number) @IsInt() @Min(0) @Max(10000) x!: number;
   @Type(() => Number) @IsInt() @Min(0) @Max(10000) y!: number;

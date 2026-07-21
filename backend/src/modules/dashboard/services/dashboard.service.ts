@@ -8,9 +8,11 @@ import { PrismaService } from '../../../infrastructure/database/prisma.service';
 import {
   BrandingDto,
   CreateApplicationDto,
+  CreateSectionDto,
   CreateWidgetDto,
   LayoutItemDto,
   UpdateApplicationDto,
+  UpdateSectionDto,
   UpdateWidgetDto,
 } from '../dto/dashboard.dto';
 
@@ -28,6 +30,7 @@ export class DashboardService {
       where: { userId },
       include: {
         applications: { orderBy: { createdAt: 'asc' } },
+        sections: { orderBy: { createdAt: 'asc' } },
         widgets: { orderBy: { createdAt: 'asc' } },
         layouts: { where: { surface, preset }, orderBy: { order: 'asc' } },
       },
@@ -53,6 +56,7 @@ export class DashboardService {
   }
   async createApp(userId: string, data: CreateApplicationDto) {
     const d = await this.dashboard(userId);
+    if (data.sectionId) await this.assertSection(userId, data.sectionId);
     const app = await this.db.application.create({
       data: {
         dashboardId: d.id,
@@ -63,6 +67,7 @@ export class DashboardService {
         icon: data.icon,
         category: data.category,
         statusUrl: data.statusUrl,
+        sectionId: data.sectionId === undefined ? undefined : data.sectionId || null,
       },
     });
     await this.addLayouts(d.id, 'APPLICATION', app.id);
@@ -70,6 +75,7 @@ export class DashboardService {
   }
   async updateApp(userId: string, id: string, data: UpdateApplicationDto) {
     await this.assertApp(userId, id);
+    if (data.sectionId) await this.assertSection(userId, data.sectionId);
     const result = await this.db.application.update({
       where: { id },
       data: {
@@ -81,6 +87,7 @@ export class DashboardService {
         category: data.category,
         statusUrl: data.statusUrl,
         visible: data.visible,
+        sectionId: data.sectionId === undefined ? undefined : data.sectionId || null,
       },
     });
     return { ...result, message: 'Aplicativo atualizado com sucesso' };
@@ -89,6 +96,24 @@ export class DashboardService {
     await this.assertApp(userId, id);
     await this.db.application.delete({ where: { id } });
     return { ok: true, message: 'Aplicativo excluído com sucesso' };
+  }
+  async createSection(userId: string, data: CreateSectionDto) {
+    const d = await this.dashboard(userId);
+    const section = await this.db.section.create({
+      data: { dashboardId: d.id, name: data.name.slice(0, 80) },
+    });
+    await this.addLayouts(d.id, 'SECTION', section.id);
+    return { ...section, message: 'Seção criada com sucesso' };
+  }
+  async updateSection(userId: string, id: string, data: UpdateSectionDto) {
+    await this.assertSection(userId, id);
+    const section = await this.db.section.update({ where: { id }, data: { name: data.name } });
+    return { ...section, message: 'Seção atualizada com sucesso' };
+  }
+  async deleteSection(userId: string, id: string) {
+    await this.assertSection(userId, id);
+    await this.db.section.delete({ where: { id } });
+    return { ok: true, message: 'Seção excluída com sucesso' };
   }
   async createWidget(userId: string, data: CreateWidgetDto) {
     const d = await this.dashboard(userId);
@@ -152,6 +177,10 @@ export class DashboardService {
         })
       ).map((x) => x.id),
     );
+    const ownedSections = new Set(
+      (await this.db.section.findMany({ where: { dashboardId: d.id }, select: { id: true } }))
+        .map((section) => section.id),
+    );
     await this.db.$transaction(async (tx) => {
       await tx.layoutItem.deleteMany({
         where: { dashboardId: d.id, surface, preset },
@@ -159,9 +188,10 @@ export class DashboardService {
       for (const [order, item] of items.entries()) {
         const isApp = item.kind === 'APPLICATION';
         const isWidget = item.kind === 'WIDGET';
-        const target = isApp ? item.applicationId : isWidget ? item.widgetId : item.elementKey;
+        const isSection = item.kind === 'SECTION';
+        const target = isApp ? item.applicationId : isWidget ? item.widgetId : isSection ? item.sectionId : item.elementKey;
         const allowedElements = ['BRAND', 'CLOCK', 'WEATHER', 'SEARCH', 'ACTIONS', 'ADD', 'FOOTER'];
-        if (!target || (isApp && !ownedApps.has(target)) || (isWidget && !ownedWidgets.has(target)) || (!isApp && !isWidget && !allowedElements.includes(target))) throw new ForbiddenException();
+        if (!target || (isApp && !ownedApps.has(target)) || (isWidget && !ownedWidgets.has(target)) || (isSection && !ownedSections.has(target)) || (!isApp && !isWidget && !isSection && !allowedElements.includes(target))) throw new ForbiddenException();
         await tx.layoutItem.create({
           data: {
             dashboardId: d.id,
@@ -175,7 +205,8 @@ export class DashboardService {
             order,
             applicationId: isApp ? target : null,
             widgetId: isWidget ? target : null,
-            elementKey: !isApp && !isWidget ? target : null,
+            sectionId: isSection ? target : null,
+            elementKey: !isApp && !isWidget && !isSection ? target : null,
           },
         });
       }
@@ -451,9 +482,14 @@ export class DashboardService {
     if (!x) throw new NotFoundException();
     return x;
   }
+  private async assertSection(userId: string, id: string) {
+    const section = await this.db.section.findFirst({ where: { id, dashboard: { userId } } });
+    if (!section) throw new NotFoundException();
+    return section;
+  }
   private async addLayouts(
     dashboardId: string,
-    kind: 'APPLICATION' | 'WIDGET',
+    kind: 'APPLICATION' | 'WIDGET' | 'SECTION',
     id: string,
     widgetType?: string,
   ) {
@@ -476,6 +512,11 @@ export class DashboardService {
           w = 112;
           h = 112;
         }
+      } else if (kind === 'SECTION') {
+        x = mobile ? 0 : 360;
+        y = mobile ? 3 + n : n * 260;
+        w = mobile ? 3 : 520;
+        h = mobile ? 2 : 240;
       } else if (widgetType === 'DIVIDER') {
         x = 0;
         y = mobile ? 3 + n : n * 132;
@@ -504,6 +545,7 @@ export class DashboardService {
         h,
         applicationId: kind === 'APPLICATION' ? id : null,
         widgetId: kind === 'WIDGET' ? id : null,
+        sectionId: kind === 'SECTION' ? id : null,
       });
     }
     await this.db.layoutItem.createMany({ data });

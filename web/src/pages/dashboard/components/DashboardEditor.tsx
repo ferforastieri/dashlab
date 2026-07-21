@@ -5,10 +5,12 @@ import { useUpdateApplicationMutation } from '../../../api/applications/useUpdat
 import { useCreateWidgetMutation } from '../../../api/widgets/useCreateWidgetMutation';
 import { useUpdateWidgetMutation } from '../../../api/widgets/useUpdateWidgetMutation';
 import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
+import { useCreateSectionMutation } from '../../../api/sections/useCreateSectionMutation';
+import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSectionMutation';
 import { ImageUpload } from '../../../components/ui/ImageUpload';
 import { Modal } from '../../../components/ui/Modal';
 import { AccountPanel } from '../../account/components/AccountPanel';
-import { DashboardApplication as AppItem, DashboardData as Dash, DashboardWidget as Widget } from '../dashboard.types';
+import { DashboardApplication as AppItem, DashboardData as Dash, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 
 export function DashboardEditor({
@@ -20,7 +22,7 @@ export function DashboardEditor({
 }: {
   type: string;
   dash: Dash;
-  editing: AppItem | Widget | null;
+  editing: AppItem | Widget | Section | null;
   close: () => void;
   done: () => void;
 }) {
@@ -28,6 +30,8 @@ export function DashboardEditor({
     updateApplication = useUpdateApplicationMutation(),
     createWidget = useCreateWidgetMutation(),
     updateWidget = useUpdateWidgetMutation(),
+    createSection = useCreateSectionMutation(),
+    updateSection = useUpdateSectionMutation(),
     updateBranding = useUpdateBrandingMutation();
   const [mode, setMode] = useState(type),
     [form, setForm] = useState<any>({
@@ -58,6 +62,7 @@ export function DashboardEditor({
           category: form.category || undefined,
           statusUrl: form.statusUrl || undefined,
           visible: form.visible,
+          sectionId: form.sectionId || null,
         };
         await (editing
           ? updateApplication.mutateAsync({ id: editing.id, data: application })
@@ -72,6 +77,10 @@ export function DashboardEditor({
         await (editing
           ? updateWidget.mutateAsync({ id: editing.id, data: widget })
           : createWidget.mutateAsync(widget));
+      } else if (mode === 'section') {
+        await (editing
+          ? updateSection.mutateAsync({ id: editing.id, data: { name: form.name } })
+          : createSection.mutateAsync({ name: form.name }));
       } else if (mode === 'brand') {
         await updateBranding.mutateAsync({
           name: form.name,
@@ -118,6 +127,13 @@ export function DashboardEditor({
             >
               Widget
             </button>
+            <button
+              type="button"
+              className={mode === 'section' ? ui.active : ''}
+              onClick={() => setMode('section')}
+            >
+              Seção
+            </button>
           </div>
         )}
         <h2>
@@ -127,7 +143,9 @@ export function DashboardEditor({
               ? 'Minha conta'
               : mode === 'app'
                 ? `${editing ? 'Editar' : 'Novo'} aplicativo`
-                : `${editing ? 'Editar' : 'Novo'} widget`}
+                : mode === 'section'
+                  ? `${editing ? 'Editar' : 'Nova'} seção`
+                  : `${editing ? 'Editar' : 'Novo'} widget`}
         </h2>
         {mode === 'app' && (
           <>
@@ -160,11 +178,11 @@ export function DashboardEditor({
               />
             </label>
             <label>
-              Categoria
-              <input
-                value={form.category || ''}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              />
+              Seção
+              <select value={form.sectionId || ''} onChange={(e) => setForm({ ...form, sectionId: e.target.value })}>
+                <option value="">Sem seção</option>
+                {dash.sections.map((section) => <option key={section.id} value={section.id}>{section.name}</option>)}
+              </select>
             </label>
             <label>
               Deep link mobile
@@ -181,6 +199,12 @@ export function DashboardEditor({
               />
             </label>
           </>
+        )}
+        {mode === 'section' && (
+          <label>
+            Nome da seção
+            <input required value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </label>
         )}
         {mode === 'widget' && (
           <>

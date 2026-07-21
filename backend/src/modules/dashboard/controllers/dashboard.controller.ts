@@ -17,11 +17,13 @@ import { DashboardService } from '../services/dashboard.service';
 import {
   BrandingDto,
   CreateApplicationDto,
+  CreateSectionDto,
   CreateWidgetDto,
   MetricsHistoryDto,
   SaveLayoutDto,
   SurfaceDto,
   UpdateApplicationDto,
+  UpdateSectionDto,
   UpdateWidgetDto,
   WeatherQueryDto,
 } from '../dto/dashboard.dto';
@@ -62,6 +64,25 @@ export class DashboardController {
     @Param('id') id: string,
   ) {
     return this.service.deleteApp(r.user.sub, id);
+  }
+  @UseGuards(JwtAuthGuard) @Post('sections') createSection(
+    @Req() r: AuthRequest,
+    @Body() b: CreateSectionDto,
+  ) {
+    return this.service.createSection(r.user.sub, b);
+  }
+  @UseGuards(JwtAuthGuard) @Patch('sections/:id') updateSection(
+    @Req() r: AuthRequest,
+    @Param('id') id: string,
+    @Body() b: UpdateSectionDto,
+  ) {
+    return this.service.updateSection(r.user.sub, id, b);
+  }
+  @UseGuards(JwtAuthGuard) @Delete('sections/:id') deleteSection(
+    @Req() r: AuthRequest,
+    @Param('id') id: string,
+  ) {
+    return this.service.deleteSection(r.user.sub, id);
   }
   @UseGuards(JwtAuthGuard) @Post('widgets') createWidget(
     @Req() r: AuthRequest,

@@ -24,6 +24,7 @@ describe('DashboardService tenant isolation', () => {
       dashboard: { findUnique: jest.fn().mockResolvedValue({ id: 'd1', layoutPreset: 'FREE' }) },
       application: { findMany: jest.fn().mockResolvedValue([{ id: 'a1' }]) },
       widget: { findMany: jest.fn().mockResolvedValue([]) },
+      section: { findMany: jest.fn().mockResolvedValue([]) },
       $transaction: jest.fn((fn: any) => fn(tx)),
     };
     await new DashboardService(db).saveLayout('u1', 'WEB', [

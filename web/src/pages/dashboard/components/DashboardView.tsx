@@ -18,9 +18,10 @@ import { useApplicationStatusesQuery } from '../../../api/applications/useApplic
 import { useSaveLayoutMutation } from '../../../api/layouts/useSaveLayoutMutation';
 import { useDeleteApplicationMutation } from '../../../api/applications/useDeleteApplicationMutation';
 import { useDeleteWidgetMutation } from '../../../api/widgets/useDeleteWidgetMutation';
+import { useDeleteSectionMutation } from '../../../api/sections/useDeleteSectionMutation';
 import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
-import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardWidget as Widget } from '../dashboard.types';
+import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 import { DashboardClock } from './DashboardClock';
 import { DashboardEditor } from './DashboardEditor';
@@ -45,14 +46,15 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     saveLayout = useSaveLayoutMutation(),
     updateBranding = useUpdateBrandingMutation(),
     deleteApp = useDeleteApplicationMutation(),
-    deleteWidget = useDeleteWidgetMutation();
+    deleteWidget = useDeleteWidgetMutation(),
+    deleteSection = useDeleteSectionMutation();
   const dash = (dashboardQuery.data || null) as Dash | null,
     metrics = metricsQuery.data || {},
     history = historyQuery.data || {},
     statuses = Object.fromEntries(((statusesQuery.data || []) as any[]).map((x) => [x.id, x]));
   const [query, setQuery] = useState(''),
-    [modal, setModal] = useState<'app' | 'widget' | 'brand' | 'account' | null>(null),
-    [editing, setEditing] = useState<AppItem | Widget | null>(null),
+    [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | 'account' | null>(null),
+    [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [layouts, setLayouts] = useState<Layout[]>([]),
     [canvasHeight, setCanvasHeight] = useState<number | null>(null),
@@ -81,13 +83,17 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     const next = layouts.map((layout) => (layout.id === id ? { ...layout, ...values } : layout));
     setLayouts(next);
     await saveLayout.mutateAsync(
-      next.map(({ kind, applicationId, widgetId, elementKey, x, y, w, h }) => ({
-        kind, applicationId, widgetId, elementKey, x, y, w, h,
+      next.map(({ kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h }) => ({
+        kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h,
       })),
     );
   }
   async function remove(kind: string, id: string) {
-    await (kind === 'applications' ? deleteApp.mutateAsync(id) : deleteWidget.mutateAsync(id));
+    await (kind === 'applications'
+      ? deleteApp.mutateAsync(id)
+      : kind === 'sections'
+        ? deleteSection.mutateAsync(id)
+        : deleteWidget.mutateAsync(id));
     setMenu(null);
   }
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
@@ -122,7 +128,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     '--wallpaper-overlay': `${branding.wallpaperOverlay}%`,
     '--ui-scale': branding.fontScale / 100,
     backgroundImage: branding.wallpaper
-      ? `linear-gradient(color-mix(in srgb, #000 var(--wallpaper-overlay), transparent), color-mix(in srgb, #000 var(--wallpaper-overlay), transparent)), url(${branding.wallpaper})`
+      ? `linear-gradient(color-mix(in srgb, var(--surface-bg) var(--wallpaper-overlay), transparent), color-mix(in srgb, var(--surface-bg) var(--wallpaper-overlay), transparent)), url(${branding.wallpaper})`
       : undefined,
   } as CSSProperties;
   const renderDashboardElement = (elementKey: Layout['elementKey']) => {
@@ -175,8 +181,11 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 : null;
             const widget =
               layout.kind === 'WIDGET' ? dash.widgets.find((w) => w.id === layout.widgetId) : null;
+            const dashboardSection =
+              layout.kind === 'SECTION' ? dash.sections.find((section) => section.id === layout.sectionId) : null;
             const dashboardElement = layout.kind === 'DASHBOARD_ELEMENT' ? layout.elementKey : null;
-            if (!app && !widget && !dashboardElement) return null;
+            if (app?.sectionId) return null;
+            if (!app && !widget && !dashboardSection && !dashboardElement) return null;
             return (
               <Rnd
                 key={layout.id}
@@ -184,8 +193,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
                 size={{ width: layout.w, height: layout.h }}
-                minWidth={dashboardElement ? 32 : widget?.type === 'DIVIDER' ? 120 : 72}
-                minHeight={dashboardElement || widget?.type === 'DIVIDER' ? 20 : 72}
+                minWidth={dashboardElement ? 32 : dashboardSection ? 240 : widget?.type === 'DIVIDER' ? 120 : 72}
+                minHeight={dashboardElement || widget?.type === 'DIVIDER' ? 20 : dashboardSection ? 140 : 72}
                 disableDragging={!layoutEdit}
                 enableResizing={layoutEdit}
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
@@ -215,6 +224,27 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                     {layoutEdit && <div className="chrome-drag-handle" aria-hidden="true" />}
                     {renderDashboardElement(dashboardElement)}
                   </div>
+                ) : dashboardSection ? (
+                  <div className="section-card">
+                    <header className="section-header">
+                      <h3>{dashboardSection.name}</h3>
+                      {layoutEdit && <div className="section-actions">
+                        <button onClick={() => { setEditing(dashboardSection); setModal('section'); }} title="Editar seção"><Edit3 /></button>
+                        <button onClick={() => setConfirmDelete({ kind: 'sections', id: dashboardSection.id, name: dashboardSection.name })} title="Excluir seção"><Trash2 /></button>
+                      </div>}
+                    </header>
+                    <div className="section-apps">
+                      {dash.applications.filter((item) => item.sectionId === dashboardSection.id).map((item) => (
+                        <div className="section-app" key={item.id}>
+                          <a href={item.url} target="_blank" rel="noreferrer" className={layoutEdit ? 'pointer-events-none' : ''}>
+                            <span className="section-app-icon">{item.icon && <img src={item.icon} alt="" />}</span>
+                            <span><strong>{item.name}</strong><small>{item.description || 'Sem descrição'}</small></span>
+                          </a>
+                          {layoutEdit && <button onClick={() => { setEditing(item); setModal('app'); }} title="Editar aplicativo"><Edit3 /></button>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : app ? (
                   <div className={cn('app-wrap')}>
                     <a
@@ -226,8 +256,9 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                       {app.icon && <img src={app.icon} alt="" />}
                     </a>
                     <b>{app.name}</b>
+                    <small className="app-description">{app.description || 'Sem descrição'}</small>
                     <i
-                      className={`app-status ${statuses[app.id]?.online ? 'bg-emerald-400 shadow-[0_0_9px_#43d17d]' : statuses[app.id] ? 'bg-red-400' : 'bg-slate-400'}`}
+                      className={`app-status ${statuses[app.id]?.online ? 'is-online' : statuses[app.id] ? 'is-offline' : 'is-checking'}`}
                       title={
                         statuses[app.id]
                           ? `${statuses[app.id].online ? 'Online' : 'Offline'} · ${statuses[app.id].latency} ms`
