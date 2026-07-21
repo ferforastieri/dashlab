@@ -1,3 +1,5 @@
+name: dashlab
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -41,4 +43,8 @@ services:
     restart: unless-stopped
     ports: ['${WEB_PORT:-3000}:80']
     depends_on: [backend]
-volumes: { postgres_data: {}, uploads: {} }
+volumes:
+  postgres_data:
+    name: dashlab_postgres_data
+  uploads:
+    name: dashlab_uploads

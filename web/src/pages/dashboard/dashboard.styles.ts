@@ -14,7 +14,7 @@ export const dashboardClassNames: Record<string, string> = {
   close: 'absolute right-4 top-4 grid h-8 w-8 place-items-center border-0 bg-transparent text-slate-300',
   tabs: 'tab-list', primary: 'button-primary', secondary: 'button-secondary',
   danger: 'inline-flex h-11 items-center justify-center rounded-xl border border-red-400/30 bg-transparent px-3 text-red-300',
-  solid: 'bg-red-500 text-white', link: 'border-0 bg-transparent p-2 text-orange-300',
+  solid: 'bg-red-500 text-white', link: 'button-link',
   error: 'text-sm text-red-300', check: 'flex items-center gap-2 [&>input]:h-4 [&>input]:w-4',
   'field-row': 'grid grid-cols-2 gap-3', account: 'grid gap-3',
   session: 'flex items-center justify-between text-xs text-slate-300',

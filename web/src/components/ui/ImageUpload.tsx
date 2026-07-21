@@ -68,7 +68,7 @@ export function ImageUpload({ label, value, onChange, hint }: ImageUploadProps) 
         id={id}
         className="sr-only"
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/gif"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,image/vnd.microsoft.icon"
         onChange={(event) => select(event.target.files?.[0])}
       />
     </div>

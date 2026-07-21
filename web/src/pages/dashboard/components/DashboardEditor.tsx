@@ -295,11 +295,17 @@ export function DashboardEditor({
               onChange={(logo) => setForm({ ...form, logo })}
               hint="Prefira uma imagem quadrada em PNG ou WebP"
             />
+            <ImageUpload
+              label="Favicon da aba"
+              value={form.favicon}
+              onChange={(favicon) => setForm({ ...form, favicon })}
+              hint="Use uma imagem quadrada em PNG, WebP ou ICO"
+            />
             <label>
               Cor de destaque
               <input
                 type="color"
-                value={form.accent || '#ff7a1a'}
+                value={form.accent}
                 onChange={(e) => setForm({ ...form, accent: e.target.value })}
               />
             </label>
