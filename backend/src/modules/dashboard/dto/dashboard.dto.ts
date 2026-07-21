@@ -24,6 +24,7 @@ export enum SurfaceDto {
 export enum KindDto {
   APPLICATION = 'APPLICATION',
   WIDGET = 'WIDGET',
+  DASHBOARD_ELEMENT = 'DASHBOARD_ELEMENT',
 }
 export enum WidgetTypeDto {
   SYSTEM = 'SYSTEM',
@@ -87,6 +88,7 @@ export class LayoutItemDto {
   @IsEnum(KindDto) kind!: KindDto;
   @IsOptional() @IsString() applicationId?: string;
   @IsOptional() @IsString() widgetId?: string;
+  @IsOptional() @IsIn(['BRAND', 'CLOCK', 'WEATHER', 'SEARCH', 'ACTIONS', 'ADD', 'FOOTER']) elementKey?: string;
   @Type(() => Number) @IsInt() @Min(0) @Max(10000) x!: number;
   @Type(() => Number) @IsInt() @Min(0) @Max(10000) y!: number;
   @Type(() => Number) @IsInt() @Min(1) @Max(4000) w!: number;

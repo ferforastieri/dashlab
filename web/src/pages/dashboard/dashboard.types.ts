@@ -17,6 +17,7 @@ export type DashboardLayout = {
   kind: string;
   applicationId?: string;
   widgetId?: string;
+  elementKey?: 'BRAND' | 'CLOCK' | 'WEATHER' | 'SEARCH' | 'ACTIONS' | 'ADD' | 'FOOTER';
   order: number;
   x: number;
   y: number;

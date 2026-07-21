@@ -77,8 +77,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     const next = layouts.map((layout) => (layout.id === id ? { ...layout, ...values } : layout));
     setLayouts(next);
     await saveLayout.mutateAsync(
-      next.map(({ kind, applicationId, widgetId, x, y, w, h }) => ({
-        kind, applicationId, widgetId, x, y, w, h,
+      next.map(({ kind, applicationId, widgetId, elementKey, x, y, w, h }) => ({
+        kind, applicationId, widgetId, elementKey, x, y, w, h,
       })),
     );
   }
@@ -104,66 +104,46 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
       ? `linear-gradient(color-mix(in srgb, #000 var(--wallpaper-overlay), transparent), color-mix(in srgb, #000 var(--wallpaper-overlay), transparent)), url(${branding.wallpaper})`
       : undefined,
   } as CSSProperties;
+  const renderDashboardElement = (elementKey: Layout['elementKey']) => {
+    if (elementKey === 'BRAND') return (
+      <div className="chrome-brand">
+        <div className={cn('brand-mark small')}>
+          {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
+        </div>
+        <div className="brand-copy"><span>WORKSPACE</span><strong>{branding.name || dash.name}</strong></div>
+      </div>
+    );
+    if (elementKey === 'CLOCK') return <div className="chrome-clock"><DashboardClock /></div>;
+    if (elementKey === 'WEATHER') return <div className="chrome-weather"><HeaderWeather widget={weatherWidget} /></div>;
+    if (elementKey === 'SEARCH') return (
+      <form className={cn('search')} onSubmit={(event) => {
+        event.preventDefault();
+        if (query) window.open(`https://google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+      }}>
+        <Search size={18} />
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar na web" />
+      </form>
+    );
+    if (elementKey === 'ACTIONS') return (
+      <div className={`${cn('header-tools')} chrome-actions`}>
+        <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
+        <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => setLayoutEdit(!layoutEdit)} title="Editar organização"><Pencil /></button>
+        <button className={cn('icon-button')} onClick={() => setModal('account')} title="Minha conta"><UserRound /></button>
+        <button className={cn('icon-button')} onClick={onLogout} title="Sair"><LogOut /></button>
+      </div>
+    );
+    if (elementKey === 'ADD') return <button className="chrome-add-button" onClick={() => setModal('app')} aria-label="Adicionar aplicativo"><Plus /></button>;
+    if (elementKey === 'FOOTER') return (
+      <footer className="rack-line chrome-footer" aria-label="Estado do workspace">
+        <span>DL—01 / PERSONAL NODE</span>
+        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
+        <span className="rack-line-status"><i /> SYSTEM READY</span>
+      </footer>
+    );
+    return null;
+  };
   return (
     <div className={cn('desktop')} style={visualTokens}>
-      <header className="dash-header">
-        <div className="brand-zone">
-          <div className={cn('brand')}>
-            <div className={cn('brand-mark small')}>
-              {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
-            </div>
-            <div className="brand-copy">
-              <span>WORKSPACE</span>
-              <strong>{branding.name || dash.name}</strong>
-            </div>
-          </div>
-          <div className="header-glance">
-            <DashboardClock />
-            <HeaderWeather widget={weatherWidget} />
-          </div>
-        </div>
-        <form
-          className={cn('search')}
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (query)
-              window.open(`https://google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-          }}
-        >
-          <Search size={18} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Pesquisar na web"
-          />
-        </form>
-        <div className={cn('header-tools')}>
-          <button
-            className={cn('icon-button')}
-            onClick={() => setModal('brand')}
-            title="Personalizar"
-          >
-            <Settings />
-          </button>
-          <button
-            className={cn('icon-button', layoutEdit && 'active')}
-            onClick={() => setLayoutEdit(!layoutEdit)}
-            title="Editar organização"
-          >
-            <Pencil />
-          </button>
-          <button
-            className={cn('icon-button')}
-            onClick={() => setModal('account')}
-            title="Minha conta"
-          >
-            <UserRound />
-          </button>
-          <button className={cn('icon-button')} onClick={onLogout} title="Sair">
-            <LogOut />
-          </button>
-        </div>
-      </header>
       <main>
         {layoutEdit && <div className="canvas-edit-hint">Arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit ? 'is-editing' : ''}`} style={{ height: canvasHeight }}>
@@ -174,11 +154,12 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 : null;
             const widget =
               layout.kind === 'WIDGET' ? dash.widgets.find((w) => w.id === layout.widgetId) : null;
-            if (!app && !widget) return null;
+            const dashboardElement = layout.kind === 'DASHBOARD_ELEMENT' ? layout.elementKey : null;
+            if (!app && !widget && !dashboardElement) return null;
             return (
               <Rnd
                 key={layout.id}
-                className={`canvas-item ${layoutEdit ? 'is-editing' : ''}`}
+                className={`canvas-item ${dashboardElement ? 'chrome-canvas-item' : ''} ${layoutEdit ? 'is-editing' : ''}`}
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
                 size={{ width: layout.w, height: layout.h }}
@@ -186,6 +167,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 minHeight={72}
                 disableDragging={!layoutEdit}
                 enableResizing={layoutEdit}
+                dragHandleClassName={dashboardElement ? 'chrome-drag-handle' : undefined}
                 resizeHandleClasses={resizeHandleClasses}
                 cancel="button,a,input,select,textarea"
                 onDragStop={(_event, position) => {
@@ -200,7 +182,12 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                   });
                 }}
               >
-                {app ? (
+                {dashboardElement ? (
+                  <div className={`dashboard-element dashboard-element-${dashboardElement.toLowerCase()}`}>
+                    {layoutEdit && <div className="chrome-drag-handle" aria-hidden="true" />}
+                    {renderDashboardElement(dashboardElement)}
+                  </div>
+                ) : app ? (
                   <div className={cn('app-wrap')}>
                     <a
                       className={cn('app-icon', layoutEdit && 'pointer-events-none')}
@@ -266,16 +253,6 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           })}
         </section>
       </main>
-      <footer className="rack-line dashboard-footer" aria-label="Estado do workspace">
-        <span>DL—01 / PERSONAL NODE</span>
-        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
-        <span className="rack-line-status">
-          <i /> SYSTEM READY
-        </span>
-      </footer>
-      <button className={cn('add')} onClick={() => setModal('app')} aria-label="Adicionar aplicativo">
-        <Plus />
-      </button>
       {modal && (
         <DashboardEditor
           type={modal}

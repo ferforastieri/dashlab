@@ -157,9 +157,10 @@ export class DashboardService {
       });
       for (const [order, item] of items.entries()) {
         const isApp = item.kind === 'APPLICATION';
-        const target = isApp ? item.applicationId : item.widgetId;
-        if (!target || !(isApp ? ownedApps : ownedWidgets).has(target))
-          throw new ForbiddenException();
+        const isWidget = item.kind === 'WIDGET';
+        const target = isApp ? item.applicationId : isWidget ? item.widgetId : item.elementKey;
+        const allowedElements = ['BRAND', 'CLOCK', 'WEATHER', 'SEARCH', 'ACTIONS', 'ADD', 'FOOTER'];
+        if (!target || (isApp && !ownedApps.has(target)) || (isWidget && !ownedWidgets.has(target)) || (!isApp && !isWidget && !allowedElements.includes(target))) throw new ForbiddenException();
         await tx.layoutItem.create({
           data: {
             dashboardId: d.id,
@@ -172,7 +173,8 @@ export class DashboardService {
             h: Math.max(1, +item.h || 1),
             order,
             applicationId: isApp ? target : null,
-            widgetId: isApp ? null : target,
+            widgetId: isWidget ? target : null,
+            elementKey: !isApp && !isWidget ? target : null,
           },
         });
       }
@@ -353,6 +355,16 @@ export class DashboardService {
       apps.forEach((a, i) =>
         push('APPLICATION', a.id, 100 + i, 380 + (i % 4) * 126, Math.floor(i / 4) * 126, 112, 112),
       );
+      const elements = [
+        ['BRAND', 0, 4, 230, 64], ['CLOCK', 250, 4, 100, 64],
+        ['WEATHER', 370, 4, 210, 64], ['SEARCH', 600, 12, 480, 44],
+        ['ACTIONS', 1100, 8, 160, 52], ['ADD', 1280, 8, 52, 52],
+        ['FOOTER', 0, 820, 1332, 30],
+      ];
+      elements.forEach(([elementKey, x, y, w, h], index) => items.push({
+        dashboardId, surface, preset: 'FREE', kind: 'DASHBOARD_ELEMENT', elementKey,
+        order: 1000 + index, x, y, w, h,
+      }));
     } else {
       apps.forEach((a, i) =>
         push('APPLICATION', a.id, i, i % (mobile ? 3 : 4), Math.floor(i / (mobile ? 3 : 4)), 1, 1),
