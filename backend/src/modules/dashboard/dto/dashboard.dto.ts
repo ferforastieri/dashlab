@@ -35,6 +35,7 @@ export enum WidgetTypeDto {
   SEARCH = 'SEARCH',
   STATUS = 'STATUS',
   PROMQL = 'PROMQL',
+  DIVIDER = 'DIVIDER',
 }
 
 export class BrandingDto {

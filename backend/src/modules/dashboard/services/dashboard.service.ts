@@ -101,6 +101,7 @@ export class DashboardService {
       'SEARCH',
       'STATUS',
       'PROMQL',
+      'DIVIDER',
     ];
     if (!allowed.includes(data.type)) throw new ForbiddenException('Tipo inválido');
     const widget = await this.db.widget.create({
@@ -111,7 +112,7 @@ export class DashboardService {
         config: (data.config || {}) as any,
       },
     });
-    await this.addLayouts(d.id, 'WIDGET', widget.id);
+    await this.addLayouts(d.id, 'WIDGET', widget.id, data.type);
     return { ...widget, message: 'Widget criado com sucesso' };
   }
   async updateWidget(userId: string, id: string, data: UpdateWidgetDto) {
@@ -188,7 +189,7 @@ export class DashboardService {
       cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
       memory:
         '(1-node_memory_MemAvailable_bytes{tipo="Servidor"}/node_memory_MemTotal_bytes{tipo="Servidor"})*100',
-      disks: '(1-node_filesystem_avail_bytes{tipo="Servidor",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs"}/node_filesystem_size_bytes{tipo="Servidor",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs"})*100',
+      disks: '(1-node_filesystem_avail_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"}/node_filesystem_size_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"})*100',
       download: 'sum(rate(node_network_receive_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
       upload: 'sum(rate(node_network_transmit_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
     };
@@ -208,6 +209,7 @@ export class DashboardService {
             ? (json?.data?.result || []).map((entry: any) => ({
                 name: entry.metric?.mountpoint || entry.metric?.device || 'Disco',
                 device: entry.metric?.device || '',
+                instance: entry.metric?.instance || entry.metric?.nodename || '',
                 value: Number(entry.value?.[1] || 0),
               }))
             : Number(json?.data?.result?.[0]?.value?.[1] || 0);
@@ -230,7 +232,7 @@ export class DashboardService {
       cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
       memory:
         '(1-node_memory_MemAvailable_bytes{tipo="Servidor"}/node_memory_MemTotal_bytes{tipo="Servidor"})*100',
-      disks: '(1-node_filesystem_avail_bytes{tipo="Servidor",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs"}/node_filesystem_size_bytes{tipo="Servidor",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs"})*100',
+      disks: '(1-node_filesystem_avail_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"}/node_filesystem_size_bytes{tipo="Servidor",mountpoint!~"/(boot|run)($|/)",fstype!~"tmpfs|devtmpfs|overlay|squashfs|nsfs|fuse.*"})*100',
       download: 'sum(rate(node_network_receive_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
       upload: 'sum(rate(node_network_transmit_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
     };
@@ -246,6 +248,7 @@ export class DashboardService {
             ? (json?.data?.result || []).map((entry: any) => ({
                 name: entry.metric?.mountpoint || entry.metric?.device || 'Disco',
                 device: entry.metric?.device || '',
+                instance: entry.metric?.instance || entry.metric?.nodename || '',
                 points: (entry.values || []).map(([timestamp, value]: [number, string]) => ({
                   timestamp,
                   value: Number(value),
@@ -408,7 +411,12 @@ export class DashboardService {
     if (!x) throw new NotFoundException();
     return x;
   }
-  private async addLayouts(dashboardId: string, kind: 'APPLICATION' | 'WIDGET', id: string) {
+  private async addLayouts(
+    dashboardId: string,
+    kind: 'APPLICATION' | 'WIDGET',
+    id: string,
+    widgetType?: string,
+  ) {
     const data: any[] = [];
     for (const surface of ['WEB', 'MOBILE'] as const) {
       const n = await this.db.layoutItem.count({
@@ -428,6 +436,11 @@ export class DashboardService {
           w = 112;
           h = 112;
         }
+      } else if (widgetType === 'DIVIDER') {
+        x = 0;
+        y = mobile ? 3 + n : n * 132;
+        w = mobile ? 3 : 760;
+        h = mobile ? 1 : 32;
       } else if (mobile) {
         x = 0;
         y = 3 + n;

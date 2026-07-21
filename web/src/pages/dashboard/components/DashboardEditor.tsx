@@ -207,8 +207,9 @@ export function DashboardEditor({
                   'SEARCH',
                   'STATUS',
                   'PROMQL',
+                  'DIVIDER',
                 ].map((x) => (
-                  <option key={x}>{x}</option>
+                  <option key={x} value={x}>{x === 'DIVIDER' ? 'Divisória' : x}</option>
                 ))}
               </select>
             </label>

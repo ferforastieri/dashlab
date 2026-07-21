@@ -24,6 +24,7 @@ enum WidgetType {
   SEARCH
   STATUS
   PROMQL
+  DIVIDER
 }
 enum LayoutPreset {
   FREE

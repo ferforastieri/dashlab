@@ -5,5 +5,6 @@ export const useApplicationStatusesQuery = () =>
   useQuery({
     queryKey: queryKeys.statuses,
     queryFn: async () => (await apiClient.get('/applications/status')).data,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });

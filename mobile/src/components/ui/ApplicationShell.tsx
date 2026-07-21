@@ -394,16 +394,18 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
         <View className={s.widgets}>
           {data.widgets.slice(0, 6).map((w: any) => (
             <Pressable
-              className={s.widget}
+              className={w.type === 'DIVIDER' ? s.divider : s.widget}
               key={w.id}
               onLongPress={() => setActionItem({ kind: 'widget', item: w })}
             >
-              <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
-              <Text className={s.widgetTitle}>{w.title}</Text>
-              <Text className={s.metric}>{widgetValue(w.type, metrics)}</Text>
-              {['SYSTEM', 'STORAGE', 'NETWORK'].includes(w.type) && (
-                <MiniBars values={widgetSeries(w.type, history)} />
-              )}
+              {w.type === 'DIVIDER' ? <Text className={s.dividerText}>{w.title}</Text> : <>
+                <Ionicons name={widgetIcon(w.type)} color="#ff8b35" size={21} />
+                <Text className={s.widgetTitle}>{w.title}</Text>
+                <Text className={s.metric}>{widgetValue(w.type, metrics)}</Text>
+                {['SYSTEM', 'STORAGE', 'NETWORK'].includes(w.type) && (
+                  <MiniBars values={widgetSeries(w.type, history)} />
+                )}
+              </>}
             </Pressable>
           ))}
         </View>
@@ -480,6 +482,7 @@ function Dashboard({ logout, dashboardQuery }: { logout: () => void; dashboardQu
                   'SEARCH',
                   'STATUS',
                   'PROMQL',
+                  'DIVIDER',
                 ].map((t) => (
                   <Pressable
                     key={t}
@@ -746,6 +749,8 @@ const s = {
   appName: 'text-[#dbe5ef] text-xs mt-2 max-w-[95px]',
   widgets: 'flex-row flex-wrap gap-2.5',
   widget: 'w-full min-h-[105px] bg-white/[0.06] border border-white/[0.09] rounded-[19px] p-[15px]',
+  divider: 'w-full mt-3 mb-1 border-b border-white/20 pb-2',
+  dividerText: 'text-[10px] uppercase tracking-[2px] text-slate-400',
   widgetTitle: 'text-[#9eacbc] text-xs mt-[7px]',
   metric: 'text-white text-[23px] font-bold mt-1',
   miniChart: 'h-[34px] mt-2 flex-row items-end gap-0.5',

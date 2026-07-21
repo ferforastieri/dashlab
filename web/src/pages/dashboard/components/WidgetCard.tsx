@@ -32,15 +32,15 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editing
   const data = values[widget.type] || [metricIcons[widget.type] || MemoryStick, widget.title, '—'];
   const Icon = data[0];
   const diskEntries = new Map<string, any>();
-  for (const disk of history.disks || []) diskEntries.set(`${disk.name}:${disk.device}`, disk);
+  for (const disk of history.disks || []) diskEntries.set(`${disk.instance}:${disk.name}:${disk.device}`, disk);
   for (const disk of metrics.disks || []) {
-    const key = `${disk.name}:${disk.device}`;
+    const key = `${disk.instance}:${disk.name}:${disk.device}`;
     diskEntries.set(key, { ...diskEntries.get(key), ...disk });
   }
   const disks = [...diskEntries.values()].map((disk: any) => {
     const points = disk.points || [];
     return {
-      label: disk.name,
+      label: disk.instance ? `${disk.instance.replace(/:\d+$/, '')} · ${disk.name}` : disk.name,
       detail: disk.device,
       value: `${Number(disk.value ?? points[points.length - 1]?.value ?? 0).toFixed(0)}%`,
       points,
@@ -57,6 +57,20 @@ export function WidgetCard({ widget, metrics, history, onDelete, onEdit, editing
           { label: 'Upload', value: formatRate(metrics.upload), points: history.upload || [] },
         ]
       : widget.type === 'STORAGE' ? disks : [];
+
+  if (widget.type === 'DIVIDER') {
+    return (
+      <div className="divider-widget" role="separator" aria-label={widget.title}>
+        {widget.title && <span>{widget.title}</span>}
+        {editingLayout && (
+          <div className={dashboardCn('widget-actions')}>
+            <button onClick={onEdit} title="Editar"><Edit3 /></button>
+            <button onClick={onDelete} title="Excluir"><X /></button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={dashboardCn('widget')}>

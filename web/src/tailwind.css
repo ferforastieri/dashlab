@@ -257,6 +257,7 @@ a {
 .handle-se { right: -7px !important; bottom: -7px !important; cursor: se-resize; }
 .handle-sw { bottom: -7px !important; left: -7px !important; cursor: sw-resize; }
 .app-wrap {
+  container-type: size;
   position: relative;
   display: flex;
   height: 100%;
@@ -273,8 +274,8 @@ a {
 .app-wrap > b { display: block; margin-top: 8px; color: #c9ced0; font-size: 12px; font-weight: 400; letter-spacing: .02em; }
 .app-icon {
   display: grid;
-  width: 58px;
-  height: 58px;
+  width: clamp(58px, min(68cqw, 68cqh), 320px);
+  height: clamp(58px, min(68cqw, 68cqh), 320px);
   place-items: center;
   overflow: hidden;
   border: 1px solid #394145;
@@ -284,7 +285,37 @@ a {
   transition: transform 140ms ease, border-color 140ms ease;
 }
 .app-icon:hover { transform: translateY(-3px); border-color: #697478; }
-.app-icon img { width: 44px; height: 44px; border-radius: 7px; object-fit: contain; }
+.app-icon img { width: 78%; height: 78%; border-radius: 12%; object-fit: contain; }
+.app-status {
+  position: absolute;
+  left: calc(50% + min(30cqw, 30cqh));
+  top: calc(50% + min(18cqw, 18cqh));
+  width: clamp(10px, min(9cqw, 9cqh), 18px);
+  height: clamp(10px, min(9cqw, 9cqh), 18px);
+  border: 2px solid var(--surface-bg);
+  border-radius: 999px;
+}
+
+.divider-widget {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 2px;
+  align-items: center;
+  color: var(--muted);
+  font: 600 10px/1 'IBM Plex Mono', monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.divider-widget::before, .divider-widget::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: color-mix(in srgb, var(--border-color) 80%, var(--accent));
+}
+.divider-widget span { padding: 0 10px; white-space: nowrap; }
+.divider-widget .widget-actions { right: 4px; top: 50%; transform: translateY(-50%); }
 
 .widget-card {
   position: relative;

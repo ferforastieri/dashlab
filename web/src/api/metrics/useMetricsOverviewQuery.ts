@@ -5,5 +5,6 @@ export const useMetricsOverviewQuery = () =>
   useQuery({
     queryKey: queryKeys.metrics,
     queryFn: async () => (await apiClient.get('/metrics/overview')).data,
-    refetchInterval: 10000,
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
   });

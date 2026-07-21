@@ -184,8 +184,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
                 size={{ width: layout.w, height: layout.h }}
-                minWidth={dashboardElement ? 32 : 72}
-                minHeight={dashboardElement ? 20 : 72}
+                minWidth={dashboardElement ? 32 : widget?.type === 'DIVIDER' ? 120 : 72}
+                minHeight={dashboardElement || widget?.type === 'DIVIDER' ? 20 : 72}
                 disableDragging={!layoutEdit}
                 enableResizing={layoutEdit}
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
@@ -227,7 +227,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                     </a>
                     <b>{app.name}</b>
                     <i
-                      className={`absolute left-[calc(50%+25px)] top-[60px] h-2.5 w-2.5 rounded-full border-2 border-[#15202c] ${statuses[app.id]?.online ? 'bg-emerald-400 shadow-[0_0_9px_#43d17d]' : statuses[app.id] ? 'bg-red-400' : 'bg-slate-400'}`}
+                      className={`app-status ${statuses[app.id]?.online ? 'bg-emerald-400 shadow-[0_0_9px_#43d17d]' : statuses[app.id] ? 'bg-red-400' : 'bg-slate-400'}`}
                       title={
                         statuses[app.id]
                           ? `${statuses[app.id].online ? 'Online' : 'Offline'} · ${statuses[app.id].latency} ms`

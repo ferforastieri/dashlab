@@ -5,5 +5,6 @@ export const useMetricsHistory = () =>
   useQuery({
     queryKey: keys.history,
     queryFn: async () => (await client.get('/metrics/history?range=1h')).data,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });

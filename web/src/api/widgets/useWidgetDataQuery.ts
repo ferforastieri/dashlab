@@ -5,5 +5,6 @@ export const useWidgetDataQuery = (id: string, enabled: boolean) =>
     queryKey: ['widget-data', id],
     queryFn: async () => (await apiClient.get(`/widgets/${id}/data`)).data,
     enabled,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });

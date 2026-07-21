@@ -54,4 +54,37 @@ describe('DashboardService tenant isolation', () => {
     if (previousPrometheusUrl) process.env.PROMETHEUS_URL = previousPrometheusUrl;
     else delete process.env.PROMETHEUS_URL;
   });
+  it('keeps filesystem metrics separated by Prometheus instance', async () => {
+    const previous = global.fetch;
+    const previousPrometheusUrl = process.env.PROMETHEUS_URL;
+    process.env.PROMETHEUS_URL = 'http://prometheus.test';
+    global.fetch = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({
+          data: {
+            result: url.includes('node_filesystem')
+              ? [
+                  { metric: { instance: 'host-a:9100', mountpoint: '/', device: '/dev/sda1' }, value: [1, '45'] },
+                  { metric: { instance: 'host-b:9100', mountpoint: '/', device: '/dev/sda1' }, value: [1, '72'] },
+                ]
+              : [{ value: [1, '1'] }],
+          },
+        }),
+      }),
+    ) as any;
+
+    const result = await new DashboardService({} as any).metrics();
+
+    expect(result.disks).toEqual([
+      { instance: 'host-a:9100', name: '/', device: '/dev/sda1', value: 45 },
+      { instance: 'host-b:9100', name: '/', device: '/dev/sda1', value: 72 },
+    ]);
+    expect((global.fetch as jest.Mock).mock.calls.some(([url]) =>
+      decodeURIComponent(url).includes('mountpoint!~"/(boot|run)($|/)"'),
+    )).toBe(true);
+    global.fetch = previous;
+    if (previousPrometheusUrl) process.env.PROMETHEUS_URL = previousPrometheusUrl;
+    else delete process.env.PROMETHEUS_URL;
+  });
 });
