@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, PointerEvent as ReactPointerEvent, useEffect, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import {
   LogOut,
@@ -18,6 +18,7 @@ import { useApplicationStatusesQuery } from '../../../api/applications/useApplic
 import { useSaveLayoutMutation } from '../../../api/layouts/useSaveLayoutMutation';
 import { useDeleteApplicationMutation } from '../../../api/applications/useDeleteApplicationMutation';
 import { useDeleteWidgetMutation } from '../../../api/widgets/useDeleteWidgetMutation';
+import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardWidget as Widget } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
@@ -42,6 +43,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     historyQuery = useMetricsHistoryQuery(),
     statusesQuery = useApplicationStatusesQuery(),
     saveLayout = useSaveLayoutMutation(),
+    updateBranding = useUpdateBrandingMutation(),
     deleteApp = useDeleteApplicationMutation(),
     deleteWidget = useDeleteWidgetMutation();
   const dash = (dashboardQuery.data || null) as Dash | null,
@@ -53,6 +55,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     [editing, setEditing] = useState<AppItem | Widget | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [layouts, setLayouts] = useState<Layout[]>([]),
+    [canvasHeight, setCanvasHeight] = useState<number | null>(null),
     [menu, setMenu] = useState<string | null>(null),
     [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string } | null>(
       null,
@@ -61,6 +64,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   useEffect(() => {
     if (!dash) return;
     setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
+    setCanvasHeight((current) => current ?? (Number(dash.branding?.canvasHeight) || Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))));
     document.title = dash.branding?.name || dash.name;
     if (dash.branding?.favicon) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
@@ -89,7 +93,24 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
   const branding = dash.branding || {};
   const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
-  const canvasHeight = Math.max(620, ...layouts.map((layout) => layout.y + layout.h + 120));
+  const activeCanvasHeight = canvasHeight ?? 620;
+  const beginCanvasResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startY = event.clientY;
+    const startHeight = activeCanvasHeight;
+    let nextHeight = startHeight;
+    const move = (pointerEvent: PointerEvent) => {
+      nextHeight = Math.max(320, Math.round(startHeight + pointerEvent.clientY - startY));
+      setCanvasHeight(nextHeight);
+    };
+    const finish = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', finish);
+      void updateBranding.mutateAsync({ canvasHeight: nextHeight });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', finish, { once: true });
+  };
   const visualTokens = {
     '--accent': branding.accent,
     '--surface-bg': branding.backgroundColor,
@@ -146,7 +167,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     <div className={cn('desktop')} style={visualTokens}>
       <main>
         {layoutEdit && <div className="canvas-edit-hint">Arraste para mover · use as alças para redimensionar</div>}
-        <section className={`free-canvas ${layoutEdit ? 'is-editing' : ''}`} style={{ height: canvasHeight }}>
+        <section className={`free-canvas ${layoutEdit ? 'is-editing' : ''}`} style={{ height: activeCanvasHeight }}>
           {layouts.map((layout) => {
             const app =
               layout.kind === 'APPLICATION'
@@ -258,6 +279,11 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
               </Rnd>
             );
           })}
+          {layoutEdit && (
+            <div className="canvas-height-handle" onPointerDown={beginCanvasResize}>
+              <span>Redimensionar área</span>
+            </div>
+          )}
         </section>
       </main>
       {layoutEdit && (

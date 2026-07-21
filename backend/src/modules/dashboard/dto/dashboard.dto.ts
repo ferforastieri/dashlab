@@ -52,6 +52,7 @@ export class BrandingDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(10) @Max(100) panelOpacity?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) wallpaperOverlay?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(75) @Max(140) fontScale?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(320) @Max(10000) canvasHeight?: number;
 }
 export class CreateApplicationDto {
   @IsString() @Length(1, 80) name!: string;
