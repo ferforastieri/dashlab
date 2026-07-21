@@ -1,0 +1,7 @@
+export const queryKeys = {
+  dashboard: ['dashboard'] as const,
+  metrics: ['metrics'] as const,
+  history: ['metrics-history'] as const,
+  statuses: ['statuses'] as const,
+  sessions: ['sessions'] as const,
+};
