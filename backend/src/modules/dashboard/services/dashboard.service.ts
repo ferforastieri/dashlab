@@ -99,15 +99,38 @@ export class DashboardService {
   }
   async createSection(userId: string, data: CreateSectionDto) {
     const d = await this.dashboard(userId);
-    const section = await this.db.section.create({
-      data: { dashboardId: d.id, name: data.name.slice(0, 80) },
+    const applicationIds = await this.sectionApplicationIds(d.id, data.applicationIds);
+    const section = await this.db.$transaction(async (tx) => {
+      const created = await tx.section.create({
+        data: { dashboardId: d.id, name: data.name.slice(0, 80), collapsed: data.collapsed },
+      });
+      if (applicationIds.length) {
+        await tx.application.updateMany({
+          where: { dashboardId: d.id, id: { in: applicationIds } },
+          data: { sectionId: created.id },
+        });
+      }
+      return created;
     });
     await this.addLayouts(d.id, 'SECTION', section.id);
     return { ...section, message: 'Seção criada com sucesso' };
   }
   async updateSection(userId: string, id: string, data: UpdateSectionDto) {
-    await this.assertSection(userId, id);
-    const section = await this.db.section.update({ where: { id }, data: { name: data.name } });
+    const existing = await this.assertSection(userId, id);
+    const applicationIds = await this.sectionApplicationIds(existing.dashboardId, data.applicationIds);
+    const section = await this.db.$transaction(async (tx) => {
+      const updated = await tx.section.update({
+        where: { id },
+        data: { name: data.name, collapsed: data.collapsed },
+      });
+      if (data.applicationIds !== undefined) {
+        await tx.application.updateMany({ where: { dashboardId: existing.dashboardId, sectionId: id }, data: { sectionId: null } });
+        if (applicationIds.length) {
+          await tx.application.updateMany({ where: { dashboardId: existing.dashboardId, id: { in: applicationIds } }, data: { sectionId: id } });
+        }
+      }
+      return updated;
+    });
     return { ...section, message: 'Seção atualizada com sucesso' };
   }
   async deleteSection(userId: string, id: string) {
@@ -486,6 +509,14 @@ export class DashboardService {
     const section = await this.db.section.findFirst({ where: { id, dashboard: { userId } } });
     if (!section) throw new NotFoundException();
     return section;
+  }
+
+  private async sectionApplicationIds(dashboardId: string, ids?: string[]) {
+    if (ids === undefined) return [];
+    const uniqueIds = [...new Set(ids)];
+    const count = await this.db.application.count({ where: { dashboardId, id: { in: uniqueIds } } });
+    if (count !== uniqueIds.length) throw new ForbiddenException('Um ou mais aplicativos não pertencem a este dashboard');
+    return uniqueIds;
   }
   private async addLayouts(
     dashboardId: string,

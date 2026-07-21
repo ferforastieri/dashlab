@@ -89,6 +89,7 @@ model Application {
 model Section {
   id String @id @default(cuid())
   name String
+  collapsed Boolean @default(false)
   dashboardId String
   dashboard Dashboard @relation(fields:[dashboardId], references:[id], onDelete:Cascade)
   applications Application[]

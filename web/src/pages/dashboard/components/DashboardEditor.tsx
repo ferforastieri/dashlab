@@ -43,6 +43,9 @@ export function DashboardEditor({
       config: {},
       ...dash.branding,
       ...(editing || {}),
+      applicationIds: editing && type === 'section'
+        ? dash.applications.filter((app) => app.sectionId === editing.id).map((app) => app.id)
+        : [],
       query: (editing as Widget | null)?.config?.query || '',
     });
   const [busy, setBusy] = useState(false),
@@ -62,7 +65,6 @@ export function DashboardEditor({
           category: form.category || undefined,
           statusUrl: form.statusUrl || undefined,
           visible: form.visible,
-          sectionId: form.sectionId || null,
         };
         await (editing
           ? updateApplication.mutateAsync({ id: editing.id, data: application })
@@ -79,8 +81,8 @@ export function DashboardEditor({
           : createWidget.mutateAsync(widget));
       } else if (mode === 'section') {
         await (editing
-          ? updateSection.mutateAsync({ id: editing.id, data: { name: form.name } })
-          : createSection.mutateAsync({ name: form.name }));
+          ? updateSection.mutateAsync({ id: editing.id, data: { name: form.name, applicationIds: form.applicationIds } })
+          : createSection.mutateAsync({ name: form.name, applicationIds: form.applicationIds }));
       } else if (mode === 'brand') {
         await updateBranding.mutateAsync({
           name: form.name,
@@ -178,13 +180,6 @@ export function DashboardEditor({
               />
             </label>
             <label>
-              Seção
-              <select value={form.sectionId || ''} onChange={(e) => setForm({ ...form, sectionId: e.target.value })}>
-                <option value="">Sem seção</option>
-                {dash.sections.map((section) => <option key={section.id} value={section.id}>{section.name}</option>)}
-              </select>
-            </label>
-            <label>
               Deep link mobile
               <input
                 value={form.deepLink || ''}
@@ -200,12 +195,34 @@ export function DashboardEditor({
             </label>
           </>
         )}
-        {mode === 'section' && (
+        {mode === 'section' && <>
           <label>
             Nome da seção
             <input required value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </label>
-        )}
+          <fieldset className="section-app-picker">
+            <legend>Aplicativos da seção</legend>
+            <p>Selecione os aplicativos que serão agrupados dentro desta seção.</p>
+            <div>
+              {dash.applications.map((app) => (
+                <label key={app.id}>
+                  <input
+                    type="checkbox"
+                    checked={form.applicationIds.includes(app.id)}
+                    onChange={(event) => setForm({
+                      ...form,
+                      applicationIds: event.target.checked
+                        ? [...form.applicationIds, app.id]
+                        : form.applicationIds.filter((id: string) => id !== app.id),
+                    })}
+                  />
+                  <span>{app.icon && <img src={app.icon} alt="" />}<b>{app.name}</b><small>{app.description || 'Sem descrição'}</small></span>
+                </label>
+              ))}
+              {!dash.applications.length && <span className="section-app-picker-empty">Cadastre um aplicativo antes de criar a seção.</span>}
+            </div>
+          </fieldset>
+        </>}
         {mode === 'widget' && (
           <>
             <label>

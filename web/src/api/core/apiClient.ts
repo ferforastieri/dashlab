@@ -24,6 +24,7 @@ apiClient.interceptors.response.use(
     if (
       (response.config.method || 'get') !== 'get' &&
       response.data?.message &&
+      response.config.headers?.['X-Silent-Toast'] !== 'true' &&
       !response.config.url?.includes('/auth/refresh')
     )
       notify(response.data.message);
@@ -51,7 +52,7 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
     }
-    if ((original?.method || 'get') !== 'get') {
+    if ((original?.method || 'get') !== 'get' && original?.headers?.['X-Silent-Toast'] !== 'true') {
       const value = error.response?.data?.message;
       notify(Array.isArray(value) ? value[0] : value || 'Não foi possível continuar', 'error');
     }

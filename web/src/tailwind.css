@@ -314,10 +314,15 @@ a {
 .confirm-modal > p { color: var(--muted); }
 .section-card { display: flex; width: 100%; height: 100%; min-height: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); border-radius: var(--element-radius); background: color-mix(in srgb, var(--panel-color) var(--panel-opacity), transparent); padding: 12px; }
 .section-header { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 9px; border-bottom: 1px solid var(--border-color); }
+.section-card.is-collapsed { padding-block: 8px; }
+.section-card.is-collapsed .section-header { height: 100%; padding-bottom: 0; border-bottom: 0; }
+.section-card.is-collapsed .section-apps { display: none; }
 .section-header h3 { overflow: hidden; margin: 0; color: var(--text-color); font-size: 13px; letter-spacing: .08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .section-actions { display: flex; gap: 3px; }
 .section-actions button, .section-app > button { display: grid; width: 28px; height: 28px; place-items: center; border: 0; background: transparent; color: var(--muted); }
 .section-actions svg, .section-app > button svg { width: 14px; }
+.section-collapse svg { transition: transform 160ms ease; }
+.section-card.is-collapsed .section-collapse svg { transform: rotate(-90deg); }
 .section-apps { display: grid; min-height: 0; flex: 1; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; overflow: auto; padding-top: 10px; }
 .section-app { position: relative; min-width: 0; border: 1px solid var(--border-color); border-radius: var(--element-radius); background: color-mix(in srgb, var(--panel-color) 82%, transparent); }
 .section-app > a { display: flex; min-width: 0; height: 100%; align-items: center; gap: 9px; padding: 9px; color: var(--text-color); text-decoration: none; }
@@ -328,6 +333,18 @@ a {
 .section-app strong { font-size: 11px; }
 .section-app small { color: var(--muted); font-size: 8px; }
 .section-app > button { position: absolute; top: 2px; right: 2px; }
+.section-app-picker { display: grid; gap: 8px; margin: 0; border: 1px solid var(--border-color); border-radius: var(--element-radius); padding: 12px; }
+.section-app-picker legend { padding-inline: 5px; color: var(--text-color); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.section-app-picker > p { margin: 0; color: var(--muted); font-size: 10px; }
+.section-app-picker > div { display: grid; max-height: 260px; gap: 6px; overflow: auto; }
+.section-app-picker label { display: flex; cursor: pointer; align-items: center; gap: 9px; border: 1px solid var(--border-color); border-radius: var(--element-radius); padding: 8px; }
+.section-app-picker label:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.section-app-picker input { width: 15px; height: 15px; flex: none; accent-color: var(--accent); }
+.section-app-picker label > span { display: grid; min-width: 0; flex: 1; grid-template-columns: 28px 1fr; align-items: center; column-gap: 8px; }
+.section-app-picker img { width: 28px; height: 28px; grid-row: span 2; object-fit: contain; }
+.section-app-picker b, .section-app-picker small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.section-app-picker b { font-size: 11px; }
+.section-app-picker small, .section-app-picker-empty { color: var(--muted); font-size: 9px; }
 
 .divider-widget {
   position: relative;

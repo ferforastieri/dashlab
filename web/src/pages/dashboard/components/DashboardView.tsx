@@ -11,6 +11,7 @@ import {
   Pencil,
   Trash2,
   X,
+  ChevronDown,
 } from 'lucide-react';
 import { useMetricsOverviewQuery } from '../../../api/metrics/useMetricsOverviewQuery';
 import { useMetricsHistoryQuery } from '../../../api/metrics/useMetricsHistoryQuery';
@@ -19,6 +20,7 @@ import { useSaveLayoutMutation } from '../../../api/layouts/useSaveLayoutMutatio
 import { useDeleteApplicationMutation } from '../../../api/applications/useDeleteApplicationMutation';
 import { useDeleteWidgetMutation } from '../../../api/widgets/useDeleteWidgetMutation';
 import { useDeleteSectionMutation } from '../../../api/sections/useDeleteSectionMutation';
+import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSectionMutation';
 import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
@@ -47,7 +49,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     updateBranding = useUpdateBrandingMutation(),
     deleteApp = useDeleteApplicationMutation(),
     deleteWidget = useDeleteWidgetMutation(),
-    deleteSection = useDeleteSectionMutation();
+    deleteSection = useDeleteSectionMutation(),
+    updateSection = useUpdateSectionMutation();
   const dash = (dashboardQuery.data || null) as Dash | null,
     metrics = metricsQuery.data || {},
     history = historyQuery.data || {},
@@ -192,11 +195,11 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 className={`canvas-item ${dashboardElement ? 'chrome-canvas-item' : ''} ${app ? 'application-canvas-item' : ''} ${layoutEdit ? 'is-editing' : ''}`}
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
-                size={{ width: layout.w, height: layout.h }}
+                size={{ width: layout.w, height: dashboardSection?.collapsed ? 54 : layout.h }}
                 minWidth={dashboardElement ? 32 : dashboardSection ? 240 : widget?.type === 'DIVIDER' ? 120 : 72}
                 minHeight={dashboardElement || widget?.type === 'DIVIDER' ? 20 : dashboardSection ? 140 : 72}
                 disableDragging={!layoutEdit}
-                enableResizing={layoutEdit}
+                enableResizing={layoutEdit && !dashboardSection?.collapsed}
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
                 resizeHandleClasses={resizeHandleClasses}
                 cancel={dashboardElement ? undefined : 'button,a,input,select,textarea'}
@@ -225,13 +228,21 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                     {renderDashboardElement(dashboardElement)}
                   </div>
                 ) : dashboardSection ? (
-                  <div className="section-card">
+                  <div className={`section-card ${dashboardSection.collapsed ? 'is-collapsed' : ''}`}>
                     <header className="section-header">
                       <h3>{dashboardSection.name}</h3>
-                      {layoutEdit && <div className="section-actions">
-                        <button onClick={() => { setEditing(dashboardSection); setModal('section'); }} title="Editar seção"><Edit3 /></button>
-                        <button onClick={() => setConfirmDelete({ kind: 'sections', id: dashboardSection.id, name: dashboardSection.name })} title="Excluir seção"><Trash2 /></button>
-                      </div>}
+                      <div className="section-actions">
+                        {layoutEdit && <>
+                          <button onClick={() => { setEditing(dashboardSection); setModal('section'); }} title="Editar seção"><Edit3 /></button>
+                          <button onClick={() => setConfirmDelete({ kind: 'sections', id: dashboardSection.id, name: dashboardSection.name })} title="Excluir seção"><Trash2 /></button>
+                        </>}
+                        <button
+                          className="section-collapse"
+                          onClick={() => updateSection.mutate({ id: dashboardSection.id, data: { collapsed: !dashboardSection.collapsed }, silent: true })}
+                          title={dashboardSection.collapsed ? 'Expandir seção' : 'Recolher seção'}
+                          aria-expanded={!dashboardSection.collapsed}
+                        ><ChevronDown /></button>
+                      </div>
                     </header>
                     <div className="section-apps">
                       {dash.applications.filter((item) => item.sectionId === dashboardSection.id).map((item) => (

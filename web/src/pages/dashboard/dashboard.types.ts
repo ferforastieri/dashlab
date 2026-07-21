@@ -11,7 +11,7 @@ export type DashboardApplication = {
   sectionId?: string;
 };
 
-export type DashboardSection = { id: string; name: string };
+export type DashboardSection = { id: string; name: string; collapsed: boolean };
 
 export type DashboardWidget = { id: string; type: string; title: string; config: any };
 

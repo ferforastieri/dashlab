@@ -78,9 +78,13 @@ export class UpdateApplicationDto extends CreateApplicationDto {
 }
 export class CreateSectionDto {
   @IsString() @Length(1, 80) name!: string;
+  @IsOptional() @IsBoolean() collapsed?: boolean;
+  @IsOptional() @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) applicationIds?: string[];
 }
 export class UpdateSectionDto {
   @IsOptional() @IsString() @Length(1, 80) name?: string;
+  @IsOptional() @IsBoolean() collapsed?: boolean;
+  @IsOptional() @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) applicationIds?: string[];
 }
 export class CreateWidgetDto {
   @IsString() @Length(1, 80) title!: string;
