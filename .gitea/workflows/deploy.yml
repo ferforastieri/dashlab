@@ -6,24 +6,27 @@ on:
 jobs:
   deploy:
     runs-on: dashlab
-    container:
-      options: >-
-        -v /run/gitea-deploy:/run/gitea-deploy:ro
     steps:
       - uses: actions/checkout@v4
       - name: Configure remote Docker target
+        env:
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
         run: |
           set -eu
           apt-get update
           apt-get install -y openssh-client
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
-          cp /run/gitea-deploy/id_ed25519 "$HOME/.ssh/id_ed25519"
-          cp /run/gitea-deploy/known_hosts "$HOME/.ssh/known_hosts"
+          test -n "$DEPLOY_SSH_HOST" -a -n "$DEPLOY_SSH_USER" -a -n "$DEPLOY_SSH_PRIVATE_KEY" -a -n "$DEPLOY_SSH_KNOWN_HOSTS"
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
-          printf 'DOCKER_HOST=ssh://gitea-deploy@remote-host-from-secret\n' >> "$GITHUB_ENV"
+          printf 'DOCKER_HOST=ssh://%s@%s\n' "$DEPLOY_SSH_USER" "$DEPLOY_SSH_HOST" >> "$GITHUB_ENV"
           printf 'DOCKER_SSH_COMMAND=ssh -i %s -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=%s\n' "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" >> "$GITHUB_ENV"
-          docker -H ssh://gitea-deploy@remote-host-from-secret version
+          docker -H "ssh://$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" version
       - name: Ensure Docker CLI and Compose
         run: |
           set -eu
