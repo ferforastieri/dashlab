@@ -78,6 +78,7 @@ jobs:
           fi
           umask 077
           printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "$PROMETHEUS_URL" > .env
+          $COMPOSE --env-file .env down --remove-orphans || true
           $COMPOSE --env-file .env build --pull
           $COMPOSE --env-file .env up -d postgres
           $COMPOSE --env-file .env run --rm backend npx prisma migrate deploy
