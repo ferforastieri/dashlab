@@ -13,6 +13,12 @@ import { AccountPanel } from '../../account/components/AccountPanel';
 import { DashboardApplication as AppItem, DashboardData as Dash, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 
+const defaultBranding = {
+  accent: '#ff7a1a', theme: 'dark', wallpaper: '', logo: '', favicon: '',
+  backgroundColor: '#101416', panelColor: '#181d20', textColor: '#e7eaec', borderColor: '#343b3f',
+  radius: 5, panelOpacity: 100, wallpaperOverlay: 55, fontScale: 100, mobileLayout: 'GRID',
+};
+
 export function DashboardEditor({
   type,
   dash,
@@ -41,6 +47,7 @@ export function DashboardEditor({
       title: '',
       type: 'SYSTEM',
       config: {},
+      ...defaultBranding,
       ...dash.branding,
       ...(editing || {}),
       applicationIds: editing && type === 'section'

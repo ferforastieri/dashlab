@@ -32,6 +32,12 @@ import { DashboardEditor } from './DashboardEditor';
 import { WidgetCard } from './WidgetCard';
 import { HeaderWeather } from './HeaderWeather';
 
+const defaultBranding = {
+  accent: '#ff7a1a', wallpaper: '', logo: '', favicon: '', backgroundColor: '#101416',
+  panelColor: '#181d20', textColor: '#e7eaec', borderColor: '#343b3f', radius: 5,
+  panelOpacity: 100, wallpaperOverlay: 55, fontScale: 100, mobileLayout: 'GRID',
+};
+
 const resizeHandleClasses = {
   top: 'canvas-resize-handle handle-n',
   right: 'canvas-resize-handle handle-e',
@@ -126,7 +132,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     setMenu(null);
   }
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
-  const branding = dash.branding || {};
+  const branding = { ...defaultBranding, ...(dash.branding || {}) };
   const mobileLayout = branding.mobileLayout || 'GRID';
   const mobileApps = dash.applications.filter((app) => app.visible !== false);
   const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
@@ -207,7 +213,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   };
   return (
     <div className={`${cn('desktop')} overflow-x-hidden`} style={visualTokens}>
-      <main className={isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''}>
+      <main className={`${isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''} ${isMobile && mobileLayout === 'DRAWER' ? 'pt-[calc(64px+env(safe-area-inset-top))]' : ''}`}>
         {layoutEdit && !isMobile && <div className="canvas-edit-hint">Clique em um item para selecioná-lo · arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`} style={{ height: isMobile ? undefined : activeCanvasHeight }}>
           {layouts.map((layout) => {
@@ -369,14 +375,15 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           Concluir edição
         </button>
       )}
-      {isMobile && mobileLayout === 'DRAWER' && !mobileMenuOpen && (
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="fixed bottom-[max(18px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] z-30 inline-flex min-h-12 items-center gap-2 rounded-[var(--element-radius)] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--surface-bg)] shadow-xl"
-          aria-label="Abrir aplicativos"
-        >
-          <Menu size={19} /> Apps
-        </button>
+      {isMobile && mobileLayout === 'DRAWER' && (
+        <header className="fixed inset-x-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-[var(--border-color)] bg-[color-mix(in_srgb,var(--surface-bg)_94%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur">
+          <button onClick={() => setMobileMenuOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border border-[var(--border-color)] text-[var(--text-color)]" aria-label="Abrir aplicativos"><Menu size={20} /></button>
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] border border-[var(--border-color)] bg-[var(--accent)] text-sm font-bold text-[var(--surface-bg)]">{branding.logo ? <img src={branding.logo} alt="" className="h-full w-full object-contain p-0.5" /> : (branding.name || dash.name)[0]}</span>
+            <span className="min-w-0"><small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">WORKSPACE</small><strong className="block truncate text-sm font-semibold">{branding.name || dash.name}</strong></span>
+          </div>
+          <div className="flex shrink-0 gap-1"><button onClick={() => setModal('brand')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Personalizar"><Settings size={19} /></button><button onClick={() => setModal('account')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Minha conta"><UserRound size={19} /></button></div>
+        </header>
       )}
       {isMobile && mobileLayout !== 'GRID' && mobileMenuOpen && (
         <>
