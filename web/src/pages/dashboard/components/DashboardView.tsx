@@ -9,6 +9,7 @@ import {
   Edit3,
   UserRound,
   Pencil,
+  Menu,
   Trash2,
   X,
   ChevronDown,
@@ -23,7 +24,6 @@ import { useDeleteSectionMutation } from '../../../api/sections/useDeleteSection
 import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSectionMutation';
 import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
-import { PwaInstallButton } from '../../../components/ui/PwaInstallButton';
 import { useMediaQuery } from '../../../components/ui/useMediaQuery';
 import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
@@ -63,6 +63,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
+    [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [layouts, setLayouts] = useState<Layout[]>([]),
     [canvasHeight, setCanvasHeight] = useState<number | null>(null),
     [menu, setMenu] = useState<string | null>(null),
@@ -126,6 +127,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   }
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
   const branding = dash.branding || {};
+  const mobileLayout = branding.mobileLayout || 'GRID';
   const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
   const activeCanvasHeight = canvasHeight ?? 620;
   const beginCanvasResize = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -181,7 +183,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     );
     if (elementKey === 'ACTIONS') return (
       <div className={`${cn('header-tools')} chrome-actions`}>
-        <PwaInstallButton className={cn('icon-button')} />
+        {isMobile && mobileLayout === 'DRAWER' && <button className={cn('icon-button')} onClick={() => setMobileMenuOpen(true)} title="Abrir menu"><Menu /></button>}
         <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
         {!isMobile && <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => { setLayoutEdit(!layoutEdit); setSelectedLayoutId(null); }} title="Editar organização"><Pencil /></button>}
         <button className={cn('icon-button')} onClick={() => setModal('account')} title="Minha conta"><UserRound /></button>
@@ -199,8 +201,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     return null;
   };
   return (
-    <div className={cn('desktop')} style={visualTokens}>
-      <main>
+    <div className={`${cn('desktop')} overflow-x-hidden`} style={visualTokens}>
+      <main className={isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''}>
         {layoutEdit && !isMobile && <div className="canvas-edit-hint">Clique em um item para selecioná-lo · arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`} style={{ height: isMobile ? undefined : activeCanvasHeight }}>
           {layouts.map((layout) => {
@@ -213,7 +215,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
             const dashboardSection =
               layout.kind === 'SECTION' ? dash.sections.find((section) => section.id === layout.sectionId) : null;
             const dashboardElement = layout.kind === 'DASHBOARD_ELEMENT' ? layout.elementKey : null;
-            if (app?.sectionId) return null;
+            if (isMobile && mobileLayout !== 'GRID' && dashboardElement && ['ACTIONS', 'ADD'].includes(dashboardElement)) return null;
             if (!app && !widget && !dashboardSection && !dashboardElement) return null;
             return (
               <Rnd
@@ -361,6 +363,28 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         <button className="layout-edit-done" onClick={() => { setLayoutEdit(false); setSelectedLayoutId(null); }}>
           Concluir edição
         </button>
+      )}
+      {isMobile && mobileLayout === 'DRAWER' && mobileMenuOpen && (
+        <>
+          <button aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 z-40 bg-black/50" />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(82vw,340px)] flex-col gap-5 border-r border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl">
+            <div className="flex items-center justify-between"><strong>{branding.name || dash.name}</strong><button onClick={() => setMobileMenuOpen(false)} className="rounded p-2 text-[var(--muted)]"><X /></button></div>
+            <div className="grid gap-2">
+              <button onClick={() => { setMobileMenuOpen(false); setModal('app'); }} className="rounded border border-[var(--border-color)] p-3 text-left text-sm">Adicionar aplicativo</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('brand'); }} className="rounded border border-[var(--border-color)] p-3 text-left text-sm">Personalizar dashboard</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('account'); }} className="rounded border border-[var(--border-color)] p-3 text-left text-sm">Minha conta</button>
+            </div>
+            <button onClick={onLogout} className="mt-auto rounded border border-[var(--border-color)] p-3 text-left text-sm text-[var(--muted)]">Sair</button>
+          </aside>
+        </>
+      )}
+      {isMobile && mobileLayout === 'BOTTOM_NAV' && (
+        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[var(--border-color)] bg-[color-mix(in_srgb,var(--panel-color)_96%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur" aria-label="Navegação do dashboard">
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="min-h-11 text-xs text-[var(--muted)]">Início</button>
+          <button onClick={() => setModal('app')} className="min-h-11 text-xs text-[var(--muted)]">Adicionar</button>
+          <button onClick={() => setModal('brand')} className="min-h-11 text-xs text-[var(--muted)]">Aparência</button>
+          <button onClick={() => setModal('account')} className="min-h-11 text-xs text-[var(--muted)]">Conta</button>
+        </nav>
       )}
       {modal && (
         <DashboardEditor

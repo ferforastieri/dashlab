@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { X } from 'lucide-react';
+import { Grid2X2, PanelBottom, PanelLeft, X } from 'lucide-react';
 import { useCreateApplicationMutation } from '../../../api/applications/useCreateApplicationMutation';
 import { useUpdateApplicationMutation } from '../../../api/applications/useUpdateApplicationMutation';
 import { useCreateWidgetMutation } from '../../../api/widgets/useCreateWidgetMutation';
@@ -99,6 +99,7 @@ export function DashboardEditor({
           panelOpacity: Number(form.panelOpacity),
           wallpaperOverlay: Number(form.wallpaperOverlay),
           fontScale: Number(form.fontScale),
+          mobileLayout: form.mobileLayout || 'GRID',
         });
       } else return;
       done();
@@ -201,8 +202,8 @@ export function DashboardEditor({
             <input required value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </label>
           <fieldset className="section-app-picker">
-            <legend>Aplicativos da seção</legend>
-            <p>Selecione os aplicativos que serão agrupados dentro desta seção.</p>
+            <legend>Aplicativos</legend>
+            <p>Escolha os apps que aparecem nesta seção. Eles continuam disponíveis na tela principal.</p>
             <div>
               {dash.applications.map((app) => (
                 <label key={app.id}>
@@ -240,17 +241,17 @@ export function DashboardEditor({
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
               >
                 {[
-                  'SYSTEM',
-                  'STORAGE',
-                  'NETWORK',
-                  'CLOCK',
-                  'WEATHER',
-                  'SEARCH',
-                  'STATUS',
-                  'PROMQL',
-                  'DIVIDER',
-                ].map((x) => (
-                  <option key={x} value={x}>{x === 'DIVIDER' ? 'Divisória' : x}</option>
+                  ['SYSTEM', 'Sistema'],
+                  ['STORAGE', 'Armazenamento'],
+                  ['NETWORK', 'Rede'],
+                  ['CLOCK', 'Relógio'],
+                  ['WEATHER', 'Clima'],
+                  ['SEARCH', 'Pesquisa'],
+                  ['STATUS', 'Status'],
+                  ['PROMQL', 'Consulta PromQL'],
+                  ['DIVIDER', 'Divisória'],
+                ].map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </label>
@@ -401,6 +402,31 @@ export function DashboardEditor({
               <span>Escala da interface <output>{form.fontScale}%</output></span>
               <input type="range" min="75" max="140" value={form.fontScale} onChange={(e) => setForm({ ...form, fontScale: Number(e.target.value) })} />
             </label>
+            <fieldset className="grid gap-3 border-0 p-0">
+              <legend className="mb-1 text-sm text-[var(--muted)]">Layout no celular</legend>
+              <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">Escolha como os atalhos e controles aparecem em telas pequenas.</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {[
+                  { value: 'GRID', title: 'Grade', text: 'Conteúdo alinhado em duas colunas.', Icon: Grid2X2 },
+                  { value: 'DRAWER', title: 'Menu lateral', text: 'Atalhos concentrados em um drawer.', Icon: PanelLeft },
+                  { value: 'BOTTOM_NAV', title: 'Barra inferior', text: 'Ações sempre ao alcance do polegar.', Icon: PanelBottom },
+                ].map(({ value, title, text, Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setForm({ ...form, mobileLayout: value })}
+                    className={`grid min-h-36 content-between rounded-[var(--element-radius)] border p-3 text-left transition ${form.mobileLayout === value || (!form.mobileLayout && value === 'GRID') ? 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,var(--panel-color))] text-[var(--text-color)]' : 'border-[var(--border-color)] bg-[var(--panel-color)] text-[var(--muted)] hover:border-[var(--accent)]'}`}
+                  >
+                    <span className="grid gap-2"><Icon size={20} className="text-[var(--accent)]" /><strong className="text-sm font-semibold">{title}</strong></span>
+                    <span className="text-xs leading-snug">{text}</span>
+                    <span className="mt-3 grid h-7 grid-cols-3 gap-1 rounded border border-current/30 p-1 opacity-80">
+                      <i className={`rounded bg-current/60 ${value === 'DRAWER' ? 'col-span-1' : 'col-span-3'}`} />
+                      {value === 'BOTTOM_NAV' && <i className="col-span-3 rounded bg-current/40" />}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           </>
         )}
         {mode === 'account' && <AccountPanel onClose={close} />}

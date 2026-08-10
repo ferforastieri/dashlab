@@ -20,6 +20,7 @@ const branding = {
   panelOpacity: 100,
   wallpaperOverlay: 55,
   fontScale: 100,
+  mobileLayout: 'GRID',
 };
 
 @Injectable()
