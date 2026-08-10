@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import sharp from 'sharp';
+import sharp = require('sharp');
 import { PrismaService } from '../../../infrastructure/database/prisma.service';
 
 type DashboardBranding = {
