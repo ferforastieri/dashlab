@@ -258,7 +258,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 disableDragging={!layoutEdit || isMobile || selectedLayoutId !== layout.id}
                 enableResizing={layoutEdit && !isMobile && selectedLayoutId === layout.id && !dashboardSection?.collapsed}
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
-                resizeHandleClasses={resizeHandleClasses}
+                resizeHandleClasses={layoutEdit && !isMobile && selectedLayoutId === layout.id ? resizeHandleClasses : undefined}
                 cancel={dashboardElement ? undefined : 'button,a,input,select,textarea'}
                 onMouseDown={() => {
                   if (layoutEdit && !isMobile) setSelectedLayoutId(layout.id);
