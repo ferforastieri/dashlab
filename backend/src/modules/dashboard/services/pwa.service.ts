@@ -41,12 +41,12 @@ export class PwaService {
         short_name: name.slice(0, 24),
         description: 'Seu homelab, do seu jeito.',
         lang: 'pt-BR',
-        // Keep the same identity as the manifest present at first paint. Chrome
-        // treats a changed manifest id/start URL as a different web app and can
-        // fall back to creating a browser shortcut instead of installing it.
-        id: '/',
-        start_url: '/',
-        scope: '/',
+        // Each dashboard has a stable installation URL. Its HTML links to this
+        // manifest before React starts, so Chrome receives the custom identity,
+        // name, colours and icons as one coherent PWA definition.
+        id: `/pwa/${dashboard.id}/`,
+        start_url: `/pwa/${dashboard.id}/`,
+        scope: `/pwa/${dashboard.id}/`,
         display: 'standalone',
         orientation: 'any',
         background_color: backgroundColor,

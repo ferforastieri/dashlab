@@ -84,13 +84,11 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
     setCanvasHeight((current) => current ?? (Number(dash.branding?.canvasHeight) || Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))));
     document.title = dash.branding?.name || dash.name;
-    let manifest = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
-    if (!manifest) {
-      manifest = document.createElement('link');
-      manifest.rel = 'manifest';
-      document.head.appendChild(manifest);
+    const installationPath = `/pwa/${dash.id}/`;
+    if (window.location.pathname !== installationPath) {
+      window.location.replace(installationPath);
+      return;
     }
-    manifest.href = `/api/pwa/${dash.id}/manifest.webmanifest`;
     const backgroundColor = dash.branding?.backgroundColor;
     const themeColor = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
     if (themeColor && backgroundColor) themeColor.content = backgroundColor;
