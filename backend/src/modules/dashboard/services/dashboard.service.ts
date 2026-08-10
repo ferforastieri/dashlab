@@ -21,6 +21,24 @@ import { PwaService } from './pwa.service';
 @Injectable()
 export class DashboardService {
   constructor(private db: PrismaService, @Optional() private pwaService?: PwaService) {}
+  /**
+   * Labels vary between Prometheus installations (instance, job, host, etc.).
+   * Keep them in the deployment configuration instead of coupling DashLab to a
+   * particular exporter label such as `tipo="Servidor"`.
+   */
+  private metricSelector(...selectors: Array<string | undefined>) {
+    return selectors
+      .flatMap((selector) => (selector || '').split(',').map((part) => part.trim()))
+      .filter(Boolean)
+      .join(',');
+  }
+  private metric(metric: string, ...selectors: Array<string | undefined>) {
+    const selector = this.metricSelector(process.env.PROMETHEUS_TARGET_LABELS, ...selectors);
+    return selector ? `${metric}{${selector}}` : metric;
+  }
+  private configuredQuery(name: string, fallback: string) {
+    return process.env[`PROMETHEUS_${name}_QUERY`]?.trim() || fallback;
+  }
   private async dashboard(userId: string) {
     const d = await this.db.dashboard.findUnique({ where: { userId } });
     if (!d) throw new NotFoundException();
@@ -242,12 +260,16 @@ export class DashboardService {
   async metrics() {
     const base = process.env.PROMETHEUS_URL;
     if (!base) throw new BadGatewayException('Prometheus não configurado');
+    const networkLabels = process.env.PROMETHEUS_NETWORK_LABELS || 'device!="lo"';
+    const diskLabels = process.env.PROMETHEUS_DISK_LABELS || 'device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"';
+    const cpuIdle = this.metric('node_cpu_seconds_total', 'mode="idle"');
+    const memoryAvailable = this.metric('node_memory_MemAvailable_bytes');
+    const memoryTotal = this.metric('node_memory_MemTotal_bytes');
     const queries: any = {
-      cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
-      memory:
-        '(1-node_memory_MemAvailable_bytes{tipo="Servidor"}/node_memory_MemTotal_bytes{tipo="Servidor"})*100',
-      download: 'sum(rate(node_network_receive_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
-      upload: 'sum(rate(node_network_transmit_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
+      cpu: this.configuredQuery('CPU', `100 - avg(rate(${cpuIdle}[5m])) * 100`),
+      memory: this.configuredQuery('MEMORY', `(1-${memoryAvailable}/${memoryTotal})*100`),
+      download: this.configuredQuery('DOWNLOAD', `sum(rate(${this.metric('node_network_receive_bytes_total', networkLabels)}[5m]))`),
+      upload: this.configuredQuery('UPLOAD', `sum(rate(${this.metric('node_network_transmit_bytes_total', networkLabels)}[5m]))`),
     };
     const result: any = {};
     await Promise.all(
@@ -267,14 +289,13 @@ export class DashboardService {
         }
       }),
     );
-    const physical = 'device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"';
     const diskQueries = {
-      info: `node_disk_info{tipo="Servidor",${physical}}`,
-      utilization: `rate(node_disk_io_time_seconds_total{tipo="Servidor",${physical}}[5m])*100`,
-      read: `rate(node_disk_read_bytes_total{tipo="Servidor",${physical}}[5m])`,
-      write: `rate(node_disk_written_bytes_total{tipo="Servidor",${physical}}[5m])`,
-      temperature: 'smartmon_temperature_celsius_raw_value{tipo="Servidor"}',
-      health: 'smartmon_device_smart_healthy{tipo="Servidor"}',
+      info: this.configuredQuery('DISK_INFO', this.metric('node_disk_info', diskLabels)),
+      utilization: this.configuredQuery('DISK_UTILIZATION', `rate(${this.metric('node_disk_io_time_seconds_total', diskLabels)}[5m])*100`),
+      read: this.configuredQuery('DISK_READ', `rate(${this.metric('node_disk_read_bytes_total', diskLabels)}[5m])`),
+      write: this.configuredQuery('DISK_WRITE', `rate(${this.metric('node_disk_written_bytes_total', diskLabels)}[5m])`),
+      temperature: this.configuredQuery('DISK_TEMPERATURE', this.metric('smartmon_temperature_celsius_raw_value')),
+      health: this.configuredQuery('DISK_HEALTH', this.metric('smartmon_device_smart_healthy')),
     };
     try {
       const entries = await Promise.all(Object.entries(diskQueries).map(async ([key, query]) => {
@@ -324,13 +345,14 @@ export class DashboardService {
       end = Math.floor(Date.now() / 1000),
       start = end - seconds,
       step = Math.max(15, Math.floor(seconds / 60));
+    const networkLabels = process.env.PROMETHEUS_NETWORK_LABELS || 'device!="lo"';
+    const diskLabels = process.env.PROMETHEUS_DISK_LABELS || 'device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"';
     const queries: any = {
-      cpu: '100 - avg(rate(node_cpu_seconds_total{tipo="Servidor",mode="idle"}[5m])) * 100',
-      memory:
-        '(1-node_memory_MemAvailable_bytes{tipo="Servidor"}/node_memory_MemTotal_bytes{tipo="Servidor"})*100',
-      disks: 'rate(node_disk_io_time_seconds_total{tipo="Servidor",device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"}[5m])*100',
-      download: 'sum(rate(node_network_receive_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
-      upload: 'sum(rate(node_network_transmit_bytes_total{tipo="Servidor",device!="lo"}[5m]))',
+      cpu: this.configuredQuery('CPU', `100 - avg(rate(${this.metric('node_cpu_seconds_total', 'mode="idle"')}[5m])) * 100`),
+      memory: this.configuredQuery('MEMORY', `(1-${this.metric('node_memory_MemAvailable_bytes')}/${this.metric('node_memory_MemTotal_bytes')})*100`),
+      disks: this.configuredQuery('DISK_UTILIZATION', `rate(${this.metric('node_disk_io_time_seconds_total', diskLabels)}[5m])*100`),
+      download: this.configuredQuery('DOWNLOAD', `sum(rate(${this.metric('node_network_receive_bytes_total', networkLabels)}[5m]))`),
+      upload: this.configuredQuery('UPLOAD', `sum(rate(${this.metric('node_network_transmit_bytes_total', networkLabels)}[5m]))`),
     };
     const result: any = { range };
     await Promise.all(

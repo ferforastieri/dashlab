@@ -48,6 +48,9 @@ jobs:
           POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
           JWT_SECRET: '${{ secrets.JWT_SECRET }}'
           PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'
+          PROMETHEUS_TARGET_LABELS: '${{ secrets.PROMETHEUS_TARGET_LABELS }}'
+          PROMETHEUS_NETWORK_LABELS: '${{ secrets.PROMETHEUS_NETWORK_LABELS }}'
+          PROMETHEUS_DISK_LABELS: '${{ secrets.PROMETHEUS_DISK_LABELS }}'
         run: |
           set -eu
           test -n "$POSTGRES_PASSWORD"
@@ -66,6 +69,9 @@ jobs:
           POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
           JWT_SECRET: '${{ secrets.JWT_SECRET }}'
           PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'
+          PROMETHEUS_TARGET_LABELS: '${{ secrets.PROMETHEUS_TARGET_LABELS }}'
+          PROMETHEUS_NETWORK_LABELS: '${{ secrets.PROMETHEUS_NETWORK_LABELS }}'
+          PROMETHEUS_DISK_LABELS: '${{ secrets.PROMETHEUS_DISK_LABELS }}'
         run: |
           set -eu
           if docker compose version >/dev/null 2>&1; then
@@ -77,7 +83,7 @@ jobs:
             exit 1
           fi
           umask 077
-          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "$PROMETHEUS_URL" > .env
+          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\nPROMETHEUS_TARGET_LABELS=%s\nPROMETHEUS_NETWORK_LABELS=%s\nPROMETHEUS_DISK_LABELS=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "$PROMETHEUS_URL" "$PROMETHEUS_TARGET_LABELS" "$PROMETHEUS_NETWORK_LABELS" "$PROMETHEUS_DISK_LABELS" > .env
           docker rm -f home-web home-backend home-postgres >/dev/null 2>&1 || true
           $COMPOSE --env-file .env down --remove-orphans || true
           $COMPOSE --env-file .env build --pull

@@ -62,6 +62,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | 'account' | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
+    [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
     [layouts, setLayouts] = useState<Layout[]>([]),
     [canvasHeight, setCanvasHeight] = useState<number | null>(null),
     [menu, setMenu] = useState<string | null>(null),
@@ -182,7 +183,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
       <div className={`${cn('header-tools')} chrome-actions`}>
         <PwaInstallButton className={cn('icon-button')} />
         <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
-        {!isMobile && <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => setLayoutEdit(!layoutEdit)} title="Editar organização"><Pencil /></button>}
+        {!isMobile && <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => { setLayoutEdit(!layoutEdit); setSelectedLayoutId(null); }} title="Editar organização"><Pencil /></button>}
         <button className={cn('icon-button')} onClick={() => setModal('account')} title="Minha conta"><UserRound /></button>
         <button className={cn('icon-button')} onClick={onLogout} title="Sair"><LogOut /></button>
       </div>
@@ -200,7 +201,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   return (
     <div className={cn('desktop')} style={visualTokens}>
       <main>
-        {layoutEdit && !isMobile && <div className="canvas-edit-hint">Arraste para mover · use as alças para redimensionar</div>}
+        {layoutEdit && !isMobile && <div className="canvas-edit-hint">Clique em um item para selecioná-lo · arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`} style={{ height: isMobile ? undefined : activeCanvasHeight }}>
           {layouts.map((layout) => {
             const app =
@@ -217,17 +218,20 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
             return (
               <Rnd
                 key={layout.id}
-                className={`canvas-item ${dashboardElement ? `chrome-canvas-item mobile-${dashboardElement.toLowerCase()}` : ''} ${app ? 'application-canvas-item mobile-application' : ''} ${widget ? `mobile-widget mobile-widget-${widget.type.toLowerCase()}` : ''} ${dashboardSection ? 'mobile-section' : ''} ${layoutEdit && !isMobile ? 'is-editing' : ''}`}
+                className={`canvas-item ${dashboardElement ? `chrome-canvas-item mobile-${dashboardElement.toLowerCase()}` : ''} ${app ? 'application-canvas-item mobile-application' : ''} ${widget ? `mobile-widget mobile-widget-${widget.type.toLowerCase()}` : ''} ${dashboardSection ? 'mobile-section' : ''} ${layoutEdit && !isMobile ? 'is-editing' : ''} ${selectedLayoutId === layout.id ? 'is-selected' : ''}`}
                 bounds="parent"
                 position={{ x: layout.x, y: layout.y }}
                 size={{ width: layout.w, height: dashboardSection?.collapsed ? 54 : layout.h }}
                 minWidth={dashboardElement ? 32 : dashboardSection ? 240 : widget?.type === 'DIVIDER' ? 120 : 72}
                 minHeight={dashboardElement || widget?.type === 'DIVIDER' ? 20 : dashboardSection ? 140 : 72}
-                disableDragging={!layoutEdit || isMobile}
-                enableResizing={layoutEdit && !isMobile && !dashboardSection?.collapsed}
+                disableDragging={!layoutEdit || isMobile || selectedLayoutId !== layout.id}
+                enableResizing={layoutEdit && !isMobile && selectedLayoutId === layout.id && !dashboardSection?.collapsed}
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
                 resizeHandleClasses={resizeHandleClasses}
                 cancel={dashboardElement ? undefined : 'button,a,input,select,textarea'}
+                onMouseDown={() => {
+                  if (layoutEdit && !isMobile) setSelectedLayoutId(layout.id);
+                }}
                 onDragStop={(_event, position) => {
                   void updateLayout(layout.id, { x: position.x, y: position.y });
                 }}
@@ -354,7 +358,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         </section>
       </main>
       {layoutEdit && !isMobile && (
-        <button className="layout-edit-done" onClick={() => setLayoutEdit(false)}>
+        <button className="layout-edit-done" onClick={() => { setLayoutEdit(false); setSelectedLayoutId(null); }}>
           Concluir edição
         </button>
       )}

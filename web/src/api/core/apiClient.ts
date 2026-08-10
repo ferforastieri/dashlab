@@ -20,16 +20,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 apiClient.interceptors.response.use(
-  (response) => {
-    if (
-      (response.config.method || 'get') !== 'get' &&
-      response.data?.message &&
-      response.config.headers?.['X-Silent-Toast'] !== 'true' &&
-      !response.config.url?.includes('/auth/refresh')
-    )
-      notify(response.data.message);
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const original = error.config;
     const isAuthenticationRequest = ['/auth/login', '/auth/register', '/auth/refresh'].some(

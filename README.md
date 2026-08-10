@@ -98,6 +98,11 @@ Somente o Nginx é publicado na LAN. PostgreSQL e NestJS permanecem na rede inte
 | `POSTGRES_PASSWORD` | Senha do PostgreSQL.             |
 | `JWT_SECRET`        | Assinatura dos tokens de acesso. |
 | `PROMETHEUS_URL`    | Endereço interno do Prometheus.  |
+| `PROMETHEUS_TARGET_LABELS` | Labels que identificam o host, por exemplo `instance="node:9100"`. |
+| `PROMETHEUS_NETWORK_LABELS` | Filtro das interfaces de rede a incluir. |
+| `PROMETHEUS_DISK_LABELS` | Filtro dos discos a incluir. |
+
+As consultas usam métricas padrão do node_exporter e não dependem mais do label fixo `tipo="Servidor"`. Quando os nomes das métricas forem diferentes, as variáveis `PROMETHEUS_CPU_QUERY`, `PROMETHEUS_MEMORY_QUERY`, `PROMETHEUS_DOWNLOAD_QUERY`, `PROMETHEUS_UPLOAD_QUERY`, `PROMETHEUS_DISK_INFO_QUERY`, `PROMETHEUS_DISK_UTILIZATION_QUERY`, `PROMETHEUS_DISK_READ_QUERY`, `PROMETHEUS_DISK_WRITE_QUERY`, `PROMETHEUS_DISK_TEMPERATURE_QUERY` e `PROMETHEUS_DISK_HEALTH_QUERY` permitem informar a consulta PromQL completa.
 | `WEB_PORT`          | Porta publicada pelo Nginx.      |
 
 Segredos nunca devem ser versionados.
