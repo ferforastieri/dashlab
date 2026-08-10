@@ -1,4 +1,4 @@
-import { CSSProperties, PointerEvent as ReactPointerEvent, useEffect, useState } from 'react';
+import { CSSProperties, PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import {
   LogOut,
@@ -72,10 +72,12 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [layouts, setLayouts] = useState<Layout[]>([]),
     [canvasHeight, setCanvasHeight] = useState<number | null>(null),
+    [canvasWidth, setCanvasWidth] = useState(0),
     [menu, setMenu] = useState<string | null>(null),
     [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string } | null>(
       null,
     );
+  const canvasRef = useRef<HTMLElement | null>(null);
   const load = () => dashboardQuery.refetch();
   useEffect(() => {
     if (!dash) return;
@@ -114,6 +116,16 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     }
   }, [dash]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || isMobile) return;
+    const measure = () => setCanvasWidth(canvas.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [isMobile, dash]);
+
   async function updateLayout(id: string, values: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) {
     const next = layouts.map((layout) => (layout.id === id ? { ...layout, ...values } : layout));
     setLayouts(next);
@@ -137,13 +149,21 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   const mobileApps = dash.applications.filter((app) => app.visible !== false);
   const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
   const activeCanvasHeight = canvasHeight ?? 620;
+  const contentWidth = Math.max(1, ...layouts.map((layout) => layout.x + layout.w));
+  const canvasScale = isMobile || !canvasWidth ? 1 : Math.min(1, canvasWidth / contentWidth);
+  const displayLayout = (layout: Layout) => ({
+    x: Math.round(layout.x * canvasScale),
+    y: Math.round(layout.y * canvasScale),
+    w: Math.round(layout.w * canvasScale),
+    h: Math.round(layout.h * canvasScale),
+  });
   const beginCanvasResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     const startY = event.clientY;
     const startHeight = activeCanvasHeight;
     let nextHeight = startHeight;
     const move = (pointerEvent: PointerEvent) => {
-      nextHeight = Math.max(320, Math.round(startHeight + pointerEvent.clientY - startY));
+      nextHeight = Math.max(320, Math.round(startHeight + (pointerEvent.clientY - startY) / canvasScale));
       setCanvasHeight(nextHeight);
     };
     const finish = () => {
@@ -210,7 +230,11 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     <div className={`${cn('desktop')} overflow-x-hidden`} style={visualTokens}>
       <main className={`${isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''} ${isMobile ? 'pt-[calc(64px+env(safe-area-inset-top))]' : ''}`}>
         {layoutEdit && !isMobile && <div className="canvas-edit-hint">Clique em um item para selecioná-lo · arraste para mover · use as alças para redimensionar</div>}
-        <section className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`} style={{ height: isMobile ? undefined : activeCanvasHeight }}>
+        <section
+          ref={canvasRef}
+          className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`}
+          style={{ height: isMobile ? undefined : Math.round(activeCanvasHeight * canvasScale) }}
+        >
           {layouts.map((layout) => {
             const app =
               layout.kind === 'APPLICATION'
@@ -223,15 +247,16 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
             const dashboardElement = layout.kind === 'DASHBOARD_ELEMENT' ? layout.elementKey : null;
             if (isMobile && dashboardElement && ['BRAND', 'ACTIONS', 'ADD'].includes(dashboardElement)) return null;
             if (!app && !widget && !dashboardSection && !dashboardElement) return null;
+            const display = displayLayout(layout);
             return (
               <Rnd
                 key={layout.id}
                 className={`canvas-item ${dashboardElement ? `chrome-canvas-item mobile-${dashboardElement.toLowerCase()}` : ''} ${app ? 'application-canvas-item mobile-application' : ''} ${widget ? `mobile-widget mobile-widget-${widget.type.toLowerCase()}` : ''} ${dashboardSection ? 'mobile-section' : ''} ${layoutEdit && !isMobile ? 'is-editing' : ''} ${selectedLayoutId === layout.id ? 'is-selected' : ''}`}
                 bounds="parent"
-                position={{ x: layout.x, y: layout.y }}
-                size={{ width: layout.w, height: dashboardSection?.collapsed ? 54 : layout.h }}
-                minWidth={dashboardElement ? 32 : dashboardSection ? 240 : widget?.type === 'DIVIDER' ? 120 : 72}
-                minHeight={dashboardElement || widget?.type === 'DIVIDER' ? 20 : dashboardSection ? 140 : 72}
+                position={{ x: display.x, y: display.y }}
+                size={{ width: display.w, height: dashboardSection?.collapsed ? Math.round(54 * canvasScale) : display.h }}
+                minWidth={(dashboardElement ? 32 : dashboardSection ? 240 : widget?.type === 'DIVIDER' ? 120 : 72) * canvasScale}
+                minHeight={(dashboardElement || widget?.type === 'DIVIDER' ? 20 : dashboardSection ? 140 : 72) * canvasScale}
                 disableDragging={!layoutEdit || isMobile || selectedLayoutId !== layout.id}
                 enableResizing={layoutEdit && !isMobile && selectedLayoutId === layout.id && !dashboardSection?.collapsed}
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
@@ -241,14 +266,17 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                   if (layoutEdit && !isMobile) setSelectedLayoutId(layout.id);
                 }}
                 onDragStop={(_event, position) => {
-                  void updateLayout(layout.id, { x: position.x, y: position.y });
+                  void updateLayout(layout.id, {
+                    x: Math.round(position.x / canvasScale),
+                    y: Math.round(position.y / canvasScale),
+                  });
                 }}
                 onResizeStop={(_event, _direction, element, _delta, position) => {
                   void updateLayout(layout.id, {
-                    x: position.x,
-                    y: position.y,
-                    w: element.offsetWidth,
-                    h: element.offsetHeight,
+                    x: Math.round(position.x / canvasScale),
+                    y: Math.round(position.y / canvasScale),
+                    w: Math.round(element.offsetWidth / canvasScale),
+                    h: Math.round(element.offsetHeight / canvasScale),
                   });
                 }}
               >
