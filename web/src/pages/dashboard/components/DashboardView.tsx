@@ -188,11 +188,6 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar na web" />
       </form>
     );
-    if (elementKey === 'ACTIONS' && isMobile && mobileLayout === 'DRAWER') return (
-      <div className={`${cn('header-tools')} chrome-actions`}>
-        <button className={cn('icon-button')} onClick={() => setMobileMenuOpen(true)} title="Abrir aplicativos" aria-label="Abrir aplicativos"><Menu /></button>
-      </div>
-    );
     if (elementKey === 'ACTIONS') return (
       <div className={`${cn('header-tools')} chrome-actions`}>
         <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
@@ -213,7 +208,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   };
   return (
     <div className={`${cn('desktop')} overflow-x-hidden`} style={visualTokens}>
-      <main className={`${isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''} ${isMobile && mobileLayout === 'DRAWER' ? 'pt-[calc(64px+env(safe-area-inset-top))]' : ''}`}>
+      <main className={`${isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''} ${isMobile ? 'pt-[calc(64px+env(safe-area-inset-top))]' : ''}`}>
         {layoutEdit && !isMobile && <div className="canvas-edit-hint">Clique em um item para selecioná-lo · arraste para mover · use as alças para redimensionar</div>}
         <section className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`} style={{ height: isMobile ? undefined : activeCanvasHeight }}>
           {layouts.map((layout) => {
@@ -226,7 +221,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
             const dashboardSection =
               layout.kind === 'SECTION' ? dash.sections.find((section) => section.id === layout.sectionId) : null;
             const dashboardElement = layout.kind === 'DASHBOARD_ELEMENT' ? layout.elementKey : null;
-            if (isMobile && mobileLayout !== 'GRID' && dashboardElement && ['ACTIONS', 'ADD'].includes(dashboardElement)) return null;
+            if (isMobile && dashboardElement && ['BRAND', 'ACTIONS', 'ADD'].includes(dashboardElement)) return null;
             if (!app && !widget && !dashboardSection && !dashboardElement) return null;
             return (
               <Rnd
@@ -375,14 +370,14 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           Concluir edição
         </button>
       )}
-      {isMobile && mobileLayout === 'DRAWER' && (
+      {isMobile && (
         <header className="fixed inset-x-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-[var(--border-color)] bg-[color-mix(in_srgb,var(--surface-bg)_94%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur">
-          <button onClick={() => setMobileMenuOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border border-[var(--border-color)] text-[var(--text-color)]" aria-label="Abrir aplicativos"><Menu size={20} /></button>
+          {mobileLayout === 'DRAWER' && <button onClick={() => setMobileMenuOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border border-[var(--border-color)] text-[var(--text-color)]" aria-label="Abrir aplicativos"><Menu size={20} /></button>}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] border border-[var(--border-color)] bg-[var(--accent)] text-sm font-bold text-[var(--surface-bg)]">{branding.logo ? <img src={branding.logo} alt="" className="h-full w-full object-contain p-0.5" /> : (branding.name || dash.name)[0]}</span>
             <span className="min-w-0"><small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">WORKSPACE</small><strong className="block truncate text-sm font-semibold">{branding.name || dash.name}</strong></span>
           </div>
-          <div className="flex shrink-0 gap-1"><button onClick={() => setModal('brand')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Personalizar"><Settings size={19} /></button><button onClick={() => setModal('account')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Minha conta"><UserRound size={19} /></button></div>
+          <div className="flex shrink-0 gap-1">{mobileLayout === 'GRID' && <button onClick={() => setModal('app')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Adicionar aplicativo"><Plus size={19} /></button>}<button onClick={() => setModal('brand')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Personalizar"><Settings size={19} /></button><button onClick={() => setModal('account')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Minha conta"><UserRound size={19} /></button></div>
         </header>
       )}
       {isMobile && mobileLayout !== 'GRID' && mobileMenuOpen && (
