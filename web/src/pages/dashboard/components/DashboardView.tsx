@@ -369,6 +369,15 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           Concluir edição
         </button>
       )}
+      {isMobile && mobileLayout === 'DRAWER' && !mobileMenuOpen && (
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="fixed bottom-[max(18px,env(safe-area-inset-bottom))] right-[max(16px,env(safe-area-inset-right))] z-30 inline-flex min-h-12 items-center gap-2 rounded-[var(--element-radius)] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-semibold text-[var(--surface-bg)] shadow-xl"
+          aria-label="Abrir aplicativos"
+        >
+          <Menu size={19} /> Apps
+        </button>
+      )}
       {isMobile && mobileLayout !== 'GRID' && mobileMenuOpen && (
         <>
           <button aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 z-40 bg-black/50" />
@@ -394,10 +403,10 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
       )}
       {isMobile && mobileLayout === 'BOTTOM_NAV' && (
         <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[var(--border-color)] bg-[color-mix(in_srgb,var(--panel-color)_96%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur" aria-label="Navegação do dashboard">
-          <button onClick={() => setMobileMenuOpen(true)} className="min-h-11 text-xs text-[var(--muted)]">Apps</button>
-          <button onClick={() => setModal('app')} className="min-h-11 text-xs text-[var(--muted)]">Adicionar</button>
-          <button onClick={() => setModal('brand')} className="min-h-11 text-xs text-[var(--muted)]">Aparência</button>
-          <button onClick={() => setModal('account')} className="min-h-11 text-xs text-[var(--muted)]">Conta</button>
+          <button onClick={() => setMobileMenuOpen(true)} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><Menu size={18} />Apps</button>
+          <button onClick={() => setModal('app')} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><Plus size={18} />Adicionar</button>
+          <button onClick={() => setModal('brand')} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><Settings size={18} />Aparência</button>
+          <button onClick={() => setModal('account')} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><UserRound size={18} />Conta</button>
         </nav>
       )}
       {modal && (

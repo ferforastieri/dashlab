@@ -439,7 +439,7 @@ a {
 .auth-card form { display: grid; gap: 15px; text-align: left; }
 .auth-card label, .modal-panel label { display: grid; gap: 7px; color: var(--muted); font-size: 13px; }
 
-.modal-overlay { position: fixed; z-index: 20; inset: 0; display: grid; width: 100%; height: var(--app-viewport-height); place-items: center; overflow-y: auto; overscroll-behavior: contain; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--surface-bg) 78%, transparent); }
+.modal-overlay { position: fixed; z-index: 90; inset: 0; display: grid; width: 100%; height: var(--app-viewport-height); place-items: center; overflow-y: auto; overscroll-behavior: contain; padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--surface-bg) 78%, transparent); }
 .modal-panel { position: relative; display: grid; width: 100%; max-width: 480px; max-height: calc(var(--app-viewport-height) - max(40px, env(safe-area-inset-top) + env(safe-area-inset-bottom))); gap: 16px; overflow: auto; scroll-padding-block: 30dvh; border: 1px solid var(--line); border-top: 2px solid var(--accent); border-radius: 6px; background: var(--panel); padding: 28px; color: var(--paper); box-shadow: 0 28px 80px color-mix(in srgb, var(--surface-bg) 76%, transparent); text-align: left; }
 .modal-panel h2 { margin: 0; font-size: clamp(19px, 4vw, 25px); font-weight: 600; }
 .modal-form { display: contents; }
