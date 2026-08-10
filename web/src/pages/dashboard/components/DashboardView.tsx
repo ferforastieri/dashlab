@@ -128,6 +128,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
   const branding = dash.branding || {};
   const mobileLayout = branding.mobileLayout || 'GRID';
+  const mobileApps = dash.applications.filter((app) => app.visible !== false);
   const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
   const activeCanvasHeight = canvasHeight ?? 620;
   const beginCanvasResize = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -181,9 +182,13 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar na web" />
       </form>
     );
+    if (elementKey === 'ACTIONS' && isMobile && mobileLayout === 'DRAWER') return (
+      <div className={`${cn('header-tools')} chrome-actions`}>
+        <button className={cn('icon-button')} onClick={() => setMobileMenuOpen(true)} title="Abrir aplicativos" aria-label="Abrir aplicativos"><Menu /></button>
+      </div>
+    );
     if (elementKey === 'ACTIONS') return (
       <div className={`${cn('header-tools')} chrome-actions`}>
-        {isMobile && mobileLayout === 'DRAWER' && <button className={cn('icon-button')} onClick={() => setMobileMenuOpen(true)} title="Abrir menu"><Menu /></button>}
         <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
         {!isMobile && <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => { setLayoutEdit(!layoutEdit); setSelectedLayoutId(null); }} title="Editar organização"><Pencil /></button>}
         <button className={cn('icon-button')} onClick={() => setModal('account')} title="Minha conta"><UserRound /></button>
@@ -364,23 +369,32 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
           Concluir edição
         </button>
       )}
-      {isMobile && mobileLayout === 'DRAWER' && mobileMenuOpen && (
+      {isMobile && mobileLayout !== 'GRID' && mobileMenuOpen && (
         <>
           <button aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 z-40 bg-black/50" />
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(82vw,340px)] flex-col gap-5 border-r border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl">
-            <div className="flex items-center justify-between"><strong>{branding.name || dash.name}</strong><button onClick={() => setMobileMenuOpen(false)} className="rounded p-2 text-[var(--muted)]"><X /></button></div>
-            <div className="grid gap-2">
-              <button onClick={() => { setMobileMenuOpen(false); setModal('app'); }} className="rounded border border-[var(--border-color)] p-3 text-left text-sm">Adicionar aplicativo</button>
-              <button onClick={() => { setMobileMenuOpen(false); setModal('brand'); }} className="rounded border border-[var(--border-color)] p-3 text-left text-sm">Personalizar dashboard</button>
-              <button onClick={() => { setMobileMenuOpen(false); setModal('account'); }} className="rounded border border-[var(--border-color)] p-3 text-left text-sm">Minha conta</button>
+          <aside className={`fixed z-50 flex gap-4 border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl ${mobileLayout === 'DRAWER' ? 'inset-y-0 left-0 w-[min(86vw,360px)] flex-col border-r' : 'inset-x-0 bottom-0 max-h-[78dvh] flex-col rounded-t-[var(--element-radius)] border-t'}`}>
+            <div className="flex shrink-0 items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.14em] text-[var(--muted)]">APLICATIVOS</span><strong className="block text-sm">{branding.name || dash.name}</strong></div><button onClick={() => setMobileMenuOpen(false)} className="rounded p-2 text-[var(--muted)]" aria-label="Fechar"><X /></button></div>
+            <div className="grid min-h-0 gap-2 overflow-y-auto pr-1">
+              {mobileApps.map((app) => (
+                <a key={app.id} href={app.url} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)} className="flex min-w-0 items-center gap-3 rounded-[var(--element-radius)] border border-[var(--border-color)] bg-[var(--panel-color)] p-3 text-sm">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded border border-[var(--border-color)] bg-[var(--surface-bg)]">{app.icon ? <img src={app.icon} alt="" className="h-full w-full object-cover" /> : app.name[0]}</span>
+                  <span className="min-w-0"><strong className="block truncate font-medium">{app.name}</strong><small className="block truncate text-xs text-[var(--muted)]">{app.description || app.url}</small></span>
+                </a>
+              ))}
+              {!mobileApps.length && <p className="m-0 rounded border border-dashed border-[var(--border-color)] p-4 text-sm text-[var(--muted)]">Nenhum aplicativo cadastrado.</p>}
             </div>
-            <button onClick={onLogout} className="mt-auto rounded border border-[var(--border-color)] p-3 text-left text-sm text-[var(--muted)]">Sair</button>
+            <div className="grid shrink-0 grid-cols-2 gap-2">
+              <button onClick={() => { setMobileMenuOpen(false); setModal('app'); }} className="rounded border border-[var(--border-color)] p-3 text-sm">Adicionar</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('brand'); }} className="rounded border border-[var(--border-color)] p-3 text-sm">Aparência</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('account'); }} className="rounded border border-[var(--border-color)] p-3 text-sm">Conta</button>
+              <button onClick={onLogout} className="rounded border border-[var(--border-color)] p-3 text-sm text-[var(--muted)]">Sair</button>
+            </div>
           </aside>
         </>
       )}
       {isMobile && mobileLayout === 'BOTTOM_NAV' && (
         <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[var(--border-color)] bg-[color-mix(in_srgb,var(--panel-color)_96%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur" aria-label="Navegação do dashboard">
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="min-h-11 text-xs text-[var(--muted)]">Início</button>
+          <button onClick={() => setMobileMenuOpen(true)} className="min-h-11 text-xs text-[var(--muted)]">Apps</button>
           <button onClick={() => setModal('app')} className="min-h-11 text-xs text-[var(--muted)]">Adicionar</button>
           <button onClick={() => setModal('brand')} className="min-h-11 text-xs text-[var(--muted)]">Aparência</button>
           <button onClick={() => setModal('account')} className="min-h-11 text-xs text-[var(--muted)]">Conta</button>
