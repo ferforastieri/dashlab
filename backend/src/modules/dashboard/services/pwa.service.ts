@@ -41,8 +41,11 @@ export class PwaService {
         short_name: name.slice(0, 24),
         description: 'Seu homelab, do seu jeito.',
         lang: 'pt-BR',
-        id: `/?dashboard=${dashboard.id}`,
-        start_url: `/?dashboard=${dashboard.id}`,
+        // Keep the same identity as the manifest present at first paint. Chrome
+        // treats a changed manifest id/start URL as a different web app and can
+        // fall back to creating a browser shortcut instead of installing it.
+        id: '/',
+        start_url: '/',
         scope: '/',
         display: 'standalone',
         orientation: 'any',
