@@ -36,7 +36,7 @@ export function App() {
     <>
       <ToastHost />
       {sessionStatus === 'checking' ? (
-        <div className="launch-pending" role="status"><span className="sr-only">Verificando sua sessão…</span></div>
+        null
       ) : sessionStatus === 'authenticated' ? (
         <DashboardPage onLogout={logout} />
       ) : (

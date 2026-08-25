@@ -151,7 +151,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         : deleteWidget.mutateAsync(id));
     setMenu(null);
   }
-  if (!dash) return <div className="launch-pending" role="status"><span className="sr-only">Carregando seu DashLab…</span></div>;
+  if (!dash) return null;
   const branding = { ...defaultBranding, ...(dash.branding || {}) };
   const mobileLayout = branding.mobileLayout || 'GRID';
   const mobileApps = dash.applications.filter((app) => app.visible !== false);

@@ -435,7 +435,6 @@ a {
 .ui-error { color: var(--accent); }
 
 .loading-screen, .auth-shell { display: grid; min-height: var(--app-viewport-height); place-items: center; background: var(--ink); color: var(--muted); }
-.launch-pending { width: 100%; min-height: var(--app-viewport-height); background: var(--surface-bg); }
 .auth-shell { padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); background-image: linear-gradient(90deg, transparent 49.8%, var(--border-color) 50%, transparent 50.2%); }
 .auth-card { width: 100%; max-width: 420px; border: 1px solid var(--line); border-top: 2px solid var(--accent); border-radius: 6px; background: var(--panel); padding: 38px; text-align: center; box-shadow: 0 24px 70px color-mix(in srgb, var(--surface-bg) 70%, transparent); }
 .auth-card .brand-mark { margin-inline: auto; }
