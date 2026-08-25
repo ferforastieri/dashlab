@@ -6,6 +6,23 @@ import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-600.css';
 import '../tailwind.css';
 
+const installedDashboardId = window.location.pathname.match(/^\/pwa\/([^/]+)\/?$/)?.[1];
+if (installedDashboardId) {
+  try {
+    const cachedTheme = JSON.parse(localStorage.getItem(`dashlab:pwa-theme:${installedDashboardId}`) || '{}');
+    const isColor = (value: unknown): value is string =>
+      typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
+    if (isColor(cachedTheme.backgroundColor)) {
+      document.documentElement.style.backgroundColor = cachedTheme.backgroundColor;
+      document.body.style.backgroundColor = cachedTheme.backgroundColor;
+    }
+    const themeColor = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
+    if (themeColor && isColor(cachedTheme.themeColor)) themeColor.content = cachedTheme.themeColor;
+  } catch {
+    // A stale theme must never prevent the app from starting.
+  }
+}
+
 const syncVisualViewport = () => {
   const viewport = window.visualViewport;
   document.documentElement.style.setProperty(

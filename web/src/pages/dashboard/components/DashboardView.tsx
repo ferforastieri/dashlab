@@ -86,15 +86,25 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     document.title = dash.branding?.name || dash.name;
     const installationPath = `/pwa/${dash.id}/`;
     if (window.location.pathname !== installationPath) {
-      window.location.replace(installationPath);
-      return;
+      window.history.replaceState(window.history.state, '', installationPath);
     }
+    const manifest = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
+    if (manifest) manifest.href = `/api/pwa/${dash.id}/manifest.webmanifest`;
     const backgroundColor = dash.branding?.backgroundColor;
+    const accentColor = dash.branding?.accent;
     const themeColor = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
-    if (themeColor && backgroundColor) themeColor.content = backgroundColor;
+    if (themeColor && (accentColor || backgroundColor)) themeColor.content = accentColor || backgroundColor;
     if (backgroundColor) {
       document.documentElement.style.backgroundColor = backgroundColor;
       document.body.style.backgroundColor = backgroundColor;
+      try {
+        localStorage.setItem(
+          `dashlab:pwa-theme:${dash.id}`,
+          JSON.stringify({ backgroundColor, themeColor: accentColor || backgroundColor }),
+        );
+      } catch {
+        // Theme caching is only a launch-time enhancement.
+      }
     }
     if (dash.branding?.favicon) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
@@ -141,7 +151,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         : deleteWidget.mutateAsync(id));
     setMenu(null);
   }
-  if (!dash) return <div className={cn('loading')}>Carregando seu DashLab…</div>;
+  if (!dash) return <div className="launch-pending" role="status"><span className="sr-only">Carregando seu DashLab…</span></div>;
   const branding = { ...defaultBranding, ...(dash.branding || {}) };
   const mobileLayout = branding.mobileLayout || 'GRID';
   const mobileApps = dash.applications.filter((app) => app.visible !== false);
@@ -398,7 +408,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
       )}
       {isMobile && (
         <header className="fixed inset-x-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-[var(--border-color)] bg-[color-mix(in_srgb,var(--surface-bg)_94%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur">
-          {mobileLayout === 'DRAWER' && <button onClick={() => setMobileMenuOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border border-[var(--border-color)] text-[var(--text-color)]" aria-label="Abrir aplicativos"><Menu size={20} /></button>}
+          {mobileLayout === 'DRAWER' && <button onClick={() => setMobileMenuOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border-0 bg-transparent text-[var(--text-color)]" aria-label="Abrir aplicativos"><Menu size={20} /></button>}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <span className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] text-sm font-bold ${branding.logo ? 'bg-transparent' : 'border border-[var(--border-color)] bg-[var(--accent)] text-[var(--surface-bg)]'}`}>{branding.logo ? <img src={branding.logo} alt="" className="h-full w-full object-contain" /> : (branding.name || dash.name)[0]}</span>
             <span className="min-w-0"><small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">WORKSPACE</small><strong className="block truncate text-sm font-semibold">{branding.name || dash.name}</strong></span>
@@ -410,21 +420,21 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         <>
           <button aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 z-40 bg-black/50" />
           <aside className={`fixed z-50 flex gap-4 border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl ${mobileLayout === 'DRAWER' ? 'inset-y-0 left-0 w-[min(86vw,360px)] flex-col border-r' : 'inset-x-0 bottom-0 max-h-[78dvh] flex-col rounded-t-[var(--element-radius)] border-t'}`}>
-            <div className="flex shrink-0 items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.14em] text-[var(--muted)]">APLICATIVOS</span><strong className="block text-sm">{branding.name || dash.name}</strong></div><button onClick={() => setMobileMenuOpen(false)} className="rounded p-2 text-[var(--muted)]" aria-label="Fechar"><X /></button></div>
+            <div className="flex shrink-0 items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.14em] text-[var(--muted)]">APLICATIVOS</span><strong className="block text-sm">{branding.name || dash.name}</strong></div><button onClick={() => setMobileMenuOpen(false)} className="rounded-[var(--element-radius)] border-0 bg-transparent p-2 text-[var(--muted)]" aria-label="Fechar"><X /></button></div>
             <div className="grid min-h-0 gap-2 overflow-y-auto pr-1">
               {mobileApps.map((app) => (
                 <a key={app.id} href={app.url} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)} className="flex min-w-0 items-center gap-3 rounded-[var(--element-radius)] border border-[var(--border-color)] bg-[var(--panel-color)] p-3 text-sm">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded border border-[var(--border-color)] bg-[var(--surface-bg)]">{app.icon ? <img src={app.icon} alt="" className="h-full w-full object-cover" /> : app.name[0]}</span>
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] border-0 bg-transparent">{app.icon ? <img src={app.icon} alt="" className="h-full w-full object-contain" /> : app.name[0]}</span>
                   <span className="min-w-0"><strong className="block truncate font-medium">{app.name}</strong><small className="block truncate text-xs text-[var(--muted)]">{app.description || app.url}</small></span>
                 </a>
               ))}
-              {!mobileApps.length && <p className="m-0 rounded border border-dashed border-[var(--border-color)] p-4 text-sm text-[var(--muted)]">Nenhum aplicativo cadastrado.</p>}
+              {!mobileApps.length && <p className="m-0 rounded-[var(--element-radius)] border border-dashed border-[var(--border-color)] p-4 text-sm text-[var(--muted)]">Nenhum aplicativo cadastrado.</p>}
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-2">
-              <button onClick={() => { setMobileMenuOpen(false); setModal('app'); }} className="rounded border border-[var(--border-color)] p-3 text-sm">Adicionar</button>
-              <button onClick={() => { setMobileMenuOpen(false); setModal('brand'); }} className="rounded border border-[var(--border-color)] p-3 text-sm">Aparência</button>
-              <button onClick={() => { setMobileMenuOpen(false); setModal('account'); }} className="rounded border border-[var(--border-color)] p-3 text-sm">Conta</button>
-              <button onClick={onLogout} className="rounded border border-[var(--border-color)] p-3 text-sm text-[var(--muted)]">Sair</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('app'); }} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm">Adicionar</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('brand'); }} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm">Aparência</button>
+              <button onClick={() => { setMobileMenuOpen(false); setModal('account'); }} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm">Conta</button>
+              <button onClick={onLogout} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm text-[var(--muted)]">Sair</button>
             </div>
           </aside>
         </>

@@ -57,6 +57,15 @@ export function DashboardEditor({
     });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const title = mode === 'brand'
+    ? 'Personalizar meu DashLab'
+    : mode === 'account'
+      ? 'Minha conta'
+      : mode === 'app'
+        ? `${editing ? 'Editar' : 'Novo'} aplicativo`
+        : mode === 'section'
+          ? `${editing ? 'Editar' : 'Nova'} seção`
+          : `${editing ? 'Editar' : 'Novo'} widget`;
   async function save(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -118,9 +127,12 @@ export function DashboardEditor({
   return (
     <Modal onClose={close}>
       <form className="modal-form" onSubmit={save}>
-        <button type="button" className={cn('close')} onClick={close}>
-          <X />
-        </button>
+        <header className="modal-header">
+          <h2>{title}</h2>
+          <button type="button" className={cn('close')} onClick={close} aria-label="Fechar">
+            <X />
+          </button>
+        </header>
         {type !== 'brand' && type !== 'account' && !editing && (
           <div className={cn('tabs')}>
             <button
@@ -146,17 +158,6 @@ export function DashboardEditor({
             </button>
           </div>
         )}
-        <h2>
-          {mode === 'brand'
-            ? 'Personalizar meu DashLab'
-            : mode === 'account'
-              ? 'Minha conta'
-              : mode === 'app'
-                ? `${editing ? 'Editar' : 'Novo'} aplicativo`
-                : mode === 'section'
-                  ? `${editing ? 'Editar' : 'Nova'} seção`
-                  : `${editing ? 'Editar' : 'Novo'} widget`}
-        </h2>
         {mode === 'app' && (
           <>
             <label>
@@ -426,9 +427,9 @@ export function DashboardEditor({
                   >
                     <span className="grid gap-2"><Icon size={20} className="text-[var(--accent)]" /><strong className="text-sm font-semibold">{title}</strong></span>
                     <span className="text-xs leading-snug">{text}</span>
-                    <span className="mt-3 grid h-7 grid-cols-3 gap-1 rounded border border-current/30 p-1 opacity-80">
-                      <i className={`rounded bg-current/60 ${value === 'DRAWER' ? 'col-span-1' : 'col-span-3'}`} />
-                      {value === 'BOTTOM_NAV' && <i className="col-span-3 rounded bg-current/40" />}
+                    <span className="mt-3 grid h-7 grid-cols-3 gap-1 rounded-[var(--element-radius)] border border-current/30 p-1 opacity-80">
+                      <i className={`rounded-[var(--element-radius)] bg-current/60 ${value === 'DRAWER' ? 'col-span-1' : 'col-span-3'}`} />
+                      {value === 'BOTTOM_NAV' && <i className="col-span-3 rounded-[var(--element-radius)] bg-current/40" />}
                     </span>
                   </button>
                 ))}
