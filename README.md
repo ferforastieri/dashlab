@@ -2,7 +2,7 @@
 
 Dashboard single-user e self-hosted para organizar serviços, atalhos e métricas de um homelab.
 
-Site: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
+Site oficial: [https://dashlabplus.vercel.app/](https://dashlabplus.vercel.app/)
 
 O site público na Vercel apresenta o projeto e sua documentação. A instalação
 self-hosted usa uma única imagem Docker com landing page, Lab, API Go e
@@ -100,3 +100,7 @@ O volume `dashlab_plus_data` armazena `/data/dashlab-plus.db`. Para backups cons
 ## Segurança
 
 O DashLab+ não possui autenticação própria. Utilize somente em rede confiável, VPN ou atrás de autenticação no proxy reverso. A API aplica limites básicos por endereço (incluindo limite estrito no endpoint de atualização), limita corpos JSON e uploads, valida URLs do Prometheus e envia headers de isolamento/CSP. Não exponha SQLite, Prometheus, o socket Docker ou outros serviços internos.
+
+## Licença
+
+Distribuído sob a [Licença MIT](LICENSE).
