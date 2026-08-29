@@ -531,11 +531,12 @@ export function LandingPage() {
       </main>
 
       <footer className="site-footer">
-        <a className="brand" href="#inicio">
+        <a className="brand footer-brand" href="#inicio">
           <span>
             <img src="/logo.svg" alt="" />
           </span>
           <strong>DASHLAB+</strong>
+          <small>PERSONAL NODE</small>
         </a>
         <p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p>
         <nav>

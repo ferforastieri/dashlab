@@ -155,6 +155,14 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
 .philosophy-list span{color:var(--muted);font-size:.7rem;line-height:1.6}
 .manifesto{min-height:0;padding-block:clamp(72px,8vw,112px)}
 .closing{min-height:0;padding-block:clamp(96px,12vw,160px)}
+.site-footer{padding-block:56px 34px;row-gap:28px}
+.footer-brand{grid-template-columns:46px auto;grid-template-rows:1fr 1fr;align-self:start}
+.footer-brand>span{width:40px;height:40px;background:transparent}
+.footer-brand>span img{width:100%;height:100%;object-fit:contain}
+.footer-brand strong{font-size:.78rem}
+.footer-brand small{font-size:.5rem;letter-spacing:.15em;color:var(--muted)}
+.site-footer p{max-width:240px;margin:0;font-size:.76rem;line-height:1.6}
+.site-footer nav{align-self:start;gap:28px}
 @media(max-width:650px){
   .manifesto-copy{gap:20px}
   .principle-list{grid-template-columns:1fr;margin-top:16px;gap:8px}
