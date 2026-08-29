@@ -22,12 +22,14 @@ fi
 
 mkdir -p "$INSTALL_DIR"
 trap 'rm -f "$TEMP_COMPOSE"' EXIT HUP INT TERM
-curl -fsSL "$REPOSITORY/docker-compose.yml" -o "$TEMP_COMPOSE"
+curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 60 \
+  "$REPOSITORY/docker-compose.yml" -o "$TEMP_COMPOSE"
 mv "$TEMP_COMPOSE" "$COMPOSE_FILE"
 
 if [ ! -f "$ENV_FILE" ]; then
   umask 077
-  curl -fsSL "$REPOSITORY/.env.example" -o "$ENV_FILE"
+  curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 60 \
+    "$REPOSITORY/.env.example" -o "$ENV_FILE"
 fi
 
 if ! grep -q '^UPDATE_TOKEN=' "$ENV_FILE" || [ -z "$(sed -n 's/^UPDATE_TOKEN=//p' "$ENV_FILE" | tail -n 1)" ]; then

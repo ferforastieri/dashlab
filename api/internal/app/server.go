@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -22,6 +24,38 @@ type Server struct {
 	logger       *slog.Logger
 	updateURL    string
 	updateToken  string
+	limiter      *requestLimiter
+}
+
+type rateWindow struct {
+	started time.Time
+	count   int
+}
+type requestLimiter struct {
+	mu      sync.Mutex
+	windows map[string]rateWindow
+}
+
+func newRequestLimiter() *requestLimiter {
+	return &requestLimiter{windows: make(map[string]rateWindow)}
+}
+func (l *requestLimiter) allow(key string, limit int, now time.Time) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	w := l.windows[key]
+	if now.Sub(w.started) >= time.Minute {
+		w = rateWindow{started: now}
+	}
+	w.count++
+	l.windows[key] = w
+	if len(l.windows) > 5000 {
+		for k, item := range l.windows {
+			if now.Sub(item.started) > 2*time.Minute {
+				delete(l.windows, k)
+			}
+		}
+	}
+	return w.count <= limit
 }
 
 // Run starts the DashLab+ HTTP service and blocks until it receives a shutdown signal.
@@ -36,12 +70,17 @@ func Run() {
 	}
 	defer store.Close()
 
+	integrations := NewIntegrations()
+	if settings, settingsErr := store.Settings(context.Background()); settingsErr == nil {
+		integrations.Configure(settings)
+	}
 	server := &Server{
 		store:        store,
-		integrations: NewIntegrations(),
+		integrations: integrations,
 		logger:       logger,
 		updateURL:    strings.TrimRight(env("UPDATE_SERVICE_URL", ""), "/"),
 		updateToken:  strings.TrimSpace(env("UPDATE_TOKEN", "")),
+		limiter:      newRequestLimiter(),
 	}
 	httpServer := &http.Server{
 		Addr:              ":" + env("PORT", "3001"),
@@ -72,6 +111,8 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/version", s.version)
+	mux.HandleFunc("GET /api/settings", s.settings)
+	mux.HandleFunc("PUT /api/settings", s.saveSettings)
 	mux.HandleFunc("POST /api/update", s.update)
 	mux.HandleFunc("GET /api/dashboard", s.dashboard)
 	mux.HandleFunc("PUT /api/branding", s.branding)
@@ -96,7 +137,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /api/pwa/{dashboardId}/manifest.webmanifest", s.pwaManifest)
 	mux.HandleFunc("GET /api/pwa/{dashboardId}/icon/{file}", s.pwaIcon)
 	mux.Handle("/", webHandler(env("WEB_ROOT", "")))
-	return s.securityHeaders(s.recoverPanic(s.logRequests(mux)))
+	return s.securityHeaders(s.rateLimit(s.recoverPanic(s.logRequests(mux))))
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -106,6 +147,42 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) version(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string]string{"version": BuildVersion})
+}
+
+func (s *Server) settings(w http.ResponseWriter, r *http.Request) {
+	settings, err := s.store.Settings(r.Context())
+	if err != nil {
+		s.fail(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"prometheusUrl": settings["prometheus_url"], "hasPrometheusToken": settings["prometheus_token"] != ""})
+}
+
+func (s *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		PrometheusURL   string `json:"prometheusUrl"`
+		PrometheusToken string `json:"prometheusToken"`
+	}
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	if payload.PrometheusURL != "" {
+		parsed, err := url.Parse(strings.TrimSpace(payload.PrometheusURL))
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil {
+			writeError(w, http.StatusBadRequest, "URL do Prometheus inválida")
+			return
+		}
+	}
+	settings := map[string]string{"prometheus_url": strings.TrimSpace(payload.PrometheusURL)}
+	if strings.TrimSpace(payload.PrometheusToken) != "" {
+		settings["prometheus_token"] = strings.TrimSpace(payload.PrometheusToken)
+	}
+	if err := s.store.SaveSettings(r.Context(), settings); err != nil {
+		s.fail(w, http.StatusInternalServerError, err)
+		return
+	}
+	s.integrations.Configure(settings)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "hasPrometheusToken": settings["prometheus_token"] != ""})
 }
 
 func (s *Server) update(w http.ResponseWriter, r *http.Request) {
@@ -739,6 +816,49 @@ func (s *Server) securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "same-origin")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+		w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://dashlabplus.vercel.app")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) rateLimit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.limiter == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			ip = r.RemoteAddr
+		}
+		limit := 120
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			limit = 90
+		}
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			limit = 30
+		}
+		if r.URL.Path == "/api/update" {
+			limit = 2
+		}
+		key := ip + ":" + r.Method
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			key += ":api"
+		}
+		if r.URL.Path == "/api/update" {
+			key += ":update"
+		}
+		if !s.limiter.allow(key, limit, time.Now()) {
+			w.Header().Set("Retry-After", "60")
+			writeError(w, http.StatusTooManyRequests, "Muitas solicitações; tente novamente em instantes")
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/api/") && r.URL.Path != "/api/assets" {
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+		}
 		next.ServeHTTP(w, r)
 	})
 }

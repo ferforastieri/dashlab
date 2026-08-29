@@ -1,0 +1,13 @@
+  .dashlab-update { @apply fixed z-[10000] right-[max(18px,env(safe-area-inset-right))] bottom-[max(18px,env(safe-area-inset-bottom))] grid grid-cols-[minmax(0,1fr)_auto] items-center gap-[18px] w-[min(560px,calc(100vw-36px))] rounded-lg border border-[var(--accent,var(--orange,#ff7a1a))] bg-[var(--panel,#11171b)] p-[18px] text-[var(--paper,#f7f4ed)] shadow-2xl; font-family:'IBM Plex Mono',monospace; }
+  .dashlab-update > div:first-child { @apply grid min-w-0 gap-1.5; }
+  .dashlab-update strong { font-size:clamp(.8rem,.76rem + .18vw,.94rem); }
+  .dashlab-update span { @apply text-[var(--muted,#b4bec3)]; overflow-wrap:anywhere; font-size:clamp(.68rem,.64rem + .14vw,.8rem); line-height:1.5; }
+  .dashlab-update > div:last-child { @apply flex gap-2; }
+  .dashlab-update button { @apply min-h-10 cursor-pointer rounded border border-[var(--line,#3b484f)] bg-transparent px-[13px] text-inherit; font:600 .68rem 'IBM Plex Mono',monospace; }
+  .dashlab-update__confirm { @apply border-[var(--accent,var(--orange,#ff7a1a))] bg-[var(--accent,var(--orange,#ff7a1a))] text-[#0b0f12]; }
+  .dashlab-update button:focus-visible { @apply outline-2 outline-[var(--paper,#f7f4ed)] outline-offset-2; }
+  .dashlab-update button:disabled { @apply cursor-wait; opacity:.65; }
+@media (max-width:620px) {
+  .dashlab-update { @apply left-3 right-3 bottom-3 grid-cols-1 w-auto gap-3.5 p-4; }
+  .dashlab-update > div:last-child, .dashlab-update button { @apply flex-1; }
+}

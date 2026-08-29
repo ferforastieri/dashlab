@@ -172,8 +172,8 @@ export function DocsPage() {
             <h3>{text('2. Configure, se necessário', '2. Configure if needed')}</h3>
             <p>
               {text(
-                'Edite ~/.dashlab-plus/.env para alterar a porta ou conectar o Prometheus. Execute novamente o instalador para aplicar.',
-                'Edit ~/.dashlab-plus/.env to change the port or connect Prometheus. Run the installer again to apply it.',
+                'Edite ~/.dashlab-plus/.env apenas para alterar a porta. Para conectar o Prometheus e seus tokens, abra Personalizar no Lab; a configuração é salva no SQLite.',
+                'Edit ~/.dashlab-plus/.env only to change the port. To connect Prometheus and its tokens, open Customize in the Lab; the configuration is saved in SQLite.',
               )}
             </p>
             <h3>{text('3. Confirme a saúde', '3. Check health')}</h3>
@@ -241,7 +241,7 @@ export function DocsPage() {
                     </td>
                     <td>—</td>
                     <td>
-                      {text('URL acessível pelo container.', 'URL accessible from the container.')}
+                      {text('Compatibilidade; prefira configurar em Personalizar → Integrações.', 'Compatibility fallback; prefer Customize → Integrations.')}
                     </td>
                   </tr>
                   <tr>
@@ -293,8 +293,8 @@ export function DocsPage() {
             <h2>Prometheus</h2>
             <p>
               {text(
-                'A URL precisa ser resolvida de dentro do container dashlab-plus. Use um IP da LAN ou um nome DNS disponível na mesma rede Docker.',
-                'The URL must resolve from inside the dashlab-plus container. Use a LAN IP or a DNS name available on the same Docker network.',
+                'Configure a URL e o token em Lab → Personalizar → Integrações. A URL precisa ser resolvida de dentro do container dashlab-plus. Use um IP da LAN ou um nome DNS disponível na mesma rede Docker.',
+                'Configure the URL and token in Lab → Customize → Integrations. The URL must resolve from inside the dashlab-plus container. Use a LAN IP or a DNS name available on the same Docker network.',
               )}
             </p>
             <pre>

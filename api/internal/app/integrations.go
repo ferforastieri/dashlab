@@ -14,11 +14,24 @@ import (
 )
 
 type Integrations struct {
-	client        *http.Client
-	prometheusURL string
-	targetLabels  string
-	networkLabels string
-	diskLabels    string
+	client          *http.Client
+	prometheusURL   string
+	targetLabels    string
+	networkLabels   string
+	diskLabels      string
+	mu              sync.RWMutex
+	prometheusToken string
+}
+
+func (i *Integrations) Configure(settings map[string]string) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if value, ok := settings["prometheus_url"]; ok {
+		i.prometheusURL = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	if value, ok := settings["prometheus_token"]; ok {
+		i.prometheusToken = strings.TrimSpace(value)
+	}
 }
 
 func NewIntegrations() *Integrations {
@@ -234,16 +247,22 @@ func (i *Integrations) Weather(ctx context.Context, latitude, longitude float64)
 }
 
 func (i *Integrations) prometheus(ctx context.Context, path string, params map[string]string) (any, error) {
+	i.mu.RLock()
+	baseURL, token := i.prometheusURL, i.prometheusToken
+	i.mu.RUnlock()
 	values := url.Values{}
 	for key, value := range params {
 		values.Set(key, value)
 	}
-	return i.fetch(ctx, i.prometheusURL+path+"?"+values.Encode())
+	return i.fetch(ctx, baseURL+path+"?"+values.Encode(), token)
 }
-func (i *Integrations) fetch(ctx context.Context, target string) (any, error) {
+func (i *Integrations) fetch(ctx context.Context, target string, tokens ...string) (any, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
 		return nil, err
+	}
+	if len(tokens) > 0 && tokens[0] != "" {
+		request.Header.Set("Authorization", "Bearer "+tokens[0])
 	}
 	response, err := i.client.Do(request)
 	if err != nil {

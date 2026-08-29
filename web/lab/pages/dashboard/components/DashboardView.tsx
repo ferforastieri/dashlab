@@ -232,9 +232,9 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
   const renderDashboardElement = (elementKey: Layout['elementKey']) => {
     if (elementKey === 'BRAND')
       return (
-        <div className={`chrome-brand ${branding.logo ? 'has-logo' : ''}`}>
+        <div className="chrome-brand has-logo">
           <div className={cn('brand-mark small')}>
-            {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
+            <img src={branding.logo || '/logo.svg'} alt="" />
           </div>
           <div className="brand-copy">
             <span>WORKSPACE</span>
@@ -604,11 +604,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             <span
               className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] text-sm font-bold ${branding.logo ? 'bg-transparent' : 'border border-[var(--border-color)] bg-[var(--accent)] text-[var(--surface-bg)]'}`}
             >
-              {branding.logo ? (
-                <img src={branding.logo} alt="" className="h-full w-full object-contain" />
-              ) : (
-                (branding.name || dash.name)[0]
-              )}
+              <img src={branding.logo || '/logo.svg'} alt="" className="h-full w-full object-contain" />
             </span>
             <span className="min-w-0">
               <small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">

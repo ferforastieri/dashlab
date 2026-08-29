@@ -55,6 +55,11 @@ func (s *Store) migrate(ctx context.Context) error {
             data BLOB NOT NULL,
             created_at TEXT NOT NULL
         )`,
+		`CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )`,
 	}
 	for _, statement := range statements {
 		if _, err := s.db.ExecContext(ctx, statement); err != nil {
@@ -67,6 +72,36 @@ func (s *Store) migrate(ctx context.Context) error {
 	}
 	if count == 0 {
 		return s.saveUnlocked(ctx, defaultDashboard())
+	}
+	return nil
+}
+
+func (s *Store) Settings(ctx context.Context) (map[string]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rows, err := s.db.QueryContext(ctx, `SELECT key, value FROM app_settings`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	settings := map[string]string{}
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			return nil, err
+		}
+		settings[key] = value
+	}
+	return settings, rows.Err()
+}
+
+func (s *Store) SaveSettings(ctx context.Context, settings map[string]string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for key, value := range settings {
+		if _, err := s.db.ExecContext(ctx, `INSERT INTO app_settings(key, value, updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at`, key, value, time.Now().UTC().Format(time.RFC3339)); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -99,4 +99,4 @@ O volume `dashlab_plus_data` armazena `/data/dashlab-plus.db`. Para backups cons
 
 ## Segurança
 
-O DashLab+ não possui autenticação. Utilize somente em rede confiável, VPN ou atrás de autenticação no proxy reverso. Não exponha SQLite, Prometheus ou outros serviços internos.
+O DashLab+ não possui autenticação própria. Utilize somente em rede confiável, VPN ou atrás de autenticação no proxy reverso. A API aplica limites básicos por endereço (incluindo limite estrito no endpoint de atualização), limita corpos JSON e uploads, valida URLs do Prometheus e envia headers de isolamento/CSP. Não exponha SQLite, Prometheus, o socket Docker ou outros serviços internos.

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Grid2X2, PanelBottom, PanelLeft, X } from 'lucide-react';
 import { useCreateApplicationMutation } from '../../../api/applications/useCreateApplicationMutation';
 import { useUpdateApplicationMutation } from '../../../api/applications/useUpdateApplicationMutation';
@@ -16,6 +16,7 @@ import {
   DashboardWidget as Widget,
 } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
+import { apiClient } from '../../../api/core/apiClient';
 
 const defaultBranding = {
   accent: '#ff7a1a',
@@ -70,9 +71,17 @@ export function DashboardEditor({
           ? dash.applications.filter((app) => app.sectionId === editing.id).map((app) => app.id)
           : [],
       query: (editing as Widget | null)?.config?.query || '',
+      prometheusUrl: '',
+      prometheusToken: '',
     });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  useEffect(() => {
+    if (mode !== 'brand') return;
+    void apiClient.get('/settings').then(({ data }) => {
+      setForm((current: any) => ({ ...current, prometheusUrl: data.prometheusUrl || '' }));
+    }).catch(() => undefined);
+  }, [mode]);
   const title =
     mode === 'brand'
       ? 'Personalizar meu DashLab+'
@@ -134,6 +143,10 @@ export function DashboardEditor({
           wallpaperOverlay: Number(form.wallpaperOverlay),
           fontScale: Number(form.fontScale),
           mobileLayout: form.mobileLayout || 'GRID',
+        });
+        await apiClient.put('/settings', {
+          prometheusUrl: form.prometheusUrl || '',
+          prometheusToken: form.prometheusToken || '',
         });
       } else return;
       done();
@@ -367,6 +380,31 @@ export function DashboardEditor({
         )}
         {mode === 'brand' && (
           <>
+            <fieldset className="grid gap-3 border-0 p-0">
+              <legend className="text-sm font-semibold">Integrações</legend>
+              <label>
+                URL do Prometheus
+                <input
+                  type="url"
+                  placeholder="http://prometheus:9090"
+                  value={form.prometheusUrl || ''}
+                  onChange={(e) => setForm({ ...form, prometheusUrl: e.target.value })}
+                />
+              </label>
+              <label>
+                Token do Prometheus (opcional)
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Deixe vazio para manter o token atual"
+                  value={form.prometheusToken || ''}
+                  onChange={(e) => setForm({ ...form, prometheusToken: e.target.value })}
+                />
+              </label>
+              <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
+                As credenciais ficam no SQLite local e não são exibidas na interface.
+              </p>
+            </fieldset>
             <label>
               Nome
               <input

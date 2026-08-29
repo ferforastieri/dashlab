@@ -1,3 +1,5 @@
+import './update.css';
+
 const latestVersionUrl = 'https://dashlabplus.vercel.app/version.json';
 const checkInterval = 30 * 60 * 1000;
 
