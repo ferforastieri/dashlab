@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -120,5 +121,25 @@ func TestPwaManifestUsesStableSingleUserPath(t *testing.T) {
 	}
 	if manifest["start_url"] != "/pwa/dashlab-plus-local/" {
 		t.Fatalf("start_url = %v", manifest["start_url"])
+	}
+}
+
+func TestInstalledPwaUsesDynamicManifest(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "hub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	page := `<link rel="manifest" href="/manifest.webmanifest"><div id="root"></div>`
+	if err := os.WriteFile(filepath.Join(root, "hub", "index.html"), []byte(page), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	response := requestJSON(t, webHandler(root), http.MethodGet, "/pwa/dashlab-plus-local/", nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d", response.Code)
+	}
+	expected := `/api/pwa/dashlab-plus-local/manifest.webmanifest`
+	if !bytes.Contains(response.Body.Bytes(), []byte(expected)) {
+		t.Fatalf("dynamic manifest missing from %q", response.Body.String())
 	}
 }

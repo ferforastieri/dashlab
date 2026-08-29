@@ -1,29 +1,19 @@
 name: dashlab-plus
 
 services:
-  api:
-    build: { context: ., dockerfile: Dockerfile.api }
-    container_name: dashlab-plus-api
+  dashlab-plus:
+    image: ghcr.io/ferforastieri/dashlab-plus:latest
+    container_name: dashlab-plus
+    pull_policy: always
     restart: unless-stopped
+    ports: ['${WEB_PORT:-3000}:3000']
     environment:
       PROMETHEUS_URL: ${PROMETHEUS_URL:-}
       PROMETHEUS_TARGET_LABELS: ${PROMETHEUS_TARGET_LABELS:-}
       PROMETHEUS_NETWORK_LABELS: ${PROMETHEUS_NETWORK_LABELS:-device!="lo"}
       PROMETHEUS_DISK_LABELS: ${PROMETHEUS_DISK_LABELS:-device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"}
     volumes: [dashlab_plus_data:/data]
-    healthcheck:
-      {
-        test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/api/health'],
-        interval: 20s,
-        timeout: 5s,
-        retries: 6,
-      }
-  web:
-    build: { context: ., dockerfile: Dockerfile.web }
-    container_name: dashlab-plus-web
-    restart: unless-stopped
-    ports: ['${WEB_PORT:-3000}:80']
-    depends_on: { api: { condition: service_healthy } }
+
 volumes:
   dashlab_plus_data:
     name: dashlab_plus_data
