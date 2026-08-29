@@ -75,7 +75,7 @@ export function DashboardEditor({
     [error, setError] = useState('');
   const title =
     mode === 'brand'
-      ? 'Personalizar meu DashLab'
+      ? 'Personalizar meu DashLab+'
       : mode === 'app'
         ? `${editing ? 'Editar' : 'Novo'} aplicativo`
         : mode === 'section'

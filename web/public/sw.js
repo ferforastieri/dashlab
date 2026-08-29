@@ -1,5 +1,5 @@
-const CACHE_VERSION = 'dashlab-shell-v2';
-const SHELL = ['/', '/manifest.webmanifest'];
+const CACHE_VERSION = 'dashlab-plus-shell-v3';
+const SHELL = ['/hub/', '/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL)));
@@ -30,7 +30,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(async () => (await caches.match(request)) || caches.match('/')),
+        .catch(async () => (await caches.match(request)) || caches.match('/hub/')),
     );
     return;
   }

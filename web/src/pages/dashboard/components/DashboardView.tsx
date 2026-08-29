@@ -36,7 +36,7 @@ import {
   DashboardSection as Section,
   DashboardWidget as Widget,
 } from '../dashboard.types';
-import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
+import { dashboardCn as cn } from '../dashboard.styles';
 import { DashboardClock } from './DashboardClock';
 import { DashboardEditor } from './DashboardEditor';
 import { WidgetCard } from './WidgetCard';
@@ -109,10 +109,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))),
     );
     document.title = dash.branding?.name || dash.name;
-    const installationPath = `/pwa/${dash.id}/`;
-    if (window.location.pathname !== installationPath) {
-      window.history.replaceState(window.history.state, '', installationPath);
-    }
     const manifest = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
     if (manifest) manifest.href = `/api/pwa/${dash.id}/manifest.webmanifest`;
     const backgroundColor = dash.branding?.backgroundColor;
@@ -125,7 +121,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       document.body.style.backgroundColor = backgroundColor;
       try {
         localStorage.setItem(
-          `dashlab:pwa-theme:${dash.id}`,
+          `dashlab-plus:pwa-theme:${dash.id}`,
           JSON.stringify({ backgroundColor, themeColor: accentColor || backgroundColor }),
         );
       } catch {

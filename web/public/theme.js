@@ -1,7 +1,7 @@
 (() => {
   let saved = null;
   try {
-    saved = localStorage.getItem('dashlab-site-theme');
+    saved = localStorage.getItem('dashlab-plus-site-theme');
   } catch {
     // The operating-system preference remains a safe fallback.
   }
@@ -11,6 +11,6 @@
   document.documentElement.dataset.theme = theme;
   document.querySelector("meta[name='theme-color']")?.setAttribute(
     'content',
-    theme === 'light' ? '#f4f1ea' : '#0b0f12',
+    theme === 'light' ? '#f5f2eb' : '#090d0f',
   );
 })();

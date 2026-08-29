@@ -4,14 +4,14 @@ RUN apk add --no-cache ca-certificates
 COPY api/go.mod api/go.sum* ./
 RUN go mod download
 COPY api/ ./
-RUN go test ./... && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/dashlab-api .
+RUN go test ./... && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/dashlab-plus-api ./cmd/server
 
 FROM alpine:3.22
-RUN apk add --no-cache ca-certificates tzdata && addgroup -S dashlab && adduser -S -G dashlab dashlab
+RUN apk add --no-cache ca-certificates tzdata && addgroup -S dashlabplus && adduser -S -G dashlabplus dashlabplus
 WORKDIR /app
-COPY --from=build /out/dashlab-api /usr/local/bin/dashlab-api
-RUN mkdir -p /data && chown dashlab:dashlab /data
-USER dashlab
-ENV PORT=3001 DATABASE_PATH=/data/dashlab.db
+COPY --from=build /out/dashlab-plus-api /usr/local/bin/dashlab-plus-api
+RUN mkdir -p /data && chown dashlabplus:dashlabplus /data
+USER dashlabplus
+ENV PORT=3001 DATABASE_PATH=/data/dashlab-plus.db
 EXPOSE 3001
-ENTRYPOINT ["dashlab-api"]
+ENTRYPOINT ["dashlab-plus-api"]

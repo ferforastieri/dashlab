@@ -1,5 +1,5 @@
 {
-  "name": "dashlab",
+  "name": "dashlab-plus",
   "private": true,
   "scripts": {
     "install:all": "npm --prefix web ci",

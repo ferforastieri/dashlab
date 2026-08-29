@@ -1,51 +1,21 @@
-# DashLab
+# DashLab+
 
-<p align="center">
-  <strong>Seu homelab, do seu jeito.</strong><br>
-  Um dashboard pessoal, single-user e self-hosted para serviços, atalhos e métricas.
-</p>
+Dashboard single-user e self-hosted para organizar serviços, atalhos e métricas de um homelab.
 
-## Sobre
+Site: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
 
-O DashLab transforma os serviços de um homelab em um workspace responsivo. Aplicativos, widgets, seções, layouts, wallpapers e cores são configurados diretamente no dashboard e compartilhados entre desktop e celular.
+## Acessos
 
-O projeto é deliberadamente single-user: não há cadastro, login, JWT, ORM ou banco remoto. O limite de confiança é a rede privada, VPN ou autenticação fornecida pelo proxy reverso.
-
-## Recursos
-
-- Canvas livre no desktop e três experiências móveis.
-- Cadastro de aplicativos, deep links, categorias e ícones.
-- Seções recolhíveis e widgets configuráveis.
-- Métricas de CPU, memória, discos e rede via Prometheus.
-- Consultas PromQL personalizadas.
-- Status e latência dos serviços internos.
-- Relógio, clima e pesquisa.
-- PWA instalável com identidade personalizada.
-- Estado e imagens persistidos em um único SQLite.
-- Deploy com dois containers: Go e Nginx.
-- Landing e documentação estáticas prontas para Vercel.
-
-## Arquitetura
-
-```text
-Navegador ── Nginx ── React/Vite
-                │
-                └── /api ── Go ── SQLite
-                              ├── Prometheus
-                              ├── Open-Meteo
-                              └── serviços da LAN
-```
-
-| Pasta    | Responsabilidade                             |
-| -------- | -------------------------------------------- |
-| `api/`   | API Go, SQLite, assets e integrações locais. |
-| `web/`   | Dashboard React/Vite e PWA.                  |
-| `nginx/` | Entrega da SPA e proxy interno de `/api`.    |
-| `site/`  | Landing e documentação públicas para Vercel. |
+| Rota | Conteúdo |
+| --- | --- |
+| `/` | Landing page |
+| `/hub/` | Server Hub |
+| `/docs/` | Documentação |
+| `/api/health` | Saúde da API |
 
 ## Instalação
 
-Requisitos: Docker Engine e Docker Compose v2.
+Requer Docker Engine e Docker Compose v2.
 
 ```bash
 git clone https://github.com/ferforastieri/dashlab
@@ -54,19 +24,19 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Abra `http://IP-DO-HOST:3000`. O banco e os widgets iniciais são criados automaticamente na primeira execução.
+Acesse `http://IP-DO-HOST:3000`. O SQLite e o dashboard inicial são criados automaticamente.
 
 ## Configuração
 
-| Variável                    | Uso                                       |
-| --------------------------- | ----------------------------------------- |
-| `WEB_PORT`                  | Porta publicada pelo Nginx.               |
-| `PROMETHEUS_URL`            | URL interna do Prometheus. É opcional.    |
-| `PROMETHEUS_TARGET_LABELS`  | Labels que identificam o host monitorado. |
-| `PROMETHEUS_NETWORK_LABELS` | Filtro das interfaces de rede.            |
-| `PROMETHEUS_DISK_LABELS`    | Filtro dos discos monitorados.            |
+| Variável | Padrão | Uso |
+| --- | --- | --- |
+| `WEB_PORT` | `3000` | Porta HTTP publicada pelo Nginx. |
+| `PROMETHEUS_URL` | vazio | URL do Prometheus acessível pela API. |
+| `PROMETHEUS_TARGET_LABELS` | vazio | Labels comuns ao host monitorado. |
+| `PROMETHEUS_NETWORK_LABELS` | `device!="lo"` | Filtro das interfaces de rede. |
+| `PROMETHEUS_DISK_LABELS` | discos NVMe/SATA | Filtro dos discos monitorados. |
 
-Também são aceitas consultas completas nas variáveis `PROMETHEUS_CPU_QUERY`, `PROMETHEUS_MEMORY_QUERY`, `PROMETHEUS_DOWNLOAD_QUERY`, `PROMETHEUS_UPLOAD_QUERY`, `PROMETHEUS_DISK_INFO_QUERY`, `PROMETHEUS_DISK_UTILIZATION_QUERY`, `PROMETHEUS_DISK_READ_QUERY`, `PROMETHEUS_DISK_WRITE_QUERY`, `PROMETHEUS_DISK_TEMPERATURE_QUERY` e `PROMETHEUS_DISK_HEALTH_QUERY`.
+O Prometheus é opcional. Sem `PROMETHEUS_URL`, apenas os widgets dependentes de métricas ficam indisponíveis.
 
 ## Desenvolvimento
 
@@ -78,36 +48,20 @@ npm ci
 npm run dev
 ```
 
-API, com Go 1.24 instalado:
+API, com Go 1.24:
 
 ```bash
 cd api
 go test ./...
-DATABASE_PATH=./dashlab.db go run .
+DATABASE_PATH=./dashlab-plus.db go run ./cmd/server
 ```
 
-O Vite encaminha `/api` para `http://localhost:3001` durante o desenvolvimento.
+O Vite encaminha `/api` para `http://localhost:3001`.
 
-## Persistência e backup
+## Persistência
 
-O volume Docker `dashlab_data` contém `/data/dashlab.db`. Para uma cópia consistente, pare o serviço `api` antes de copiar o volume e inicie-o novamente ao terminar.
-
-## Landing no Vercel
-
-Importe este repositório como um projeto no Vercel. O arquivo `vercel.json` já configura a publicação estática:
-
-- Framework preset: `Other`
-- Build command: nenhum
-- Output directory: `site`
-
-A aplicação do homelab e o site público são independentes. A landing não conhece a URL, os dados ou a disponibilidade da instalação privada.
+O volume `dashlab_plus_data` armazena `/data/dashlab-plus.db`. Para backups consistentes, pare o serviço `api` antes de copiar o volume.
 
 ## Segurança
 
-O DashLab single-user não possui autenticação própria. Não publique a aplicação diretamente na internet. Para acesso remoto, prefira Tailscale, WireGuard ou autenticação no proxy reverso, protegendo tanto a interface quanto `/api`.
-
-Somente o Nginx é publicado pelo Compose. A API Go, o SQLite e o Prometheus permanecem internos.
-
-## Licença
-
-Projeto pessoal. Adicione uma licença antes de aceitar contribuições ou redistribuir o software.
+O DashLab+ não possui autenticação. Utilize somente em rede confiável, VPN ou atrás de autenticação no proxy reverso. Apenas o Nginx deve ser exposto; API, SQLite e Prometheus permanecem internos.

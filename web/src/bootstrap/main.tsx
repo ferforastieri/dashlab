@@ -8,7 +8,7 @@ import '../tailwind.css';
 const installedDashboardId = window.location.pathname.match(/^\/pwa\/([^/]+)\/?$/)?.[1];
 if (installedDashboardId) {
   try {
-    const cachedTheme = JSON.parse(localStorage.getItem(`dashlab:pwa-theme:${installedDashboardId}`) || '{}');
+    const cachedTheme = JSON.parse(localStorage.getItem(`dashlab-plus:pwa-theme:${installedDashboardId}`) || '{}');
     const isColor = (value: unknown): value is string =>
       typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
     if (isColor(cachedTheme.backgroundColor)) {

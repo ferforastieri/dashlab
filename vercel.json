@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "buildCommand": "",
-  "installCommand": "",
-  "outputDirectory": ".",
+  "framework": "vite",
+  "buildCommand": "npm --prefix web run build",
+  "installCommand": "npm --prefix web ci",
+  "outputDirectory": "web/dist",
   "cleanUrls": true,
   "trailingSlash": true,
   "headers": [

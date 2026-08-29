@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const notify = (message: string, type: 'success' | 'error' = 'success') =>
-  window.dispatchEvent(new CustomEvent('dashlab:toast', { detail: { message, type } }));
+  window.dispatchEvent(new CustomEvent('dashlab-plus:toast', { detail: { message, type } }));
 
 export const apiClient = axios.create({ baseURL: '/api', timeout: 10000 });
 

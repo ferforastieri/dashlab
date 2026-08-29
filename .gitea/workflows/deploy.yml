@@ -1,4 +1,4 @@
-name: Build and deploy DashLab
+name: Build and deploy DashLab+
 on:
   workflow_dispatch:
   push:
@@ -56,7 +56,7 @@ jobs:
         run: |
           npm --prefix web ci
           npm --prefix web run build
-          docker build --file Dockerfile.api --tag dashlab-api:test .
+          docker build --file Dockerfile.api --tag dashlab-plus-api:test .
       - name: Deploy containers
         env:
           PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'

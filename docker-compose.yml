@@ -1,18 +1,16 @@
-name: dashlab
+name: dashlab-plus
 
 services:
   api:
     build: { context: ., dockerfile: Dockerfile.api }
-    container_name: dashlab-api
+    container_name: dashlab-plus-api
     restart: unless-stopped
     environment:
-      DATABASE_PATH: /data/dashlab.db
       PROMETHEUS_URL: ${PROMETHEUS_URL:-}
       PROMETHEUS_TARGET_LABELS: ${PROMETHEUS_TARGET_LABELS:-}
       PROMETHEUS_NETWORK_LABELS: ${PROMETHEUS_NETWORK_LABELS:-device!="lo"}
       PROMETHEUS_DISK_LABELS: ${PROMETHEUS_DISK_LABELS:-device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"}
-      PORT: 3001
-    volumes: [dashlab_data:/data]
+    volumes: [dashlab_plus_data:/data]
     healthcheck:
       {
         test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3001/api/health'],
@@ -22,10 +20,10 @@ services:
       }
   web:
     build: { context: ., dockerfile: Dockerfile.web }
-    container_name: home-web
+    container_name: dashlab-plus-web
     restart: unless-stopped
     ports: ['${WEB_PORT:-3000}:80']
     depends_on: { api: { condition: service_healthy } }
 volumes:
-  dashlab_data:
-    name: dashlab_data
+  dashlab_plus_data:
+    name: dashlab_plus_data

@@ -13,8 +13,8 @@ export function ToastHost() {
       setItems((current) => [...current, { id, ...detail }]);
       window.setTimeout(() => setItems((current) => current.filter((item) => item.id !== id)), 3500);
     };
-    window.addEventListener('dashlab:toast', handler);
-    return () => window.removeEventListener('dashlab:toast', handler);
+    window.addEventListener('dashlab-plus:toast', handler);
+    return () => window.removeEventListener('dashlab-plus:toast', handler);
   }, []);
 
   return (

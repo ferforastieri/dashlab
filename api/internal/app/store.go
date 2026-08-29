@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -153,11 +153,11 @@ func newID(prefix string) string {
 
 func defaultDashboard() Dashboard {
 	dashboard := Dashboard{
-		ID:           "dashlab-local",
-		Name:         "Meu DashLab",
+		ID:           "dashlab-plus-local",
+		Name:         "Meu DashLab+",
 		LayoutPreset: "FREE",
 		Branding: map[string]any{
-			"name": "DashLab", "accent": "#ff7a1a", "theme": "dark", "wallpaper": "",
+			"name": "DashLab+", "accent": "#ff7a1a", "theme": "dark", "wallpaper": "",
 			"logo": "", "favicon": "", "backgroundColor": "#101416", "panelColor": "#181d20",
 			"textColor": "#e7eaec", "borderColor": "#343b3f", "radius": 5,
 			"panelOpacity": 100, "wallpaperOverlay": 55, "fontScale": 100, "mobileLayout": "GRID",

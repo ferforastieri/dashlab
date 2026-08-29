@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -22,9 +22,11 @@ type Server struct {
 	logger       *slog.Logger
 }
 
-func main() {
+// Run starts the DashLab+ HTTP service and blocks until it receives a shutdown signal.
+// Keeping the lifecycle here leaves cmd/server as a small, conventional entrypoint.
+func Run() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	dataPath := env("DATABASE_PATH", "/data/dashlab.db")
+	dataPath := env("DATABASE_PATH", "/data/dashlab-plus.db")
 	store, err := OpenStore(dataPath)
 	if err != nil {
 		logger.Error("open database", "error", err)
@@ -43,7 +45,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("DashLab API started", "address", httpServer.Addr, "database", dataPath)
+		logger.Info("DashLab+ API started", "address", httpServer.Addr, "database", dataPath)
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("http server", "error", err)
 			os.Exit(1)
@@ -87,7 +89,7 @@ func (s *Server) routes() http.Handler {
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "name": "DashLab", "storage": "sqlite"})
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "name": "DashLab+", "storage": "sqlite"})
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {

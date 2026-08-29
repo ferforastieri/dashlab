@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 
 func testServer(t *testing.T) (*Server, http.Handler) {
 	t.Helper()
-	store, err := OpenStore(filepath.Join(t.TempDir(), "dashlab.db"))
+	store, err := OpenStore(filepath.Join(t.TempDir(), "dashlab-plus.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestDashboardStartsWithSingleUserDefaults(t *testing.T) {
 	if err := json.Unmarshal(body, &dashboard); err != nil {
 		t.Fatal(err)
 	}
-	if dashboard.ID != "dashlab-local" {
+	if dashboard.ID != "dashlab-plus-local" {
 		t.Fatalf("dashboard id = %q", dashboard.ID)
 	}
 	if len(dashboard.Widgets) != 6 {
@@ -107,7 +107,7 @@ func TestApplicationLifecyclePersistsInSQLite(t *testing.T) {
 
 func TestPwaManifestUsesStableSingleUserPath(t *testing.T) {
 	_, handler := testServer(t)
-	response := requestJSON(t, handler, http.MethodGet, "/api/pwa/dashlab-local/manifest.webmanifest", nil)
+	response := requestJSON(t, handler, http.MethodGet, "/api/pwa/dashlab-plus-local/manifest.webmanifest", nil)
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 	}
@@ -118,7 +118,7 @@ func TestPwaManifestUsesStableSingleUserPath(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&manifest); err != nil {
 		t.Fatal(err)
 	}
-	if manifest["start_url"] != "/pwa/dashlab-local/" {
+	if manifest["start_url"] != "/pwa/dashlab-plus-local/" {
 		t.Fatalf("start_url = %v", manifest["start_url"])
 	}
 }
