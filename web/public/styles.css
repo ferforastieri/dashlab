@@ -174,3 +174,14 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
   .dashboard-stage{min-height:0;margin-top:38px}
   .dashboard-window{width:100%;margin-bottom:-24px}
 }
+
+/* Keep the page continuous instead of reserving empty viewport-sized bands. */
+.section-shell{padding-block:clamp(64px,7vw,112px)}
+.manifesto{min-height:0}
+.manifesto-copy{margin:0}
+.manifesto-note{margin:0}
+@media(max-width:650px){
+  .section-shell{padding-block:56px}
+  .manifesto-copy{margin:28px 0 0}
+  .manifesto-note{margin-top:32px}
+}
