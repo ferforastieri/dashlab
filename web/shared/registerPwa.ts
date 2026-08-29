@@ -1,5 +1,4 @@
 const latestVersionUrl = 'https://dashlabplus.vercel.app/version.json';
-const updateCommand = 'curl -fsSL https://dashlabplus.vercel.app/install.sh | sh';
 const checkInterval = 30 * 60 * 1000;
 
 type VersionResponse = { version?: unknown };
@@ -26,19 +25,6 @@ async function fetchVersion(url: string): Promise<string | null> {
   }
 }
 
-function copyUpdateCommand() {
-  if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(updateCommand);
-  const field = document.createElement('textarea');
-  field.value = updateCommand;
-  field.style.position = 'fixed';
-  field.style.opacity = '0';
-  document.body.append(field);
-  field.select();
-  const copied = document.execCommand('copy');
-  field.remove();
-  return copied ? Promise.resolve() : Promise.reject(new Error('copy failed'));
-}
-
 function updateText() {
   const english = document.documentElement.lang.toLowerCase().startsWith('en');
   return english
@@ -47,20 +33,20 @@ function updateText() {
         browser: 'A new version of DashLab+ is ready.',
         server: 'A new frontend and server version is ready.',
         update: 'Update',
-        copy: 'Copy command',
+        updating: 'Updating…',
         later: 'Later',
-        copied: 'Command copied. Run it on the server that hosts DashLab+.',
-        failed: `Run this command on the server: ${updateCommand}`,
+        started: 'Update started. The server will restart and reload automatically.',
+        failed: 'Could not start the server update. Try again in a moment.',
       }
     : {
         title: 'Atualização disponível',
         browser: 'Uma nova versão do DashLab+ está pronta.',
         server: 'Uma nova versão da interface e do servidor está pronta.',
         update: 'Atualizar',
-        copy: 'Copiar comando',
+        updating: 'Atualizando…',
         later: 'Agora não',
-        copied: 'Comando copiado. Execute-o no servidor que hospeda o DashLab+.',
-        failed: `Execute este comando no servidor: ${updateCommand}`,
+        started: 'Atualização iniciada. O servidor será reiniciado e a página recarregará.',
+        failed: 'Não foi possível iniciar a atualização. Tente novamente em instantes.',
       };
 }
 
@@ -103,14 +89,22 @@ function showUpdateNotice(
   const confirm = document.createElement('button');
   confirm.type = 'button';
   confirm.className = 'dashlab-update__confirm';
-  confirm.textContent = serverUpdate ? text.copy : text.update;
+  confirm.textContent = text.update;
   confirm.addEventListener('click', async () => {
     if (serverUpdate) {
+      confirm.disabled = true;
+      confirm.textContent = text.updating;
       try {
-        await copyUpdateCommand();
-        detail.textContent = text.copied;
-        confirm.textContent = text.copy;
+        const response = await fetch('/api/update', {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error(`update request failed: ${response.status}`);
+        detail.textContent = text.started;
+        window.setTimeout(() => window.location.reload(), 8000);
       } catch {
+        confirm.disabled = false;
+        confirm.textContent = text.update;
         detail.textContent = text.failed;
       }
       return;

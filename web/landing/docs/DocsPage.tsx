@@ -165,8 +165,8 @@ export function DocsPage() {
             </pre>
             <p>
               {text(
-                'O instalador verifica Docker e Compose, cria ~/.dashlab-plus e preserva sua configuração entre atualizações.',
-                'The installer checks Docker and Compose, creates ~/.dashlab-plus, and preserves your configuration across updates.',
+                'O instalador verifica Docker e Compose, cria ~/.dashlab-plus, configura um atualizador interno e preserva sua configuração entre atualizações.',
+                'The installer checks Docker and Compose, creates ~/.dashlab-plus, configures an internal updater, and preserves your configuration across updates.',
               )}
             </p>
             <h3>{text('2. Configure, se necessário', '2. Configure if needed')}</h3>
@@ -221,6 +221,18 @@ export function DocsPage() {
                     </td>
                     <td>
                       {text('Porta publicada pelo container.', 'Port published by the container.')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <code>UPDATE_TOKEN</code>
+                    </td>
+                    <td>gerado pelo instalador</td>
+                    <td>
+                      {text(
+                        'Token interno usado pelo botão Atualizar. Não compartilhe nem publique este valor.',
+                        'Internal token used by the Update button. Do not share or publish this value.',
+                      )}
                     </td>
                   </tr>
                   <tr>
@@ -421,8 +433,8 @@ docker start dashlab-plus`}</code>
             </p>
             <p>
               {text(
-                'Quando uma versão publicada for detectada, o DashLab+ mostra um único aviso. Atualizações apenas da interface são aplicadas no navegador; quando a imagem do servidor também mudou, o botão copia o comando acima para execução no host Docker.',
-                'When a published version is detected, DashLab+ shows a single notice. Interface-only updates are applied in the browser; when the server image has also changed, the button copies the command above to run on the Docker host.',
+                'Quando uma versão publicada for detectada, o DashLab+ mostra um único aviso. Atualizações apenas da interface são aplicadas no navegador; quando a imagem do servidor também mudou, clique em Atualizar para iniciar o processo no atualizador interno e recarregar a página após o reinício. Esta ação está disponível na instalação Compose feita pelo instalador; em um docker run direto, use o comando acima.',
+                'When a published version is detected, DashLab+ shows a single notice. Interface-only updates are applied in the browser; when the server image also changed, click Update to start the internal updater and reload the page after the restart. This action is available in the Compose installation created by the installer; with a direct docker run, use the command above.',
               )}
             </p>
           </section>
@@ -464,6 +476,12 @@ docker start dashlab-plus`}</code>
                 {text(
                   'Mantenha as imagens Docker e o host atualizados.',
                   'Keep Docker images and the host up to date.',
+                )}
+              </li>
+              <li>
+                {text(
+                  'O atualizador interno usa o socket do Docker e um token local; mantenha o arquivo ~/.dashlab-plus/.env protegido.',
+                  'The internal updater uses the Docker socket and a local token; keep ~/.dashlab-plus/.env protected.',
                 )}
               </li>
               <li>

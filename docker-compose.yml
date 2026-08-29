@@ -6,13 +6,30 @@ services:
     container_name: dashlab-plus
     pull_policy: always
     restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: 'true'
     ports: ['${WEB_PORT:-3000}:3000']
     environment:
+      UPDATE_SERVICE_URL: http://dashlab-plus-updater:8080
+      UPDATE_TOKEN: ${UPDATE_TOKEN:?UPDATE_TOKEN não configurado}
       PROMETHEUS_URL: ${PROMETHEUS_URL:-}
       PROMETHEUS_TARGET_LABELS: ${PROMETHEUS_TARGET_LABELS:-}
       PROMETHEUS_NETWORK_LABELS: ${PROMETHEUS_NETWORK_LABELS:-device!="lo"}
       PROMETHEUS_DISK_LABELS: ${PROMETHEUS_DISK_LABELS:-device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"}
     volumes: [dashlab_plus_data:/data]
+
+  dashlab-plus-updater:
+    image: containrrr/watchtower:1.7.1
+    container_name: dashlab-plus-updater
+    restart: unless-stopped
+    command: --http-api-update --cleanup --label-enable
+    environment:
+      WATCHTOWER_HTTP_API_TOKEN: ${UPDATE_TOKEN:?UPDATE_TOKEN não configurado}
+      WATCHTOWER_LABEL_ENABLE: 'true'
+    labels:
+      com.centurylinklabs.watchtower.enable: 'false'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   dashlab_plus_data:

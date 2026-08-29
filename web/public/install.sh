@@ -30,6 +30,16 @@ if [ ! -f "$ENV_FILE" ]; then
   curl -fsSL "$REPOSITORY/.env.example" -o "$ENV_FILE"
 fi
 
+if ! grep -q '^UPDATE_TOKEN=' "$ENV_FILE" || [ -z "$(sed -n 's/^UPDATE_TOKEN=//p' "$ENV_FILE" | tail -n 1)" ]; then
+  UPDATE_TOKEN=$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')
+  if grep -q '^UPDATE_TOKEN=' "$ENV_FILE"; then
+    sed -i "s/^UPDATE_TOKEN=.*/UPDATE_TOKEN=$UPDATE_TOKEN/" "$ENV_FILE"
+  else
+    printf '\nUPDATE_TOKEN=%s\n' "$UPDATE_TOKEN" >> "$ENV_FILE"
+  fi
+  chmod 600 "$ENV_FILE"
+fi
+
 docker compose --project-directory "$INSTALL_DIR" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
 docker compose --project-directory "$INSTALL_DIR" --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --remove-orphans
 

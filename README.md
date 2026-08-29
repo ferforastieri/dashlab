@@ -28,9 +28,11 @@ Requer Docker Engine e Docker Compose v2:
 curl -fsSL https://dashlabplus.vercel.app/install.sh | sh
 ```
 
-O instalador salva a configuração em `~/.dashlab-plus`, baixa a imagem pública do GHCR e preserva os dados no volume Docker. Execute o mesmo comando para atualizar.
+O instalador salva a configuração em `~/.dashlab-plus`, gera um token interno para o atualizador, baixa a imagem pública do GHCR e preserva os dados no volume Docker. Execute o mesmo comando para atualizar.
 
-O Lab compara a versão instalada com a última versão publicada. Um único aviso cobre interface e servidor: atualizações do PWA são aplicadas no navegador; quando a imagem Docker mudou, o botão copia o comando de atualização para execução no host.
+O Lab compara a versão instalada com a última versão publicada. Um único aviso cobre interface e servidor: atualizações do PWA são aplicadas no navegador; quando a imagem Docker mudou, clique em **Atualizar** para iniciar a atualização e reiniciar o container automaticamente. Esse botão funciona na instalação Compose feita pelo instalador; em um `docker run` direto, use o comando manual abaixo.
+
+O atualizador interno precisa do socket do Docker e é protegido pelo token gerado no arquivo `~/.dashlab-plus/.env`; mantenha esse arquivo privado e restrinja o acesso ao Lab à sua LAN ou VPN.
 
 Também é possível iniciar diretamente:
 

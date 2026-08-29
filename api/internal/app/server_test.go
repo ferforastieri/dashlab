@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func testServer(t *testing.T) (*Server, http.Handler) {
@@ -86,6 +87,46 @@ func TestVersionEndpointIsNotCached(t *testing.T) {
 	}
 	if payload["version"] != BuildVersion {
 		t.Fatalf("version = %q", payload["version"])
+	}
+}
+
+func TestUpdateEndpointRequiresUpdater(t *testing.T) {
+	_, handler := testServer(t)
+	response := requestJSON(t, handler, http.MethodPost, "/api/update", nil)
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestUpdateEndpointTriggersInternalUpdater(t *testing.T) {
+	var gotAuthorization string
+	var gotPath string
+	requestReceived := make(chan struct{})
+	updater := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuthorization = r.Header.Get("Authorization")
+		gotPath = r.URL.RequestURI()
+		close(requestReceived)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer updater.Close()
+
+	server, handler := testServer(t)
+	server.updateURL = updater.URL
+	server.updateToken = "test-token"
+	response := requestJSON(t, handler, http.MethodPost, "/api/update", nil)
+	if response.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+	select {
+	case <-requestReceived:
+	case <-time.After(time.Second):
+		t.Fatal("updater was not called")
+	}
+	if gotAuthorization != "Bearer test-token" {
+		t.Fatalf("authorization = %q", gotAuthorization)
+	}
+	if gotPath != "/v1/update" {
+		t.Fatalf("request path = %q", gotPath)
 	}
 }
 

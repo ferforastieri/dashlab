@@ -20,6 +20,8 @@ type Server struct {
 	store        *Store
 	integrations *Integrations
 	logger       *slog.Logger
+	updateURL    string
+	updateToken  string
 }
 
 // Run starts the DashLab+ HTTP service and blocks until it receives a shutdown signal.
@@ -34,7 +36,13 @@ func Run() {
 	}
 	defer store.Close()
 
-	server := &Server{store: store, integrations: NewIntegrations(), logger: logger}
+	server := &Server{
+		store:        store,
+		integrations: NewIntegrations(),
+		logger:       logger,
+		updateURL:    strings.TrimRight(env("UPDATE_SERVICE_URL", ""), "/"),
+		updateToken:  strings.TrimSpace(env("UPDATE_TOKEN", "")),
+	}
 	httpServer := &http.Server{
 		Addr:              ":" + env("PORT", "3001"),
 		Handler:           server.routes(),
@@ -64,6 +72,7 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/version", s.version)
+	mux.HandleFunc("POST /api/update", s.update)
 	mux.HandleFunc("GET /api/dashboard", s.dashboard)
 	mux.HandleFunc("PUT /api/branding", s.branding)
 	mux.HandleFunc("POST /api/applications", s.createApplication)
@@ -97,6 +106,32 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) version(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string]string{"version": BuildVersion})
+}
+
+func (s *Server) update(w http.ResponseWriter, r *http.Request) {
+	if s.updateURL == "" || s.updateToken == "" {
+		writeError(w, http.StatusServiceUnavailable, "Atualização automática não está disponível nesta instalação")
+		return
+	}
+	request, err := http.NewRequest(http.MethodGet, s.updateURL+"/v1/update", nil)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "Não foi possível iniciar a atualização")
+		return
+	}
+	request.Header.Set("Authorization", "Bearer "+s.updateToken)
+	client := &http.Client{Timeout: 8 * time.Second}
+	go func() {
+		response, err := client.Do(request)
+		if err != nil {
+			s.logger.Warn("automatic update request failed", "error", err)
+			return
+		}
+		_ = response.Body.Close()
+		if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+			s.logger.Warn("updater rejected automatic update", "status", response.StatusCode)
+		}
+	}()
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "started"})
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
