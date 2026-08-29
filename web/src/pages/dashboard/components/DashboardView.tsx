@@ -1,13 +1,17 @@
-import { CSSProperties, PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
+import {
+  CSSProperties,
+  PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Rnd } from 'react-rnd';
 import {
-  LogOut,
   MoreVertical,
   Plus,
   Search,
   Settings,
   Edit3,
-  UserRound,
   Pencil,
   Menu,
   Trash2,
@@ -25,7 +29,13 @@ import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSection
 import { useUpdateBrandingMutation } from '../../../api/dashboard/useUpdateBrandingMutation';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { useMediaQuery } from '../../../components/ui/useMediaQuery';
-import { DashboardApplication as AppItem, DashboardData as Dash, DashboardLayout as Layout, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
+import {
+  DashboardApplication as AppItem,
+  DashboardData as Dash,
+  DashboardLayout as Layout,
+  DashboardSection as Section,
+  DashboardWidget as Widget,
+} from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 import { DashboardClock } from './DashboardClock';
 import { DashboardEditor } from './DashboardEditor';
@@ -33,9 +43,19 @@ import { WidgetCard } from './WidgetCard';
 import { HeaderWeather } from './HeaderWeather';
 
 const defaultBranding = {
-  accent: '#ff7a1a', wallpaper: '', logo: '', favicon: '', backgroundColor: '#101416',
-  panelColor: '#181d20', textColor: '#e7eaec', borderColor: '#343b3f', radius: 5,
-  panelOpacity: 100, wallpaperOverlay: 55, fontScale: 100, mobileLayout: 'GRID',
+  accent: '#ff7a1a',
+  wallpaper: '',
+  logo: '',
+  favicon: '',
+  backgroundColor: '#101416',
+  panelColor: '#181d20',
+  textColor: '#e7eaec',
+  borderColor: '#343b3f',
+  radius: 5,
+  panelOpacity: 100,
+  wallpaperOverlay: 55,
+  fontScale: 100,
+  mobileLayout: 'GRID',
 };
 
 const resizeHandleClasses = {
@@ -49,7 +69,7 @@ const resizeHandleClasses = {
   topLeft: 'canvas-resize-handle handle-nw',
 };
 
-export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => void; dashboardQuery: any }) {
+export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
   const isMobile = useMediaQuery('(max-width: 800px)');
   const metricsQuery = useMetricsOverviewQuery(),
     historyQuery = useMetricsHistoryQuery(),
@@ -65,7 +85,7 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     history = historyQuery.data || {},
     statuses = Object.fromEntries(((statusesQuery.data || []) as any[]).map((x) => [x.id, x]));
   const [query, setQuery] = useState(''),
-    [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | 'account' | null>(null),
+    [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
@@ -82,7 +102,12 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
   useEffect(() => {
     if (!dash) return;
     setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
-    setCanvasHeight((current) => current ?? (Number(dash.branding?.canvasHeight) || Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))));
+    setCanvasHeight(
+      (current) =>
+        current ??
+        (Number(dash.branding?.canvasHeight) ||
+          Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))),
+    );
     document.title = dash.branding?.name || dash.name;
     const installationPath = `/pwa/${dash.id}/`;
     if (window.location.pathname !== installationPath) {
@@ -93,7 +118,8 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     const backgroundColor = dash.branding?.backgroundColor;
     const accentColor = dash.branding?.accent;
     const themeColor = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
-    if (themeColor && (accentColor || backgroundColor)) themeColor.content = accentColor || backgroundColor;
+    if (themeColor && (accentColor || backgroundColor))
+      themeColor.content = accentColor || backgroundColor;
     if (backgroundColor) {
       document.documentElement.style.backgroundColor = backgroundColor;
       document.body.style.backgroundColor = backgroundColor;
@@ -139,7 +165,15 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     setLayouts(next);
     await saveLayout.mutateAsync(
       next.map(({ kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h }) => ({
-        kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h,
+        kind,
+        applicationId,
+        widgetId,
+        sectionId,
+        elementKey,
+        x,
+        y,
+        w,
+        h,
       })),
     );
   }
@@ -171,7 +205,10 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
     const startHeight = activeCanvasHeight;
     let nextHeight = startHeight;
     const move = (pointerEvent: PointerEvent) => {
-      nextHeight = Math.max(320, Math.round(startHeight + (pointerEvent.clientY - startY) / canvasScale));
+      nextHeight = Math.max(
+        320,
+        Math.round(startHeight + (pointerEvent.clientY - startY) / canvasScale),
+      );
       setCanvasHeight(nextHeight);
     };
     const finish = () => {
@@ -197,47 +234,105 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
       : undefined,
   } as CSSProperties;
   const renderDashboardElement = (elementKey: Layout['elementKey']) => {
-    if (elementKey === 'BRAND') return (
-      <div className={`chrome-brand ${branding.logo ? 'has-logo' : ''}`}>
-        <div className={cn('brand-mark small')}>
-          {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
+    if (elementKey === 'BRAND')
+      return (
+        <div className={`chrome-brand ${branding.logo ? 'has-logo' : ''}`}>
+          <div className={cn('brand-mark small')}>
+            {branding.logo ? <img src={branding.logo} alt="" /> : (branding.name || 'D')[0]}
+          </div>
+          <div className="brand-copy">
+            <span>WORKSPACE</span>
+            <strong>{branding.name || dash.name}</strong>
+          </div>
         </div>
-        <div className="brand-copy"><span>WORKSPACE</span><strong>{branding.name || dash.name}</strong></div>
-      </div>
-    );
-    if (elementKey === 'CLOCK') return <div className="chrome-clock"><DashboardClock /></div>;
-    if (elementKey === 'WEATHER') return <div className="chrome-weather"><HeaderWeather widget={weatherWidget} /></div>;
-    if (elementKey === 'SEARCH') return (
-      <form className={cn('search')} onSubmit={(event) => {
-        event.preventDefault();
-        if (query) window.open(`https://google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-      }}>
-        <Search size={18} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Pesquisar na web" />
-      </form>
-    );
-    if (elementKey === 'ACTIONS') return (
-      <div className={`${cn('header-tools')} chrome-actions`}>
-        <button className={cn('icon-button')} onClick={() => setModal('brand')} title="Personalizar"><Settings /></button>
-        {!isMobile && <button className={cn('icon-button', layoutEdit && 'active')} onClick={() => { setLayoutEdit(!layoutEdit); setSelectedLayoutId(null); }} title="Editar organização"><Pencil /></button>}
-        <button className={cn('icon-button')} onClick={() => setModal('account')} title="Minha conta"><UserRound /></button>
-        <button className={cn('icon-button')} onClick={onLogout} title="Sair"><LogOut /></button>
-      </div>
-    );
-    if (elementKey === 'ADD') return <button className="chrome-add-button" onClick={() => setModal('app')} aria-label="Adicionar aplicativo"><Plus /></button>;
-    if (elementKey === 'FOOTER') return (
-      <footer className="rack-line chrome-footer" aria-label="Estado do workspace">
-        <span>DL—01 / PERSONAL NODE</span>
-        <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
-        <span className="rack-line-status"><i /> SYSTEM READY</span>
-      </footer>
-    );
+      );
+    if (elementKey === 'CLOCK')
+      return (
+        <div className="chrome-clock">
+          <DashboardClock />
+        </div>
+      );
+    if (elementKey === 'WEATHER')
+      return (
+        <div className="chrome-weather">
+          <HeaderWeather widget={weatherWidget} />
+        </div>
+      );
+    if (elementKey === 'SEARCH')
+      return (
+        <form
+          className={cn('search')}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (query)
+              window.open(`https://google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+          }}
+        >
+          <Search size={18} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Pesquisar na web"
+          />
+        </form>
+      );
+    if (elementKey === 'ACTIONS')
+      return (
+        <div className={`${cn('header-tools')} chrome-actions`}>
+          <button
+            className={cn('icon-button')}
+            onClick={() => setModal('brand')}
+            title="Personalizar"
+          >
+            <Settings />
+          </button>
+          {!isMobile && (
+            <button
+              className={cn('icon-button', layoutEdit && 'active')}
+              onClick={() => {
+                setLayoutEdit(!layoutEdit);
+                setSelectedLayoutId(null);
+              }}
+              title="Editar organização"
+            >
+              <Pencil />
+            </button>
+          )}
+        </div>
+      );
+    if (elementKey === 'ADD')
+      return (
+        <button
+          className="chrome-add-button"
+          onClick={() => setModal('app')}
+          aria-label="Adicionar aplicativo"
+        >
+          <Plus />
+        </button>
+      );
+    if (elementKey === 'FOOTER')
+      return (
+        <footer className="rack-line chrome-footer" aria-label="Estado do workspace">
+          <span>DL—01 / PERSONAL NODE</span>
+          <span>{dash.applications.length.toString().padStart(2, '0')} SERVICES</span>
+          <span className="rack-line-status">
+            <i /> SYSTEM READY
+          </span>
+        </footer>
+      );
     return null;
   };
   return (
     <div className={`${cn('desktop')} overflow-x-hidden`} style={visualTokens}>
-      <main className={`${isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''} ${isMobile ? 'pt-[calc(64px+env(safe-area-inset-top))]' : ''}`}>
-        {layoutEdit && !isMobile && <div className="canvas-edit-hint">Clique em um item para selecioná-lo · arraste para mover · use as alças para redimensionar</div>}
+      <main
+        className={`${isMobile && mobileLayout === 'BOTTOM_NAV' ? 'pb-20' : ''} ${isMobile ? 'pt-[calc(64px+env(safe-area-inset-top))]' : ''}`}
+      >
+        {layoutEdit && !isMobile && (
+          <div className="canvas-edit-hint">
+            Clique em um item para selecioná-lo · arraste para mover · use as alças para
+            redimensionar
+          </div>
+        )}
         <section
           ref={canvasRef}
           className={`free-canvas ${layoutEdit && !isMobile ? 'is-editing' : ''}`}
@@ -251,9 +346,16 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
             const widget =
               layout.kind === 'WIDGET' ? dash.widgets.find((w) => w.id === layout.widgetId) : null;
             const dashboardSection =
-              layout.kind === 'SECTION' ? dash.sections.find((section) => section.id === layout.sectionId) : null;
+              layout.kind === 'SECTION'
+                ? dash.sections.find((section) => section.id === layout.sectionId)
+                : null;
             const dashboardElement = layout.kind === 'DASHBOARD_ELEMENT' ? layout.elementKey : null;
-            if (isMobile && dashboardElement && ['BRAND', 'ACTIONS', 'ADD'].includes(dashboardElement)) return null;
+            if (
+              isMobile &&
+              dashboardElement &&
+              ['BRAND', 'ACTIONS', 'ADD'].includes(dashboardElement)
+            )
+              return null;
             if (!app && !widget && !dashboardSection && !dashboardElement) return null;
             const display = displayLayout(layout);
             return (
@@ -262,13 +364,39 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                 className={`canvas-item ${dashboardElement ? `chrome-canvas-item mobile-${dashboardElement.toLowerCase()}` : ''} ${app ? 'application-canvas-item mobile-application' : ''} ${widget ? `mobile-widget mobile-widget-${widget.type.toLowerCase()}` : ''} ${dashboardSection ? 'mobile-section' : ''} ${layoutEdit && !isMobile ? 'is-editing' : ''} ${selectedLayoutId === layout.id ? 'is-selected' : ''}`}
                 bounds="parent"
                 position={{ x: display.x, y: display.y }}
-                size={{ width: display.w, height: dashboardSection?.collapsed ? Math.round(54 * canvasScale) : display.h }}
-                minWidth={(dashboardElement ? 32 : dashboardSection ? 240 : widget?.type === 'DIVIDER' ? 120 : 72) * canvasScale}
-                minHeight={(dashboardElement || widget?.type === 'DIVIDER' ? 20 : dashboardSection ? 140 : 72) * canvasScale}
+                size={{
+                  width: display.w,
+                  height: dashboardSection?.collapsed ? Math.round(54 * canvasScale) : display.h,
+                }}
+                minWidth={
+                  (dashboardElement
+                    ? 32
+                    : dashboardSection
+                      ? 240
+                      : widget?.type === 'DIVIDER'
+                        ? 120
+                        : 72) * canvasScale
+                }
+                minHeight={
+                  (dashboardElement || widget?.type === 'DIVIDER'
+                    ? 20
+                    : dashboardSection
+                      ? 140
+                      : 72) * canvasScale
+                }
                 disableDragging={!layoutEdit || isMobile || selectedLayoutId !== layout.id}
-                enableResizing={layoutEdit && !isMobile && selectedLayoutId === layout.id && !dashboardSection?.collapsed}
+                enableResizing={
+                  layoutEdit &&
+                  !isMobile &&
+                  selectedLayoutId === layout.id &&
+                  !dashboardSection?.collapsed
+                }
                 dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
-                resizeHandleClasses={layoutEdit && !isMobile && selectedLayoutId === layout.id ? resizeHandleClasses : undefined}
+                resizeHandleClasses={
+                  layoutEdit && !isMobile && selectedLayoutId === layout.id
+                    ? resizeHandleClasses
+                    : undefined
+                }
                 cancel={dashboardElement ? undefined : 'button,a,input,select,textarea'}
                 onMouseDown={() => {
                   if (layoutEdit && !isMobile) setSelectedLayoutId(layout.id);
@@ -301,32 +429,85 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
                     {renderDashboardElement(dashboardElement)}
                   </div>
                 ) : dashboardSection ? (
-                  <div className={`section-card ${dashboardSection.collapsed ? 'is-collapsed' : ''}`}>
+                  <div
+                    className={`section-card ${dashboardSection.collapsed ? 'is-collapsed' : ''}`}
+                  >
                     <header className="section-header">
                       <h3>{dashboardSection.name}</h3>
                       <div className="section-actions">
-                        {layoutEdit && <>
-                          <button onClick={() => { setEditing(dashboardSection); setModal('section'); }} title="Editar seção"><Edit3 /></button>
-                          <button onClick={() => setConfirmDelete({ kind: 'sections', id: dashboardSection.id, name: dashboardSection.name })} title="Excluir seção"><Trash2 /></button>
-                        </>}
+                        {layoutEdit && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditing(dashboardSection);
+                                setModal('section');
+                              }}
+                              title="Editar seção"
+                            >
+                              <Edit3 />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setConfirmDelete({
+                                  kind: 'sections',
+                                  id: dashboardSection.id,
+                                  name: dashboardSection.name,
+                                })
+                              }
+                              title="Excluir seção"
+                            >
+                              <Trash2 />
+                            </button>
+                          </>
+                        )}
                         <button
                           className="section-collapse"
-                          onClick={() => updateSection.mutate({ id: dashboardSection.id, data: { collapsed: !dashboardSection.collapsed }, silent: true })}
+                          onClick={() =>
+                            updateSection.mutate({
+                              id: dashboardSection.id,
+                              data: { collapsed: !dashboardSection.collapsed },
+                              silent: true,
+                            })
+                          }
                           title={dashboardSection.collapsed ? 'Expandir seção' : 'Recolher seção'}
                           aria-expanded={!dashboardSection.collapsed}
-                        ><ChevronDown /></button>
+                        >
+                          <ChevronDown />
+                        </button>
                       </div>
                     </header>
                     <div className="section-apps">
-                      {dash.applications.filter((item) => item.sectionId === dashboardSection.id).map((item) => (
-                        <div className="section-app" key={item.id}>
-                          <a href={item.url} target="_blank" rel="noreferrer" className={layoutEdit ? 'pointer-events-none' : ''}>
-                            <span className="section-app-icon">{item.icon && <img src={item.icon} alt="" />}</span>
-                            <span><strong>{item.name}</strong><small>{item.description || 'Sem descrição'}</small></span>
-                          </a>
-                          {layoutEdit && <button onClick={() => { setEditing(item); setModal('app'); }} title="Editar aplicativo"><Edit3 /></button>}
-                        </div>
-                      ))}
+                      {dash.applications
+                        .filter((item) => item.sectionId === dashboardSection.id)
+                        .map((item) => (
+                          <div className="section-app" key={item.id}>
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className={layoutEdit ? 'pointer-events-none' : ''}
+                            >
+                              <span className="section-app-icon">
+                                {item.icon && <img src={item.icon} alt="" />}
+                              </span>
+                              <span>
+                                <strong>{item.name}</strong>
+                                <small>{item.description || 'Sem descrição'}</small>
+                              </span>
+                            </a>
+                            {layoutEdit && (
+                              <button
+                                onClick={() => {
+                                  setEditing(item);
+                                  setModal('app');
+                                }}
+                                title="Editar aplicativo"
+                              >
+                                <Edit3 />
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   </div>
                 ) : app ? (
@@ -402,49 +583,171 @@ export function DashboardView({ onLogout, dashboardQuery }: { onLogout: () => vo
         </section>
       </main>
       {layoutEdit && !isMobile && (
-        <button className="layout-edit-done" onClick={() => { setLayoutEdit(false); setSelectedLayoutId(null); }}>
+        <button
+          className="layout-edit-done"
+          onClick={() => {
+            setLayoutEdit(false);
+            setSelectedLayoutId(null);
+          }}
+        >
           Concluir edição
         </button>
       )}
       {isMobile && (
         <header className="fixed inset-x-0 top-0 z-30 flex min-h-16 items-center gap-3 border-b border-[var(--border-color)] bg-[color-mix(in_srgb,var(--surface-bg)_94%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-2 pt-[max(8px,env(safe-area-inset-top))] backdrop-blur">
-          {mobileLayout === 'DRAWER' && <button onClick={() => setMobileMenuOpen(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border-0 bg-transparent text-[var(--text-color)]" aria-label="Abrir aplicativos"><Menu size={20} /></button>}
+          {mobileLayout === 'DRAWER' && (
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--element-radius)] border-0 bg-transparent text-[var(--text-color)]"
+              aria-label="Abrir aplicativos"
+            >
+              <Menu size={20} />
+            </button>
+          )}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <span className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] text-sm font-bold ${branding.logo ? 'bg-transparent' : 'border border-[var(--border-color)] bg-[var(--accent)] text-[var(--surface-bg)]'}`}>{branding.logo ? <img src={branding.logo} alt="" className="h-full w-full object-contain" /> : (branding.name || dash.name)[0]}</span>
-            <span className="min-w-0"><small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">WORKSPACE</small><strong className="block truncate text-sm font-semibold">{branding.name || dash.name}</strong></span>
+            <span
+              className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] text-sm font-bold ${branding.logo ? 'bg-transparent' : 'border border-[var(--border-color)] bg-[var(--accent)] text-[var(--surface-bg)]'}`}
+            >
+              {branding.logo ? (
+                <img src={branding.logo} alt="" className="h-full w-full object-contain" />
+              ) : (
+                (branding.name || dash.name)[0]
+              )}
+            </span>
+            <span className="min-w-0">
+              <small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">
+                WORKSPACE
+              </small>
+              <strong className="block truncate text-sm font-semibold">
+                {branding.name || dash.name}
+              </strong>
+            </span>
           </div>
-          <div className="flex shrink-0 gap-1">{mobileLayout === 'GRID' && <button onClick={() => setModal('app')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Adicionar aplicativo"><Plus size={19} /></button>}<button onClick={() => setModal('brand')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Personalizar"><Settings size={19} /></button><button onClick={() => setModal('account')} className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]" aria-label="Minha conta"><UserRound size={19} /></button></div>
+          <div className="flex shrink-0 gap-1">
+            {mobileLayout === 'GRID' && (
+              <button
+                onClick={() => setModal('app')}
+                className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]"
+                aria-label="Adicionar aplicativo"
+              >
+                <Plus size={19} />
+              </button>
+            )}
+            <button
+              onClick={() => setModal('brand')}
+              className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]"
+              aria-label="Personalizar"
+            >
+              <Settings size={19} />
+            </button>
+          </div>
         </header>
       )}
       {isMobile && mobileLayout !== 'GRID' && mobileMenuOpen && (
         <>
-          <button aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} className="fixed inset-0 z-40 bg-black/50" />
-          <aside className={`fixed z-50 flex gap-4 border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl ${mobileLayout === 'DRAWER' ? 'inset-y-0 left-0 w-[min(86vw,360px)] flex-col border-r' : 'inset-x-0 bottom-0 max-h-[78dvh] flex-col rounded-t-[var(--element-radius)] border-t'}`}>
-            <div className="flex shrink-0 items-center justify-between gap-3"><div><span className="text-[10px] tracking-[.14em] text-[var(--muted)]">APLICATIVOS</span><strong className="block text-sm">{branding.name || dash.name}</strong></div><button onClick={() => setMobileMenuOpen(false)} className="rounded-[var(--element-radius)] border-0 bg-transparent p-2 text-[var(--muted)]" aria-label="Fechar"><X /></button></div>
+          <button
+            aria-label="Fechar menu"
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 z-40 bg-black/50"
+          />
+          <aside
+            className={`fixed z-50 flex gap-4 border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl ${mobileLayout === 'DRAWER' ? 'inset-y-0 left-0 w-[min(86vw,360px)] flex-col border-r' : 'inset-x-0 bottom-0 max-h-[78dvh] flex-col rounded-t-[var(--element-radius)] border-t'}`}
+          >
+            <div className="flex shrink-0 items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] tracking-[.14em] text-[var(--muted)]">
+                  APLICATIVOS
+                </span>
+                <strong className="block text-sm">{branding.name || dash.name}</strong>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-[var(--element-radius)] border-0 bg-transparent p-2 text-[var(--muted)]"
+                aria-label="Fechar"
+              >
+                <X />
+              </button>
+            </div>
             <div className="grid min-h-0 gap-2 overflow-y-auto pr-1">
               {mobileApps.map((app) => (
-                <a key={app.id} href={app.url} target="_blank" rel="noreferrer" onClick={() => setMobileMenuOpen(false)} className="flex min-w-0 items-center gap-3 rounded-[var(--element-radius)] border border-[var(--border-color)] bg-[var(--panel-color)] p-3 text-sm">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] border-0 bg-transparent">{app.icon ? <img src={app.icon} alt="" className="h-full w-full object-contain" /> : app.name[0]}</span>
-                  <span className="min-w-0"><strong className="block truncate font-medium">{app.name}</strong><small className="block truncate text-xs text-[var(--muted)]">{app.description || app.url}</small></span>
+                <a
+                  key={app.id}
+                  href={app.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex min-w-0 items-center gap-3 rounded-[var(--element-radius)] border border-[var(--border-color)] bg-[var(--panel-color)] p-3 text-sm"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] border-0 bg-transparent">
+                    {app.icon ? (
+                      <img src={app.icon} alt="" className="h-full w-full object-contain" />
+                    ) : (
+                      app.name[0]
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <strong className="block truncate font-medium">{app.name}</strong>
+                    <small className="block truncate text-xs text-[var(--muted)]">
+                      {app.description || app.url}
+                    </small>
+                  </span>
                 </a>
               ))}
-              {!mobileApps.length && <p className="m-0 rounded-[var(--element-radius)] border border-dashed border-[var(--border-color)] p-4 text-sm text-[var(--muted)]">Nenhum aplicativo cadastrado.</p>}
+              {!mobileApps.length && (
+                <p className="m-0 rounded-[var(--element-radius)] border border-dashed border-[var(--border-color)] p-4 text-sm text-[var(--muted)]">
+                  Nenhum aplicativo cadastrado.
+                </p>
+              )}
             </div>
             <div className="grid shrink-0 grid-cols-2 gap-2">
-              <button onClick={() => { setMobileMenuOpen(false); setModal('app'); }} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm">Adicionar</button>
-              <button onClick={() => { setMobileMenuOpen(false); setModal('brand'); }} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm">Aparência</button>
-              <button onClick={() => { setMobileMenuOpen(false); setModal('account'); }} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm">Conta</button>
-              <button onClick={onLogout} className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm text-[var(--muted)]">Sair</button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setModal('app');
+                }}
+                className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm"
+              >
+                Adicionar
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setModal('brand');
+                }}
+                className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm"
+              >
+                Aparência
+              </button>
             </div>
           </aside>
         </>
       )}
       {isMobile && mobileLayout === 'BOTTOM_NAV' && (
-        <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[var(--border-color)] bg-[color-mix(in_srgb,var(--panel-color)_96%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur" aria-label="Navegação do dashboard">
-          <button onClick={() => setMobileMenuOpen(true)} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><Menu size={18} />Apps</button>
-          <button onClick={() => setModal('app')} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><Plus size={18} />Adicionar</button>
-          <button onClick={() => setModal('brand')} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><Settings size={18} />Aparência</button>
-          <button onClick={() => setModal('account')} className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"><UserRound size={18} />Conta</button>
+        <nav
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-[var(--border-color)] bg-[color-mix(in_srgb,var(--panel-color)_96%,transparent)] px-[max(12px,env(safe-area-inset-left))] pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur"
+          aria-label="Navegação do dashboard"
+        >
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"
+          >
+            <Menu size={18} />
+            Apps
+          </button>
+          <button
+            onClick={() => setModal('app')}
+            className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"
+          >
+            <Plus size={18} />
+            Adicionar
+          </button>
+          <button
+            onClick={() => setModal('brand')}
+            className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"
+          >
+            <Settings size={18} />
+            Aparência
+          </button>
         </nav>
       )}
       {modal && (

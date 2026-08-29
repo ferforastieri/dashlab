@@ -2,73 +2,75 @@
 
 <p align="center">
   <strong>Seu homelab, do seu jeito.</strong><br>
-  Um dashboard pessoal e self-hosted inspirado na experiência de desktop do ZimaOS e CasaOS.
+  Um dashboard pessoal, single-user e self-hosted para serviços, atalhos e métricas.
 </p>
 
 ## Sobre
 
-O DashLab transforma os serviços de um homelab em uma tela inicial simples, bonita e adaptada a cada usuário. Depois de criar uma conta, cada pessoa recebe um dashboard privado com aplicativos, widgets e layouts independentes para desktop e celular.
+O DashLab transforma os serviços de um homelab em um workspace responsivo. Aplicativos, widgets, seções, layouts, wallpapers e cores são configurados diretamente no dashboard e compartilhados entre desktop e celular.
 
-Não existe um painel administrativo separado: links, widgets, wallpaper, cores e organização são alterados diretamente no dashboard.
+O projeto é deliberadamente single-user: não há cadastro, login, JWT, ORM ou banco remoto. O limite de confiança é a rede privada, VPN ou autenticação fornecida pelo proxy reverso.
 
 ## Recursos
 
-- Contas e dashboards privados por usuário.
-- Interface web fullscreen com canvas livre de aplicativos e widgets.
-- PWA instalável em desktop, Android e iOS, com shell disponível offline.
-- Interface web responsiva com layouts independentes para desktop e celular.
-- Cadastro de links, deep links, categorias e ícones.
-- Widgets de CPU, memória, discos, rede, relógio, clima, pesquisa e status.
-- Consultas PromQL personalizadas com acesso controlado ao Prometheus.
-- Tema, nome, wallpaper e cor de destaque por usuário.
-- Deploy em Docker com PostgreSQL, NestJS, React e Nginx.
-- CI/CD pelo Gitea Actions com build e deploy dos containers.
+- Canvas livre no desktop e três experiências móveis.
+- Cadastro de aplicativos, deep links, categorias e ícones.
+- Seções recolhíveis e widgets configuráveis.
+- Métricas de CPU, memória, discos e rede via Prometheus.
+- Consultas PromQL personalizadas.
+- Status e latência dos serviços internos.
+- Relógio, clima e pesquisa.
+- PWA instalável com identidade personalizada.
+- Estado e imagens persistidos em um único SQLite.
+- Deploy com dois containers: Go e Nginx.
+- Landing e documentação estáticas prontas para Vercel.
 
 ## Arquitetura
 
 ```text
-Web React/Vite ── NestJS API ── PostgreSQL
-                         │
-                         ├── Prometheus
-                         └── Open-Meteo / status dos serviços
+Navegador ── Nginx ── React/Vite
+                │
+                └── /api ── Go ── SQLite
+                              ├── Prometheus
+                              ├── Open-Meteo
+                              └── serviços da LAN
 ```
 
-| Pasta               | Responsabilidade                                                      |
-| ------------------- | --------------------------------------------------------------------- |
-| `backend/`          | API NestJS, autenticação, Prisma, integrações e regras de isolamento. |
-| `web/`              | Dashboard React/Vite servido pelo Nginx.                              |
-| `nginx/`            | SPA e proxy interno de `/api` para o backend.                         |
-| `.gitea/workflows/` | Build, testes, migrations e deploy Docker.                            |
+| Pasta    | Responsabilidade                             |
+| -------- | -------------------------------------------- |
+| `api/`   | API Go, SQLite, assets e integrações locais. |
+| `web/`   | Dashboard React/Vite e PWA.                  |
+| `nginx/` | Entrega da SPA e proxy interno de `/api`.    |
+| `site/`  | Landing e documentação públicas para Vercel. |
 
-### Organização do código
+## Instalação
 
-- O backend é organizado por domínio em `src/modules/<modulo>/`, com `controllers/`,
-  `services/`, `dto/`, `guards/` e `test/` dentro de cada módulo.
-- Banco de dados, composição da aplicação e demais detalhes técnicos ficam isolados em
-  `backend/src/infrastructure/`.
-- A web organiza `api/` por domínio. Cada chamada possui um hook React Query próprio,
-  enquanto o cliente Axios compartilhado permanece em `api/http/`.
-- Na web, `pages/` compõe hooks e componentes globais de `components/ui/`.
-- Os pontos de entrada ficam em `bootstrap/`, sem arquivos `App` ou `main` misturados à raiz do
-  código-fonte.
-- Tailwind CSS atende a interface web.
+Requisitos: Docker Engine e Docker Compose v2.
+
+```bash
+git clone https://github.com/ferforastieri/dashlab
+cd dashlab
+cp .env.example .env
+docker compose up -d --build
+```
+
+Abra `http://IP-DO-HOST:3000`. O banco e os widgets iniciais são criados automaticamente na primeira execução.
+
+## Configuração
+
+| Variável                    | Uso                                       |
+| --------------------------- | ----------------------------------------- |
+| `WEB_PORT`                  | Porta publicada pelo Nginx.               |
+| `PROMETHEUS_URL`            | URL interna do Prometheus. É opcional.    |
+| `PROMETHEUS_TARGET_LABELS`  | Labels que identificam o host monitorado. |
+| `PROMETHEUS_NETWORK_LABELS` | Filtro das interfaces de rede.            |
+| `PROMETHEUS_DISK_LABELS`    | Filtro dos discos monitorados.            |
+
+Também são aceitas consultas completas nas variáveis `PROMETHEUS_CPU_QUERY`, `PROMETHEUS_MEMORY_QUERY`, `PROMETHEUS_DOWNLOAD_QUERY`, `PROMETHEUS_UPLOAD_QUERY`, `PROMETHEUS_DISK_INFO_QUERY`, `PROMETHEUS_DISK_UTILIZATION_QUERY`, `PROMETHEUS_DISK_READ_QUERY`, `PROMETHEUS_DISK_WRITE_QUERY`, `PROMETHEUS_DISK_TEMPERATURE_QUERY` e `PROMETHEUS_DISK_HEALTH_QUERY`.
 
 ## Desenvolvimento
 
-Requisitos: Node.js 22, npm, Docker e Docker Compose.
-
-```bash
-cp .env.example .env
-docker compose up -d postgres
-
-cd backend
-npm ci
-npx prisma generate
-npx prisma migrate deploy
-npm run start:dev
-```
-
-Em outro terminal:
+Frontend:
 
 ```bash
 cd web
@@ -76,44 +78,35 @@ npm ci
 npm run dev
 ```
 
-## Produção
+API, com Go 1.24 instalado:
 
 ```bash
-cp .env.example .env
-# Preencha senhas e chaves com valores aleatórios fortes.
-docker compose --env-file .env build
-docker compose --env-file .env up -d postgres
-docker compose --env-file .env run --rm backend npx prisma migrate deploy
-docker compose --env-file .env up -d
+cd api
+go test ./...
+DATABASE_PATH=./dashlab.db go run .
 ```
 
-Somente o Nginx é publicado na LAN. PostgreSQL e NestJS permanecem na rede interna do Compose; chamadas `/api` são encaminhadas pelo Nginx.
+O Vite encaminha `/api` para `http://localhost:3001` durante o desenvolvimento.
 
-## Variáveis de ambiente
+## Persistência e backup
 
-| Variável            | Uso                              |
-| ------------------- | -------------------------------- |
-| `POSTGRES_DB`       | Nome do banco.                   |
-| `POSTGRES_USER`     | Usuário do PostgreSQL.           |
-| `POSTGRES_PASSWORD` | Senha do PostgreSQL.             |
-| `JWT_SECRET`        | Assinatura dos tokens de acesso. |
-| `PROMETHEUS_URL`    | Endereço interno do Prometheus.  |
-| `PROMETHEUS_TARGET_LABELS` | Labels que identificam o host, por exemplo `instance="node:9100"`. |
-| `PROMETHEUS_NETWORK_LABELS` | Filtro das interfaces de rede a incluir. |
-| `PROMETHEUS_DISK_LABELS` | Filtro dos discos a incluir. |
+O volume Docker `dashlab_data` contém `/data/dashlab.db`. Para uma cópia consistente, pare o serviço `api` antes de copiar o volume e inicie-o novamente ao terminar.
 
-As consultas usam métricas padrão do node_exporter e não dependem mais do label fixo `tipo="Servidor"`. Quando os nomes das métricas forem diferentes, as variáveis `PROMETHEUS_CPU_QUERY`, `PROMETHEUS_MEMORY_QUERY`, `PROMETHEUS_DOWNLOAD_QUERY`, `PROMETHEUS_UPLOAD_QUERY`, `PROMETHEUS_DISK_INFO_QUERY`, `PROMETHEUS_DISK_UTILIZATION_QUERY`, `PROMETHEUS_DISK_READ_QUERY`, `PROMETHEUS_DISK_WRITE_QUERY`, `PROMETHEUS_DISK_TEMPERATURE_QUERY` e `PROMETHEUS_DISK_HEALTH_QUERY` permitem informar a consulta PromQL completa.
-| `WEB_PORT`          | Porta publicada pelo Nginx.      |
+## Landing no Vercel
 
-Segredos nunca devem ser versionados.
+Importe este repositório como um projeto no Vercel. O arquivo `vercel.json` já configura a publicação estática:
+
+- Framework preset: `Other`
+- Build command: nenhum
+- Output directory: `site`
+
+A aplicação do homelab e o site público são independentes. A landing não conhece a URL, os dados ou a disponibilidade da instalação privada.
 
 ## Segurança
 
-- Todas as consultas de dashboard são filtradas pelo usuário autenticado.
-- Senhas são protegidas com Argon2.
-- Refresh tokens são armazenados no banco somente como hash.
-- PromQL usa apenas o servidor Prometheus definido no deploy.
-- Aplicativos e widgets de outros usuários não são acessíveis por IDs manipulados.
+O DashLab single-user não possui autenticação própria. Não publique a aplicação diretamente na internet. Para acesso remoto, prefira Tailscale, WireGuard ou autenticação no proxy reverso, protegendo tanto a interface quanto `/api`.
+
+Somente o Nginx é publicado pelo Compose. A API Go, o SQLite e o Prometheus permanecem internos.
 
 ## Licença
 

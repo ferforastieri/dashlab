@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://dashlab.vercel.app/sitemap.xml

@@ -45,29 +45,20 @@ jobs:
           docker compose version
       - name: Validate secrets
         env:
-          POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
-          JWT_SECRET: '${{ secrets.JWT_SECRET }}'
           PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'
           PROMETHEUS_TARGET_LABELS: '${{ secrets.PROMETHEUS_TARGET_LABELS }}'
           PROMETHEUS_NETWORK_LABELS: '${{ secrets.PROMETHEUS_NETWORK_LABELS }}'
           PROMETHEUS_DISK_LABELS: '${{ secrets.PROMETHEUS_DISK_LABELS }}'
         run: |
           set -eu
-          test -n "$POSTGRES_PASSWORD"
-          test ${#JWT_SECRET} -ge 32
-          test -n "$PROMETHEUS_URL"
+          test -n "$PROMETHEUS_URL" || echo "Prometheus is optional; metrics will stay unavailable"
       - name: Test and build
         run: |
-          npm --prefix backend ci
-          npm --prefix backend run prisma:generate
-          npm --prefix backend run build
-          npm --prefix backend test -- --passWithNoTests
           npm --prefix web ci
           npm --prefix web run build
+          docker build --file Dockerfile.api --tag dashlab-api:test .
       - name: Deploy containers
         env:
-          POSTGRES_PASSWORD: '${{ secrets.POSTGRES_PASSWORD }}'
-          JWT_SECRET: '${{ secrets.JWT_SECRET }}'
           PROMETHEUS_URL: '${{ secrets.PROMETHEUS_URL }}'
           PROMETHEUS_TARGET_LABELS: '${{ secrets.PROMETHEUS_TARGET_LABELS }}'
           PROMETHEUS_NETWORK_LABELS: '${{ secrets.PROMETHEUS_NETWORK_LABELS }}'
@@ -83,12 +74,9 @@ jobs:
             exit 1
           fi
           umask 077
-          printf 'POSTGRES_PASSWORD=%s\nJWT_SECRET=%s\nPROMETHEUS_URL=%s\nPROMETHEUS_TARGET_LABELS=%s\nPROMETHEUS_NETWORK_LABELS=%s\nPROMETHEUS_DISK_LABELS=%s\n' "$POSTGRES_PASSWORD" "$JWT_SECRET" "$PROMETHEUS_URL" "$PROMETHEUS_TARGET_LABELS" "$PROMETHEUS_NETWORK_LABELS" "$PROMETHEUS_DISK_LABELS" > .env
+          printf 'PROMETHEUS_URL=%s\nPROMETHEUS_TARGET_LABELS=%s\nPROMETHEUS_NETWORK_LABELS=%s\nPROMETHEUS_DISK_LABELS=%s\n' "$PROMETHEUS_URL" "$PROMETHEUS_TARGET_LABELS" "$PROMETHEUS_NETWORK_LABELS" "$PROMETHEUS_DISK_LABELS" > .env
           # O host de deploy não possui rota IPv6 para o Docker Hub. Não force
           # uma consulta ao registry quando as imagens-base já estão no cache.
           $COMPOSE --env-file .env build
-          $COMPOSE --env-file .env up -d postgres
-          $COMPOSE --env-file .env run --rm backend npx prisma migrate deploy
-          $COMPOSE --env-file .env run --rm backend npx prisma migrate status
           $COMPOSE --env-file .env up -d --remove-orphans
           $COMPOSE --env-file .env ps

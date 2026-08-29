@@ -1,7 +1,7 @@
 import { useDashboardQuery } from '../../api/dashboard/useDashboardQuery';
 import { DashboardView } from './components/DashboardView';
 
-export function DashboardPage({ onLogout }: { onLogout: () => void }) {
+export function DashboardPage() {
   const dashboardQuery = useDashboardQuery();
-  return <DashboardView dashboardQuery={dashboardQuery} onLogout={onLogout} />;
+  return <DashboardView dashboardQuery={dashboardQuery} />;
 }

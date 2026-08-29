@@ -1,1 +1,0 @@
-ALTER TYPE "ItemKind" ADD VALUE 'SECTION';

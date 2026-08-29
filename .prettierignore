@@ -6,3 +6,5 @@ android
 ios
 *.log
 package-lock.json
+/api
+/site

@@ -9,14 +9,29 @@ import { useCreateSectionMutation } from '../../../api/sections/useCreateSection
 import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSectionMutation';
 import { ImageUpload } from '../../../components/ui/ImageUpload';
 import { Modal } from '../../../components/ui/Modal';
-import { AccountPanel } from '../../account/components/AccountPanel';
-import { DashboardApplication as AppItem, DashboardData as Dash, DashboardSection as Section, DashboardWidget as Widget } from '../dashboard.types';
+import {
+  DashboardApplication as AppItem,
+  DashboardData as Dash,
+  DashboardSection as Section,
+  DashboardWidget as Widget,
+} from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 
 const defaultBranding = {
-  accent: '#ff7a1a', theme: 'dark', wallpaper: '', logo: '', favicon: '',
-  backgroundColor: '#101416', panelColor: '#181d20', textColor: '#e7eaec', borderColor: '#343b3f',
-  radius: 5, panelOpacity: 100, wallpaperOverlay: 55, fontScale: 100, mobileLayout: 'GRID',
+  accent: '#ff7a1a',
+  theme: 'dark',
+  wallpaper: '',
+  logo: '',
+  favicon: '',
+  backgroundColor: '#101416',
+  panelColor: '#181d20',
+  textColor: '#e7eaec',
+  borderColor: '#343b3f',
+  radius: 5,
+  panelOpacity: 100,
+  wallpaperOverlay: 55,
+  fontScale: 100,
+  mobileLayout: 'GRID',
 };
 
 export function DashboardEditor({
@@ -50,17 +65,17 @@ export function DashboardEditor({
       ...defaultBranding,
       ...dash.branding,
       ...(editing || {}),
-      applicationIds: editing && type === 'section'
-        ? dash.applications.filter((app) => app.sectionId === editing.id).map((app) => app.id)
-        : [],
+      applicationIds:
+        editing && type === 'section'
+          ? dash.applications.filter((app) => app.sectionId === editing.id).map((app) => app.id)
+          : [],
       query: (editing as Widget | null)?.config?.query || '',
     });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
-  const title = mode === 'brand'
-    ? 'Personalizar meu DashLab'
-    : mode === 'account'
-      ? 'Minha conta'
+  const title =
+    mode === 'brand'
+      ? 'Personalizar meu DashLab'
       : mode === 'app'
         ? `${editing ? 'Editar' : 'Novo'} aplicativo`
         : mode === 'section'
@@ -97,7 +112,10 @@ export function DashboardEditor({
           : createWidget.mutateAsync(widget));
       } else if (mode === 'section') {
         await (editing
-          ? updateSection.mutateAsync({ id: editing.id, data: { name: form.name, applicationIds: form.applicationIds } })
+          ? updateSection.mutateAsync({
+              id: editing.id,
+              data: { name: form.name, applicationIds: form.applicationIds },
+            })
           : createSection.mutateAsync({ name: form.name, applicationIds: form.applicationIds }));
       } else if (mode === 'brand') {
         await updateBranding.mutateAsync({
@@ -133,7 +151,7 @@ export function DashboardEditor({
             <X />
           </button>
         </header>
-        {type !== 'brand' && type !== 'account' && !editing && (
+        {type !== 'brand' && !editing && (
           <div className={cn('tabs')}>
             <button
               type="button"
@@ -204,34 +222,53 @@ export function DashboardEditor({
             </label>
           </>
         )}
-        {mode === 'section' && <>
-          <label>
-            Nome da seção
-            <input required value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </label>
-          <fieldset className="section-app-picker">
-            <legend>Aplicativos</legend>
-            <p>Escolha os apps que aparecem nesta seção. Eles continuam disponíveis na tela principal.</p>
-            <div>
-              {dash.applications.map((app) => (
-                <label key={app.id}>
-                  <input
-                    type="checkbox"
-                    checked={form.applicationIds.includes(app.id)}
-                    onChange={(event) => setForm({
-                      ...form,
-                      applicationIds: event.target.checked
-                        ? [...form.applicationIds, app.id]
-                        : form.applicationIds.filter((id: string) => id !== app.id),
-                    })}
-                  />
-                  <span>{app.icon && <img src={app.icon} alt="" />}<b>{app.name}</b><small>{app.description || 'Sem descrição'}</small></span>
-                </label>
-              ))}
-              {!dash.applications.length && <span className="section-app-picker-empty">Cadastre um aplicativo antes de criar a seção.</span>}
-            </div>
-          </fieldset>
-        </>}
+        {mode === 'section' && (
+          <>
+            <label>
+              Nome da seção
+              <input
+                required
+                value={form.name || ''}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </label>
+            <fieldset className="section-app-picker">
+              <legend>Aplicativos</legend>
+              <p>
+                Escolha os apps que aparecem nesta seção. Eles continuam disponíveis na tela
+                principal.
+              </p>
+              <div>
+                {dash.applications.map((app) => (
+                  <label key={app.id}>
+                    <input
+                      type="checkbox"
+                      checked={form.applicationIds.includes(app.id)}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          applicationIds: event.target.checked
+                            ? [...form.applicationIds, app.id]
+                            : form.applicationIds.filter((id: string) => id !== app.id),
+                        })
+                      }
+                    />
+                    <span>
+                      {app.icon && <img src={app.icon} alt="" />}
+                      <b>{app.name}</b>
+                      <small>{app.description || 'Sem descrição'}</small>
+                    </span>
+                  </label>
+                ))}
+                {!dash.applications.length && (
+                  <span className="section-app-picker-empty">
+                    Cadastre um aplicativo antes de criar a seção.
+                  </span>
+                )}
+              </div>
+            </fieldset>
+          </>
+        )}
         {mode === 'widget' && (
           <>
             <label>
@@ -259,7 +296,9 @@ export function DashboardEditor({
                   ['PROMQL', 'Consulta PromQL'],
                   ['DIVIDER', 'Divisória'],
                 ].map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -350,7 +389,7 @@ export function DashboardEditor({
               label="Favicon da aba"
               value={form.favicon}
               onChange={(favicon) => setForm({ ...form, favicon })}
-              hint="Use uma imagem quadrada em PNG, WebP ou ICO"
+              hint="Use uma imagem quadrada em PNG ou WebP"
             />
             <label>
               Cor de destaque
@@ -395,29 +434,78 @@ export function DashboardEditor({
               </label>
             </div>
             <label className="range-field">
-              <span>Arredondamento <output>{form.radius}px</output></span>
-              <input type="range" min="0" max="40" value={form.radius} onChange={(e) => setForm({ ...form, radius: Number(e.target.value) })} />
+              <span>
+                Arredondamento <output>{form.radius}px</output>
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="40"
+                value={form.radius}
+                onChange={(e) => setForm({ ...form, radius: Number(e.target.value) })}
+              />
             </label>
             <label className="range-field">
-              <span>Opacidade dos painéis <output>{form.panelOpacity}%</output></span>
-              <input type="range" min="10" max="100" value={form.panelOpacity} onChange={(e) => setForm({ ...form, panelOpacity: Number(e.target.value) })} />
+              <span>
+                Opacidade dos painéis <output>{form.panelOpacity}%</output>
+              </span>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                value={form.panelOpacity}
+                onChange={(e) => setForm({ ...form, panelOpacity: Number(e.target.value) })}
+              />
             </label>
             <label className="range-field">
-              <span>Escurecer wallpaper <output>{form.wallpaperOverlay}%</output></span>
-              <input type="range" min="0" max="100" value={form.wallpaperOverlay} onChange={(e) => setForm({ ...form, wallpaperOverlay: Number(e.target.value) })} />
+              <span>
+                Escurecer wallpaper <output>{form.wallpaperOverlay}%</output>
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={form.wallpaperOverlay}
+                onChange={(e) => setForm({ ...form, wallpaperOverlay: Number(e.target.value) })}
+              />
             </label>
             <label className="range-field">
-              <span>Escala da interface <output>{form.fontScale}%</output></span>
-              <input type="range" min="75" max="140" value={form.fontScale} onChange={(e) => setForm({ ...form, fontScale: Number(e.target.value) })} />
+              <span>
+                Escala da interface <output>{form.fontScale}%</output>
+              </span>
+              <input
+                type="range"
+                min="75"
+                max="140"
+                value={form.fontScale}
+                onChange={(e) => setForm({ ...form, fontScale: Number(e.target.value) })}
+              />
             </label>
             <fieldset className="grid gap-3 border-0 p-0">
               <legend className="mb-1 text-sm text-[var(--muted)]">Layout no celular</legend>
-              <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">Escolha como os atalhos e controles aparecem em telas pequenas.</p>
+              <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
+                Escolha como os atalhos e controles aparecem em telas pequenas.
+              </p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {[
-                  { value: 'GRID', title: 'Grade', text: 'Conteúdo alinhado em duas colunas.', Icon: Grid2X2 },
-                  { value: 'DRAWER', title: 'Menu lateral', text: 'Atalhos concentrados em um drawer.', Icon: PanelLeft },
-                  { value: 'BOTTOM_NAV', title: 'Barra inferior', text: 'Ações sempre ao alcance do polegar.', Icon: PanelBottom },
+                  {
+                    value: 'GRID',
+                    title: 'Grade',
+                    text: 'Conteúdo alinhado em duas colunas.',
+                    Icon: Grid2X2,
+                  },
+                  {
+                    value: 'DRAWER',
+                    title: 'Menu lateral',
+                    text: 'Atalhos concentrados em um drawer.',
+                    Icon: PanelLeft,
+                  },
+                  {
+                    value: 'BOTTOM_NAV',
+                    title: 'Barra inferior',
+                    text: 'Ações sempre ao alcance do polegar.',
+                    Icon: PanelBottom,
+                  },
                 ].map(({ value, title, text, Icon }) => (
                   <button
                     key={value}
@@ -425,11 +513,18 @@ export function DashboardEditor({
                     onClick={() => setForm({ ...form, mobileLayout: value })}
                     className={`grid min-h-36 content-between rounded-[var(--element-radius)] border p-3 text-left transition ${form.mobileLayout === value || (!form.mobileLayout && value === 'GRID') ? 'border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_12%,var(--panel-color))] text-[var(--text-color)]' : 'border-[var(--border-color)] bg-[var(--panel-color)] text-[var(--muted)] hover:border-[var(--accent)]'}`}
                   >
-                    <span className="grid gap-2"><Icon size={20} className="text-[var(--accent)]" /><strong className="text-sm font-semibold">{title}</strong></span>
+                    <span className="grid gap-2">
+                      <Icon size={20} className="text-[var(--accent)]" />
+                      <strong className="text-sm font-semibold">{title}</strong>
+                    </span>
                     <span className="text-xs leading-snug">{text}</span>
                     <span className="mt-3 grid h-7 grid-cols-3 gap-1 rounded-[var(--element-radius)] border border-current/30 p-1 opacity-80">
-                      <i className={`rounded-[var(--element-radius)] bg-current/60 ${value === 'DRAWER' ? 'col-span-1' : 'col-span-3'}`} />
-                      {value === 'BOTTOM_NAV' && <i className="col-span-3 rounded-[var(--element-radius)] bg-current/40" />}
+                      <i
+                        className={`rounded-[var(--element-radius)] bg-current/60 ${value === 'DRAWER' ? 'col-span-1' : 'col-span-3'}`}
+                      />
+                      {value === 'BOTTOM_NAV' && (
+                        <i className="col-span-3 rounded-[var(--element-radius)] bg-current/40" />
+                      )}
                     </span>
                   </button>
                 ))}
@@ -437,13 +532,10 @@ export function DashboardEditor({
             </fieldset>
           </>
         )}
-        {mode === 'account' && <AccountPanel onClose={close} />}
         {error && <div className={cn('error')}>{error}</div>}
-        {mode !== 'account' && (
-          <button className={cn('primary')} disabled={busy}>
-            {busy ? 'Salvando…' : 'Salvar'}
-          </button>
-        )}
+        <button className={cn('primary')} disabled={busy}>
+          {busy ? 'Salvando…' : 'Salvar'}
+        </button>
       </form>
     </Modal>
   );

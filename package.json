@@ -2,9 +2,9 @@
   "name": "dashlab",
   "private": true,
   "scripts": {
-    "install:all": "npm --prefix backend ci && npm --prefix web ci",
-    "build": "npm --prefix backend run build && npm --prefix web run build",
-    "test": "npm --prefix backend test",
+    "install:all": "npm --prefix web ci",
+    "build": "npm --prefix web run build",
+    "test": "npm --prefix web run build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

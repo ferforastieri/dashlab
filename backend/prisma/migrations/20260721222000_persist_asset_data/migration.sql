@@ -1,1 +1,0 @@
-ALTER TABLE "Asset" ADD COLUMN "data" BYTEA;
