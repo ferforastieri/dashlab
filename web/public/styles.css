@@ -181,11 +181,20 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
 .site-tools button[aria-pressed='true']{background:color-mix(in srgb,var(--orange) 14%,var(--ink-soft));color:var(--paper)}
 @media(max-width:650px){
   .site-tools{grid-template-columns:40px 40px;width:82px;height:38px;gap:0}
-  .site-tools button,.site-tools button:first-child{width:40px;min-width:40px;height:36px}
+  .site-tools button,.site-tools button:first-child{width:40px;min-width:40px;height:40px;padding:0}
   .hero{padding-top:104px;padding-bottom:64px}
   .hero-copy{max-width:34rem}
   .hero h1{font-size:clamp(2.8rem,12.5vw,4rem);line-height:.96;letter-spacing:-.045em}
   .hero-intro{max-width:33ch}
   .dashboard-stage{min-height:0;margin-top:38px}
   .dashboard-window{width:100%;margin-bottom:-24px}
+  .site-header{grid-template-columns:1fr auto auto;align-items:center}
+  .site-header .brand{align-self:center;transform:translateY(1px)}
+  .site-header .brand>span{width:32px;height:32px}
+  .site-header .brand>span img{width:100%;height:100%;object-fit:contain}
+  .site-footer{align-items:center;text-align:center}
+  .site-footer .footer-brand{align-self:center;text-align:left}
+  .site-footer p{max-width:28ch;text-align:center}
+  .site-footer nav{justify-items:center;text-align:center}
+  .site-footer>small{text-align:center}
 }
