@@ -6,6 +6,7 @@ import { renderToString } from 'react-dom/server';
 import { defineConfig, type Plugin, type Rollup } from 'vite';
 import { DocsPage } from './landing/docs/DocsPage';
 import { LandingPage } from './landing/LandingPage';
+import { ReleasesPage } from './landing/releases/ReleasesPage';
 
 const rootMarker = '<div id="root"></div>';
 const workerVersionMarker = '__DASHLAB_BUILD_VERSION__';
@@ -33,6 +34,8 @@ function publicRouteAliases(): Plugin {
     '/index.html': '/landing/index.html',
     '/docs': '/landing/docs/index.html',
     '/docs/': '/landing/docs/index.html',
+    '/releases': '/landing/releases/index.html',
+    '/releases/': '/landing/releases/index.html',
     '/lab': '/lab/index.html',
     '/lab/': '/lab/index.html',
   };
@@ -59,6 +62,8 @@ function publicRouteAliases(): Plugin {
           ? () => renderToString(createElement(LandingPage))
           : filename.endsWith('/landing/docs/index.html')
             ? () => renderToString(createElement(DocsPage))
+            : filename.endsWith('/landing/releases/index.html')
+              ? () => renderToString(createElement(ReleasesPage))
             : null;
         const versionedHtml = html.replace(
           '<head>',
@@ -74,6 +79,7 @@ function publicRouteAliases(): Plugin {
       handler(_options, bundle) {
         moveHtmlEntry(bundle, 'landing/index.html', 'index.html');
         moveHtmlEntry(bundle, 'landing/docs/index.html', 'docs/index.html');
+        moveHtmlEntry(bundle, 'landing/releases/index.html', 'releases/index.html');
         moveHtmlEntry(bundle, 'lab/index.html', 'lab/index.html');
       },
     },
@@ -99,6 +105,7 @@ export default defineConfig({
       input: {
         landing: 'landing/index.html',
         docs: 'landing/docs/index.html',
+        releases: 'landing/releases/index.html',
         lab: 'lab/index.html',
       },
     },

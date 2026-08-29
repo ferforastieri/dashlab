@@ -175,7 +175,7 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
 }
 
 /* Final control sizing: both preferences are intentionally square. */
-.site-tools{display:grid;grid-template-columns:44px 44px;gap:0;width:90px;height:42px;padding:0}
+.site-tools{display:grid;grid-template-columns:44px 44px;gap:8px;width:96px;height:42px;padding:0}
 .site-tools button,.site-tools button:first-child{width:44px;min-width:44px;height:40px;padding:0}
 .site-tools button:first-child b{display:none}
 .site-tools button[aria-pressed='true']{background:color-mix(in srgb,var(--orange) 14%,var(--ink-soft));color:var(--paper)}

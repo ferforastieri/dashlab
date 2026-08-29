@@ -17,6 +17,7 @@ No deploy público, a landing fica em `/`. Na instalação Docker, `/` abre dire
 | `/` | Lab (instalação self-hosted) |
 | `/lab/` | Lab |
 | `/docs/` | Documentação |
+| `/releases/` | Histórico de releases |
 | `/api/health` | Saúde da API |
 | `/api/version` | Versão publicada instalada |
 

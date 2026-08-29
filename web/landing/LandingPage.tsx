@@ -541,6 +541,7 @@ export function LandingPage() {
         <p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p>
         <nav>
           <a href="/docs/">{text('Documentação', 'Documentation')}</a>
+          <a href="/releases/">{text('Releases', 'Releases')}</a>
           <a href="https://github.com/ferforastieri/dashlab">GitHub</a>
           <a href="#inicio">{text('Voltar ao topo ↑', 'Back to top ↑')}</a>
         </nav>
