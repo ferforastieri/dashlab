@@ -6,6 +6,10 @@
   "outputDirectory": "web/dist",
   "cleanUrls": true,
   "trailingSlash": true,
+  "redirects": [
+    { "source": "/lab", "destination": "/docs/#instalacao", "permanent": false },
+    { "source": "/lab/", "destination": "/docs/#instalacao", "permanent": false }
+  ],
   "headers": [
     {
       "source": "/(.*)",

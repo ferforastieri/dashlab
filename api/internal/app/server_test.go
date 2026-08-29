@@ -144,11 +144,11 @@ func TestPwaManifestUsesStableSingleUserPath(t *testing.T) {
 
 func TestInstalledPwaUsesDynamicManifest(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, "hub"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "lab"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	page := `<link rel="manifest" href="/lab.webmanifest"><div id="root"></div>`
-	if err := os.WriteFile(filepath.Join(root, "hub", "index.html"), []byte(page), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "lab", "index.html"), []byte(page), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -159,5 +159,23 @@ func TestInstalledPwaUsesDynamicManifest(t *testing.T) {
 	expected := `/api/pwa/dashlab-plus-local/manifest.webmanifest`
 	if !bytes.Contains(response.Body.Bytes(), []byte(expected)) {
 		t.Fatalf("dynamic manifest missing from %q", response.Body.String())
+	}
+}
+
+func TestSelfHostedRootOpensLab(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "lab"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "lab", "index.html"), []byte("lab"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	response := requestJSON(t, webHandler(root), http.MethodGet, "/", nil)
+	if response.Code != http.StatusFound {
+		t.Fatalf("status = %d", response.Code)
+	}
+	if location := response.Header().Get("Location"); location != "/lab/" {
+		t.Fatalf("location = %q", location)
 	}
 }

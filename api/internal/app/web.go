@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// webHandler serves the built landing, documentation, and Server Hub from the
+// webHandler serves the built landing, documentation, and Lab from the
 // same process as the API. WEB_ROOT remains optional so API-only development
 // and tests do not depend on a frontend build.
 func webHandler(root string) http.Handler {
@@ -27,9 +27,15 @@ func webHandler(root string) http.Handler {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			return
 		}
+		// A self-hosted instance is the actual dashboard, so its root opens the
+		// Lab directly. The public Vercel deployment keeps the marketing landing.
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/lab/", http.StatusFound)
+			return
+		}
 
 		if dashboardID, ok := installedDashboardID(r.URL.Path); ok {
-			serveInstalledHub(w, r, root, dashboardID)
+			serveInstalledLab(w, r, root, dashboardID)
 			return
 		}
 
@@ -52,8 +58,8 @@ func installedDashboardID(requestPath string) (string, bool) {
 	return parts[1], true
 }
 
-func serveInstalledHub(w http.ResponseWriter, r *http.Request, root, dashboardID string) {
-	page, err := os.ReadFile(filepath.Join(root, "hub", "index.html"))
+func serveInstalledLab(w http.ResponseWriter, r *http.Request, root, dashboardID string) {
+	page, err := os.ReadFile(filepath.Join(root, "lab", "index.html"))
 	if err != nil {
 		http.NotFound(w, r)
 		return

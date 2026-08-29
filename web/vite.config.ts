@@ -33,8 +33,8 @@ function publicRouteAliases(): Plugin {
     '/index.html': '/landing/index.html',
     '/docs': '/landing/docs/index.html',
     '/docs/': '/landing/docs/index.html',
-    '/hub': '/lab/index.html',
-    '/hub/': '/lab/index.html',
+    '/lab': '/lab/index.html',
+    '/lab/': '/lab/index.html',
   };
 
   return {
@@ -74,7 +74,7 @@ function publicRouteAliases(): Plugin {
       handler(_options, bundle) {
         moveHtmlEntry(bundle, 'landing/index.html', 'index.html');
         moveHtmlEntry(bundle, 'landing/docs/index.html', 'docs/index.html');
-        moveHtmlEntry(bundle, 'lab/index.html', 'hub/index.html');
+        moveHtmlEntry(bundle, 'lab/index.html', 'lab/index.html');
       },
     },
     writeBundle() {

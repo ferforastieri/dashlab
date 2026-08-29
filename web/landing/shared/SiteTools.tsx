@@ -53,6 +53,12 @@ export function SiteTools({
     <div className="site-tools" aria-label={isEnglish ? 'Preferences' : 'Preferências'}>
       <button
         type="button"
+        title={
+          isEnglish
+            ? `Enable ${theme === 'light' ? 'dark' : 'light'} mode`
+            : `Ativar modo ${theme === 'light' ? 'escuro' : 'claro'}`
+        }
+        aria-pressed={theme === 'light'}
         aria-label={
           isEnglish
             ? `Enable ${theme === 'light' ? 'dark' : 'light'} mode`
@@ -73,6 +79,8 @@ export function SiteTools({
       </button>
       <button
         type="button"
+        title={isEnglish ? 'Switch language' : 'Trocar idioma'}
+        aria-pressed={isEnglish}
         aria-label={isEnglish ? 'Mudar idioma para português' : 'Switch language to English'}
         onClick={toggleLanguage}
       >

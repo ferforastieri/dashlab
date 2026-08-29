@@ -5,15 +5,17 @@ Dashboard single-user e self-hosted para organizar serviços, atalhos e métrica
 Site: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
 
 O site público na Vercel apresenta o projeto e sua documentação. A instalação
-self-hosted usa uma única imagem Docker com landing page, Server Hub, API Go e
+self-hosted usa uma única imagem Docker com landing page, Lab, API Go e
 persistência SQLite.
+
+No deploy público, a landing fica em `/`. Na instalação Docker, `/` abre diretamente o Lab; a landing é destinada à apresentação pública do projeto.
 
 ## Acessos
 
 | Rota | Conteúdo |
 | --- | --- |
-| `/` | Landing page |
-| `/hub/` | Server Hub |
+| `/` | Lab (instalação self-hosted) |
+| `/lab/` | Lab |
 | `/docs/` | Documentação |
 | `/api/health` | Saúde da API |
 | `/api/version` | Versão publicada instalada |
@@ -60,7 +62,7 @@ O Prometheus é opcional. Sem `PROMETHEUS_URL`, apenas os widgets dependentes de
 | Pasta | Responsabilidade |
 | --- | --- |
 | `web/landing` | Landing e documentação React. |
-| `web/lab` | Server Hub React e cliente da API. |
+| `web/lab` | Lab React e cliente da API. |
 | `web/public` | Assets estáticos, PWA e instalador. |
 | `api` | Servidor Go, integrações e SQLite. |
 

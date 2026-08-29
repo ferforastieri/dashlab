@@ -100,8 +100,8 @@ export function DocsPage() {
             <h2>{text('Visão geral', 'Overview')}</h2>
             <p>
               {text(
-                'O DashLab+ centraliza atalhos, métricas e disponibilidade dos serviços da sua rede. Uma única imagem contém a landing, o Server Hub e a API Go.',
-                'DashLab+ centralizes shortcuts, metrics, and service availability on your network. A single image contains the landing page, Server Hub, and Go API.',
+                'O DashLab+ centraliza atalhos, métricas e disponibilidade dos serviços da sua rede. Uma única imagem contém a landing, o Lab e a API Go.',
+                'DashLab+ centralizes shortcuts, metrics, and service availability on your network. A single image contains the landing page, Lab, and Go API.',
               )}
             </p>
             <div className="docs-callout">
@@ -362,7 +362,7 @@ PROMETHEUS_DISK_LABELS=device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`}</code>
    │
    ▼
 DashLab+ :3000
-   ├── Landing + Server Hub
+   ├── Landing + Lab
    ├── API /api
    ├── SQLite /data/dashlab-plus.db
    ├── Prometheus

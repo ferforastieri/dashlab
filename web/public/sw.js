@@ -3,7 +3,7 @@ const CACHE_VERSION = `dashlab-plus-shell-${BUILD_VERSION}`;
 const SHELL = [
   '/',
   '/docs/',
-  '/hub/',
+  '/lab/',
   '/manifest.webmanifest',
   '/lab.webmanifest',
   '/update.css',
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(async () => (await caches.match(request)) || caches.match('/hub/')),
+        .catch(async () => (await caches.match(request)) || caches.match('/lab/')),
     );
     return;
   }

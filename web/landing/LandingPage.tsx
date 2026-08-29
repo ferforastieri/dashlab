@@ -152,8 +152,8 @@ export function LandingPage() {
           toggleLanguage={toggleLanguage}
           toggleTheme={toggleTheme}
         />
-        <a className="header-cta" href="/hub/">
-          {text('Abrir Server Hub', 'Open Server Hub')} <span>→</span>
+        <a className="header-cta" href="#instalacao">
+          {text('Ver instalação', 'See installation')} <span>→</span>
         </a>
       </header>
 
@@ -175,8 +175,8 @@ export function LandingPage() {
               )}
             </p>
             <div className="hero-actions">
-              <a className="button primary" href="/hub/">
-                {text('Abrir Server Hub', 'Open Server Hub')} <span>→</span>
+              <a className="button primary" href="#instalacao">
+                {text('Ver como instalar', 'See how to install')} <span>→</span>
               </a>
               <a className="button secondary" href="/docs/">
                 {text('Ler documentação', 'Read the docs')}
@@ -362,7 +362,7 @@ export function LandingPage() {
               <small>INTERFACE</small>
               <strong>React + Vite</strong>
               <span>
-                {text('Landing + Server Hub responsivo', 'Responsive landing + Server Hub')}
+                {text('Landing + Lab responsivo', 'Responsive landing + Lab')}
               </span>
             </div>
             <div className="connector">
@@ -397,7 +397,7 @@ export function LandingPage() {
             <div className="node small-node">
               <small>{text('ENTREGA', 'DELIVERY')}</small>
               <strong>Go HTTP</strong>
-              <span>Landing + Hub + /api</span>
+              <span>Landing + Lab + /api</span>
             </div>
           </div>
         </section>
@@ -438,7 +438,7 @@ export function LandingPage() {
               <li>
                 <span>03</span>
                 <div>
-                  <strong>{text('Abra o Server Hub', 'Open the Server Hub')}</strong>
+                  <strong>{text('Acesse o painel', 'Open your dashboard')}</strong>
                   <p>
                     {text(
                       'Configuração e imagens permanecem no volume SQLite entre atualizações.',
@@ -495,8 +495,8 @@ export function LandingPage() {
                 'Lightweight, direct, and under your control.',
               )}
             </p>
-            <a className="button primary" href="/hub/">
-              {text('Entrar no Server Hub', 'Enter Server Hub')} <span>→</span>
+            <a className="button primary" href="/docs/#instalacao">
+              {text('Ver guia de instalação', 'View installation guide')} <span>→</span>
             </a>
           </div>
         </section>
