@@ -13,9 +13,10 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "types": ["vite/client"],
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src"],
+  "include": ["landing", "lab", "shared"],
   "references": []
 }

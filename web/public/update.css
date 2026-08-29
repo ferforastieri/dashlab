@@ -1,0 +1,97 @@
+.dashlab-update {
+  position: fixed;
+  z-index: 10000;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  width: min(560px, calc(100vw - 36px));
+  padding: 18px;
+  border: 1px solid var(--accent, var(--orange, #ff7a1a));
+  border-radius: 8px;
+  background: var(--panel, #11171b);
+  color: var(--paper, #f7f4ed);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.dashlab-update > div:first-child {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dashlab-update strong {
+  font-size: clamp(0.8rem, 0.76rem + 0.18vw, 0.94rem);
+}
+
+.dashlab-update span {
+  color: var(--muted, #b4bec3);
+  font-size: clamp(0.68rem, 0.64rem + 0.14vw, 0.8rem);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.dashlab-update > div:last-child {
+  display: flex;
+  gap: 8px;
+}
+
+.dashlab-update button {
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid var(--line, #3b484f);
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: 600 0.68rem 'IBM Plex Mono', monospace;
+}
+
+.dashlab-update__confirm {
+  border-color: var(--accent, var(--orange, #ff7a1a)) !important;
+  background: var(--accent, var(--orange, #ff7a1a)) !important;
+  color: #0b0f12 !important;
+}
+
+.dashlab-update button:focus-visible {
+  outline: 2px solid var(--paper, #f7f4ed);
+  outline-offset: 2px;
+}
+
+.dashlab-update button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 620px) {
+  .dashlab-update {
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    grid-template-columns: 1fr;
+    width: auto;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .dashlab-update > div:last-child,
+  .dashlab-update button {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dashlab-update {
+    animation: dashlab-update-in 220ms ease-out;
+  }
+
+  @keyframes dashlab-update-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+}

@@ -1,0 +1,5 @@
+api/**
+.github/**
+.gitea/**
+Dockerfile
+docker-compose.yml

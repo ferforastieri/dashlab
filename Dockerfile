@@ -1,4 +1,6 @@
 FROM node:22-alpine AS web
+ARG BUILD_VERSION=development
+ENV VITE_BUILD_VERSION=$BUILD_VERSION
 WORKDIR /src/web
 COPY web/package*.json ./
 RUN npm ci
@@ -6,16 +8,21 @@ COPY web/ ./
 RUN npm run build
 
 FROM golang:1.24-alpine AS api
+ARG BUILD_VERSION=development
 WORKDIR /src/api
 RUN apk add --no-cache ca-certificates
 COPY api/go.mod api/go.sum* ./
 RUN go mod download
 COPY api/ ./
-RUN go test ./... && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/dashlab-plus ./cmd/server
+RUN go test ./... && CGO_ENABLED=0 go build -trimpath \
+  -ldflags="-s -w -X github.com/ferforastieri/dashlab/api/internal/app.BuildVersion=${BUILD_VERSION}" \
+  -o /out/dashlab-plus ./cmd/server
 
 FROM alpine:3.22
+ARG BUILD_VERSION=development
 LABEL org.opencontainers.image.source="https://github.com/ferforastieri/dashlab"
 LABEL org.opencontainers.image.description="DashLab+ self-hosted homelab dashboard"
+LABEL org.opencontainers.image.revision=$BUILD_VERSION
 RUN apk add --no-cache ca-certificates tzdata \
   && addgroup -S dashlabplus \
   && adduser -S -G dashlabplus dashlabplus \

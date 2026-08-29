@@ -4,6 +4,10 @@ Dashboard single-user e self-hosted para organizar serviços, atalhos e métrica
 
 Site: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
 
+O site público na Vercel apresenta o projeto e sua documentação. A instalação
+self-hosted usa uma única imagem Docker com landing page, Server Hub, API Go e
+persistência SQLite.
+
 ## Acessos
 
 | Rota | Conteúdo |
@@ -12,6 +16,7 @@ Site: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
 | `/hub/` | Server Hub |
 | `/docs/` | Documentação |
 | `/api/health` | Saúde da API |
+| `/api/version` | Versão publicada instalada |
 
 ## Instalação rápida
 
@@ -22,6 +27,8 @@ curl -fsSL https://dashlabplus.vercel.app/install.sh | sh
 ```
 
 O instalador salva a configuração em `~/.dashlab-plus`, baixa a imagem pública do GHCR e preserva os dados no volume Docker. Execute o mesmo comando para atualizar.
+
+O Lab compara a versão instalada com a última versão publicada. Um único aviso cobre interface e servidor: atualizações do PWA são aplicadas no navegador; quando a imagem Docker mudou, o botão copia o comando de atualização para execução no host.
 
 Também é possível iniciar diretamente:
 
@@ -50,6 +57,13 @@ O Prometheus é opcional. Sem `PROMETHEUS_URL`, apenas os widgets dependentes de
 
 ## Desenvolvimento
 
+| Pasta | Responsabilidade |
+| --- | --- |
+| `web/landing` | Landing e documentação React. |
+| `web/lab` | Server Hub React e cliente da API. |
+| `web/public` | Assets estáticos, PWA e instalador. |
+| `api` | Servidor Go, integrações e SQLite. |
+
 Frontend:
 
 ```bash
@@ -77,7 +91,7 @@ docker run --rm -p 3000:3000 -v dashlab_plus_data:/data dashlab-plus
 
 ## Persistência
 
-O volume `dashlab_plus_data` armazena `/data/dashlab-plus.db`. Para backups consistentes, pare o serviço `api` antes de copiar o volume.
+O volume `dashlab_plus_data` armazena `/data/dashlab-plus.db`. Para backups consistentes, pare o container `dashlab-plus` antes de copiar o volume.
 
 ## Segurança
 

@@ -63,6 +63,7 @@ func Run() {
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
+	mux.HandleFunc("GET /api/version", s.version)
 	mux.HandleFunc("GET /api/dashboard", s.dashboard)
 	mux.HandleFunc("PUT /api/branding", s.branding)
 	mux.HandleFunc("POST /api/applications", s.createApplication)
@@ -91,6 +92,11 @@ func (s *Server) routes() http.Handler {
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "name": "DashLab+", "storage": "sqlite"})
+}
+
+func (s *Server) version(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, map[string]string{"version": BuildVersion})
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {

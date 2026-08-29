@@ -60,7 +60,7 @@ func serveInstalledHub(w http.ResponseWriter, r *http.Request, root, dashboardID
 	}
 	page = []byte(strings.ReplaceAll(
 		string(page),
-		"/manifest.webmanifest",
+		"/lab.webmanifest",
 		"/api/pwa/"+dashboardID+"/manifest.webmanifest",
 	))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

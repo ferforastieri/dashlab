@@ -1,18 +1,31 @@
-const CACHE_VERSION = 'dashlab-plus-shell-v3';
-const SHELL = ['/hub/', '/manifest.webmanifest'];
+const BUILD_VERSION = '__DASHLAB_BUILD_VERSION__';
+const CACHE_VERSION = `dashlab-plus-shell-${BUILD_VERSION}`;
+const SHELL = [
+  '/',
+  '/docs/',
+  '/hub/',
+  '/manifest.webmanifest',
+  '/lab.webmanifest',
+  '/update.css',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(SHELL)));
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key))),
-    ),
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key))),
+      ),
   );
   self.clients.claim();
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -37,13 +50,17 @@ self.addEventListener('fetch', (event) => {
 
   if (['script', 'style', 'font', 'image'].includes(request.destination)) {
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      })),
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          }),
+      ),
     );
   }
 });

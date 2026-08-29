@@ -71,6 +71,24 @@ func TestDashboardStartsWithSingleUserDefaults(t *testing.T) {
 	}
 }
 
+func TestVersionEndpointIsNotCached(t *testing.T) {
+	_, handler := testServer(t)
+	response := requestJSON(t, handler, http.MethodGet, "/api/version", nil)
+	if response.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("cache control = %q", response.Header().Get("Cache-Control"))
+	}
+	var payload map[string]string
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatal(err)
+	}
+	if payload["version"] != BuildVersion {
+		t.Fatalf("version = %q", payload["version"])
+	}
+}
+
 func TestApplicationLifecyclePersistsInSQLite(t *testing.T) {
 	server, handler := testServer(t)
 	created := requestJSON(t, handler, http.MethodPost, "/api/applications", map[string]any{"name": "Proxmox", "url": "https://proxmox.local"})
@@ -129,7 +147,7 @@ func TestInstalledPwaUsesDynamicManifest(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "hub"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	page := `<link rel="manifest" href="/manifest.webmanifest"><div id="root"></div>`
+	page := `<link rel="manifest" href="/lab.webmanifest"><div id="root"></div>`
 	if err := os.WriteFile(filepath.Join(root, "hub", "index.html"), []byte(page), 0o644); err != nil {
 		t.Fatal(err)
 	}
