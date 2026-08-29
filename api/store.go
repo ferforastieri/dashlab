@@ -102,10 +102,12 @@ func (s *Store) loadUnlocked(ctx context.Context) (Dashboard, error) {
 	if err := json.Unmarshal([]byte(raw), &dashboard); err != nil {
 		return Dashboard{}, fmt.Errorf("decode dashboard: %w", err)
 	}
+	normalizeDashboard(&dashboard)
 	return dashboard, nil
 }
 
 func (s *Store) saveUnlocked(ctx context.Context, dashboard Dashboard) error {
+	normalizeDashboard(&dashboard)
 	raw, err := json.Marshal(dashboard)
 	if err != nil {
 		return err

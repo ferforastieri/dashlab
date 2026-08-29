@@ -42,8 +42,9 @@ func TestDashboardStartsWithSingleUserDefaults(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
 	}
+	body := response.Body.Bytes()
 	var dashboard Dashboard
-	if err := json.NewDecoder(response.Body).Decode(&dashboard); err != nil {
+	if err := json.Unmarshal(body, &dashboard); err != nil {
 		t.Fatal(err)
 	}
 	if dashboard.ID != "dashlab-local" {
@@ -54,6 +55,18 @@ func TestDashboardStartsWithSingleUserDefaults(t *testing.T) {
 	}
 	if len(dashboard.Layouts) == 0 {
 		t.Fatal("expected seeded web layouts")
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(body, &raw); err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"applications", "sections", "widgets", "layouts"} {
+		if raw[field] == nil {
+			t.Fatalf("%s must be a JSON array, got null", field)
+		}
+		if _, ok := raw[field].([]any); !ok {
+			t.Fatalf("%s must be a JSON array, got %T", field, raw[field])
+		}
 	}
 }
 

@@ -80,5 +80,24 @@ func cloneDashboard(source Dashboard) (Dashboard, error) {
 	}
 	var copy Dashboard
 	err = json.Unmarshal(data, &copy)
+	normalizeDashboard(&copy)
 	return copy, err
+}
+
+func normalizeDashboard(dashboard *Dashboard) {
+	if dashboard.Branding == nil {
+		dashboard.Branding = make(map[string]any)
+	}
+	if dashboard.Applications == nil {
+		dashboard.Applications = make([]Application, 0)
+	}
+	if dashboard.Sections == nil {
+		dashboard.Sections = make([]Section, 0)
+	}
+	if dashboard.Widgets == nil {
+		dashboard.Widgets = make([]Widget, 0)
+	}
+	if dashboard.Layouts == nil {
+		dashboard.Layouts = make([]Layout, 0)
+	}
 }
