@@ -323,6 +323,20 @@ export function LandingPage() {
                 'DashLab+ is reduced to the essentials: an expressive frontend, a small Go API, and one SQLite file. The landing page lives at the edge; your installation stays at home.',
               )}
             </p>
+            <div className="philosophy-list">
+              <div>
+                <strong>{text('CONTROLE', 'CONTROL')}</strong>
+                <span>{text('Você decide onde os dados vivem e quem pode acessá-los.', 'You decide where data lives and who can access it.')}</span>
+              </div>
+              <div>
+                <strong>{text('CLAREZA', 'CLARITY')}</strong>
+                <span>{text('Uma interface direta, sem camadas, contas ou serviços obrigatórios.', 'A direct interface without layers, accounts, or mandatory services.')}</span>
+              </div>
+              <div>
+                <strong>{text('CONTINUIDADE', 'CONTINUITY')}</strong>
+                <span>{text('Seu workspace permanece portátil, legível e fácil de restaurar.', 'Your workspace stays portable, readable, and easy to restore.')}</span>
+              </div>
+            </div>
           </aside>
         </section>
 
