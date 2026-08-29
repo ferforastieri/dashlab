@@ -300,6 +300,20 @@ export function LandingPage() {
               <br />
               <em>{text('Sua interface.', 'Your interface.')}</em>
             </h2>
+            <div className="principle-list" aria-label={text('Princípios do DashLab+', 'DashLab+ principles')}>
+              <div>
+                <strong>{text('LOCAL', 'LOCAL')}</strong>
+                <span>{text('Roda onde seus dados estão.', 'Runs where your data lives.')}</span>
+              </div>
+              <div>
+                <strong>{text('PRIVADO', 'PRIVATE')}</strong>
+                <span>{text('Sem conta externa ou nuvem obrigatória.', 'No external account or mandatory cloud.')}</span>
+              </div>
+              <div>
+                <strong>{text('COMPOSTO', 'COMPOSABLE')}</strong>
+                <span>{text('Serviços, métricas e atalhos em um só lugar.', 'Services, metrics, and shortcuts in one place.')}</span>
+              </div>
+            </div>
           </div>
           <aside className="manifesto-note reveal">
             <span>{text('FILOSOFIA', 'PHILOSOPHY')}</span>
