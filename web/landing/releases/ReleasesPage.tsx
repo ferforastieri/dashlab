@@ -1,26 +1,24 @@
-import { SiteTools, useSitePreferences } from '../shared/SiteTools';
+import { useEffect, useState } from 'react';
+import { useSitePreferences } from '../shared/SiteTools';
+import { PublicFooter, PublicHeader } from '../shared/SiteChrome';
 
 export function ReleasesPage() {
   const { language, theme, text, toggleLanguage, toggleTheme } = useSitePreferences({
     pt: 'Releases — DashLab+',
     en: 'Releases — DashLab+',
   });
+  const [releases, setReleases] = useState<Array<{ tag_name: string; name: string; html_url: string; published_at: string; body: string | null }>>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch('https://api.github.com/repos/ferforastieri/dashlab/releases?per_page=20', { headers: { Accept: 'application/vnd.github+json' } })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('releases unavailable')))
+      .then((data) => setReleases(Array.isArray(data) ? data : []))
+      .catch(() => setReleases([]))
+      .finally(() => setLoading(false));
+  }, []);
   return (
     <>
-      <header className="docs-header">
-        <a className="brand" href="/">
-          <span><img src="/logo.svg" alt="" /></span>
-          <strong>DASHLAB+</strong>
-          <small>RELEASES</small>
-        </a>
-        <nav className="docs-header-nav" aria-label={text('Navegação principal', 'Main navigation')}>
-          <a href="/">{text('Início', 'Home')}</a>
-          <a href="/docs/">{text('Documentação', 'Documentation')}</a>
-          <a href="/releases/">Releases</a>
-        </nav>
-        <SiteTools language={language} theme={theme} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
-        <a href="https://github.com/ferforastieri/dashlab/releases">GitHub ↗</a>
-      </header>
+      <PublicHeader compact sectionLabel="RELEASES" language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
       <main className="docs-content releases-page">
         <div className="docs-hero">
           <p className="eyebrow"><span /> RELEASES</p>
@@ -33,7 +31,22 @@ export function ReleasesPage() {
           <p>{text('Cada publicação na branch principal gera uma nova imagem no GHCR e um release no GitHub. Consulte as notas completas no repositório.', 'Every publication on the main branch creates a new GHCR image and a GitHub release. Read the complete notes in the repository.')}</p>
           <a className="button primary" href="https://github.com/ferforastieri/dashlab/releases">{text('Ver releases no GitHub', 'View GitHub releases')} <span>↗</span></a>
         </section>
+        <section className="release-list-section">
+          <p className="doc-index">HISTORY</p>
+          <h2>{text('Histórico de versões.', 'Version history.')}</h2>
+          {loading && <p>{text('Carregando releases…', 'Loading releases…')}</p>}
+          {!loading && releases.length === 0 && <p>{text('Não foi possível carregar a lista agora. Consulte os releases diretamente no GitHub.', 'The list could not be loaded right now. Check the releases directly on GitHub.')}</p>}
+          <div className="release-list">
+            {releases.map((release) => <article className="release-card" key={release.tag_name}>
+              <div><span className="release-tag">{release.tag_name}</span><time dateTime={release.published_at}>{new Date(release.published_at).toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}</time></div>
+              <h3>{release.name || release.tag_name}</h3>
+              <p>{(release.body || text('Release publicado automaticamente pela pipeline.', 'Release published automatically by the pipeline.')).slice(0, 280)}</p>
+              <a href={release.html_url}>{text('Ver detalhes', 'View details')} ↗</a>
+            </article>)}
+          </div>
+        </section>
       </main>
+      <PublicFooter language={language} text={text} />
     </>
   );
 }

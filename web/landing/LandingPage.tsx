@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { SiteTools, useSitePreferences } from './shared/SiteTools';
+import { useSitePreferences } from './shared/SiteTools';
+import { PublicFooter, PublicHeader } from './shared/SiteChrome';
 
 const installCommand = 'curl -fsSL https://dashlabplus.vercel.app/install.sh | sh';
 
@@ -53,17 +54,8 @@ export function LandingPage() {
     pt: 'DashLab+ — seu homelab, do seu jeito',
     en: 'DashLab+ — your homelab, your way',
   });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [copied, setCopied] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   useEffect(() => {
     const nodes = document.querySelectorAll<HTMLElement>('.reveal');
@@ -103,8 +95,6 @@ export function LandingPage() {
     window.setTimeout(() => setCopied(false), 1600);
   }
 
-  const closeMenu = () => setMenuOpen(false);
-
   return (
     <>
       <div className="signal-field" aria-hidden="true">
@@ -112,51 +102,7 @@ export function LandingPage() {
         <i />
         <i />
       </div>
-      <header className={`site-header ${scrolled ? 'is-scrolled' : ''}`} data-header>
-        <a className="brand" href="#inicio" aria-label="DashLab+, início" onClick={closeMenu}>
-          <span>
-            <img src="/logo.svg" alt="" />
-          </span>
-          <strong>DASHLAB+</strong>
-          <small>PERSONAL NODE</small>
-        </a>
-        <button
-          className="menu-button"
-          type="button"
-          aria-expanded={menuOpen}
-          aria-label={text('Abrir menu', 'Open menu')}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <span />
-          <span />
-        </button>
-        <nav
-          className={menuOpen ? 'is-open' : ''}
-          aria-label={text('Navegação principal', 'Main navigation')}
-        >
-          <a href="#recursos" onClick={closeMenu}>
-            {text('Recursos', 'Features')}
-          </a>
-          <a href="#arquitetura" onClick={closeMenu}>
-            {text('Arquitetura', 'Architecture')}
-          </a>
-          <a href="#instalacao" onClick={closeMenu}>
-            {text('Instalação', 'Installation')}
-          </a>
-          <a href="/docs/">{text('Documentação', 'Documentation')}</a>
-          <a href="/releases/">Releases</a>
-          <a href="https://github.com/ferforastieri/dashlab">GitHub</a>
-        </nav>
-        <SiteTools
-          language={language}
-          theme={theme}
-          toggleLanguage={toggleLanguage}
-          toggleTheme={toggleTheme}
-        />
-        <a className="header-cta" href="#instalacao">
-          {text('Ver instalação', 'See installation')} <span>→</span>
-        </a>
-      </header>
+      <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
 
       <main>
         <section className="hero" id="inicio">
@@ -531,23 +477,7 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="site-footer">
-        <a className="brand footer-brand" href="#inicio">
-          <span>
-            <img src="/logo.svg" alt="" />
-          </span>
-          <strong>DASHLAB+</strong>
-          <small>PERSONAL NODE</small>
-        </a>
-        <p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p>
-        <nav>
-          <a href="/docs/">{text('Documentação', 'Documentation')}</a>
-          <a href="/releases/">{text('Releases', 'Releases')}</a>
-          <a href="https://github.com/ferforastieri/dashlab">GitHub</a>
-          <a href="#inicio">{text('Voltar ao topo ↑', 'Back to top ↑')}</a>
-        </nav>
-        <small>© {new Date().getFullYear()} DashLab+ · Self-hosted</small>
-      </footer>
+      <PublicFooter language={language} text={text} />
     </>
   );
 }

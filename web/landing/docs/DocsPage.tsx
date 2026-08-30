@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
-import { SiteTools, useSitePreferences } from '../shared/SiteTools';
+import { useSitePreferences } from '../shared/SiteTools';
+import { PublicFooter, PublicHeader } from '../shared/SiteChrome';
 
 const installCommand = 'curl -fsSL https://dashlabplus.vercel.app/install.sh | sh';
 
@@ -40,27 +41,7 @@ export function DocsPage() {
 
   return (
     <>
-      <header className="docs-header">
-        <a className="brand" href="/">
-          <span>
-            <img src="/logo.svg" alt="" />
-          </span>
-          <strong>DASHLAB+</strong>
-          <small>DOCUMENTATION</small>
-        </a>
-        <nav className="docs-header-nav" aria-label={text('Navegação principal', 'Main navigation')}>
-          <a href="/">{text('Início', 'Home')}</a>
-          <a href="/docs/">{text('Documentação', 'Documentation')}</a>
-          <a href="/releases/">Releases</a>
-        </nav>
-        <SiteTools
-          language={language}
-          theme={theme}
-          toggleLanguage={toggleLanguage}
-          toggleTheme={toggleTheme}
-        />
-        <a href="https://github.com/ferforastieri/dashlab">GitHub ↗</a>
-      </header>
+      <PublicHeader compact language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
 
       <div className="docs-layout">
         <aside className="docs-sidebar">
@@ -540,12 +521,7 @@ docker start dashlab-plus`}</code>
             </p>
           </section>
 
-          <footer className="docs-footer">
-            <p>
-              {text('DashLab+ · documentação single-user', 'DashLab+ · single-user documentation')}
-            </p>
-            <a href="/">{text('← Voltar para a apresentação', '← Back to the presentation')}</a>
-          </footer>
+          <PublicFooter compact language={language} text={text} />
         </main>
       </div>
     </>
