@@ -7,6 +7,7 @@ INSTALL_DIR="${DASHLAB_PLUS_DIR:-${HOME:-.}/.dashlab-plus}"
 COMPOSE_FILE="$INSTALL_DIR/docker-compose.yml"
 ENV_FILE="$INSTALL_DIR/.env"
 TEMP_COMPOSE="$INSTALL_DIR/.docker-compose.yml.$$"
+UPDATER_DIR="$INSTALL_DIR/updater"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker não encontrado. Instale o Docker Engine antes de continuar." >&2
@@ -22,10 +23,20 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 mkdir -p "$INSTALL_DIR"
-trap 'rm -f "$TEMP_COMPOSE"' EXIT HUP INT TERM
+trap 'rm -f "$TEMP_COMPOSE" "$UPDATER_DIR"/.*.$$' EXIT HUP INT TERM
 curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 60 \
   "$REPOSITORY/docker-compose.yml" -o "$TEMP_COMPOSE"
 mv "$TEMP_COMPOSE" "$COMPOSE_FILE"
+
+# The updater is built locally by Compose; download its complete source tree
+# alongside the Compose file instead of assuming it exists on the host.
+mkdir -p "$UPDATER_DIR"
+for file in Dockerfile go.mod main.go; do
+  temp_file="$UPDATER_DIR/.$file.$$"
+  curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 60 \
+    "$REPOSITORY/updater/$file" -o "$temp_file"
+  mv "$temp_file" "$UPDATER_DIR/$file"
+done
 
 if [ ! -f "$ENV_FILE" ]; then
   umask 077
