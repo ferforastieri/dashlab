@@ -153,6 +153,26 @@ export function registerPwa() {
         .catch(() => undefined);
     }
 
+    // Remove shell caches created by older workers. Those caches contained the
+    // complete HTML shell and could make a normal reload alternate between two
+    // deployments while Ctrl+F5 appeared correct.
+    try {
+      const resetKey = 'dashlab-plus-cache-reset-v2';
+      if (!sessionStorage.getItem(resetKey)) {
+        const keys = await caches.keys();
+        const legacy = keys.filter((key) => key.startsWith('dashlab-plus-shell-'));
+        if (legacy.length) {
+          await Promise.all(legacy.map((key) => caches.delete(key)));
+          sessionStorage.setItem(resetKey, '1');
+          window.location.reload();
+          return;
+        }
+        sessionStorage.setItem(resetKey, '1');
+      }
+    } catch {
+      // Cache APIs can be unavailable in private browsing; normal update flow remains active.
+    }
+
     let checking = false;
     const checkForUpdate = async () => {
       if (checking) return;
