@@ -38,7 +38,7 @@ for file in Dockerfile go.mod main.go; do
 done
 
 docker compose --project-directory "$INSTALL_DIR" -f "$COMPOSE_FILE" pull
-docker compose --project-directory "$INSTALL_DIR" -f "$COMPOSE_FILE" up -d --remove-orphans
+docker compose --project-directory "$INSTALL_DIR" -f "$COMPOSE_FILE" up -d --build --remove-orphans
 
 echo "DashLab+ está disponível em http://localhost:3000"
 echo "Configuração: $INSTALL_DIR"

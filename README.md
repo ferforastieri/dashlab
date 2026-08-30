@@ -63,7 +63,7 @@ curl -fsSL https://dashlabplus.vercel.app/install.sh | sh
 
 Para uma instalação reprodutível, baixe o instalador de uma release e execute com `DASHLAB_RELEASE_REF=refs/tags/vX.Y.Z`.
 
-O instalador cria `~/.dashlab-plus`, gera o token interno do updater e inicia a aplicação. Acesse `http://IP-DO-HOST:3000`. Executar o comando novamente atualiza a instalação sem remover o volume de dados.
+O instalador cria `~/.dashlab-plus`, prepara o updater interno e inicia a aplicação. Acesse `http://IP-DO-HOST:3000`. Executar o comando novamente atualiza a instalação sem remover o volume de dados.
 
 Execução manual:
 
@@ -119,7 +119,7 @@ O Lab consulta a versão pública e mostra uma notificação quando há atualiza
 
 ## Segurança operacional
 
-A API exige autenticação Basic e rejeita requisições mutáveis de origens diferentes. URLs de status e Prometheus que apontam para redes privadas precisam estar em `OUTBOUND_ALLOWLIST`; destinos locais não são aceitos por padrão. Faça backup periódico do volume `dashlab_plus_data` e mantenha o `.env` com permissão `0600`.
+A API exige autenticação e rejeita requisições mutáveis de origens diferentes. Configure os destinos de status e Prometheus em **Personalizar → Integrações**. Faça backup periódico do volume `dashlab_plus_data`.
 
 ## Licença
 

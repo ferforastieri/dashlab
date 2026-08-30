@@ -493,7 +493,7 @@ docker start dashlab-plus`}</code>
                 )}
               </li>
               <li>
-                {text('Defina OUTBOUND_ALLOWLIST para hosts privados usados pelo Prometheus e pelos checks de status.', 'Set OUTBOUND_ALLOWLIST for private hosts used by Prometheus and status checks.')}
+                {text('Configure os destinos do Prometheus e dos checks de status em Personalizar → Integrações.', 'Configure Prometheus and status-check destinations in Customize → Integrations.')}
               </li>
               <li>
                 {text('Não publique Prometheus ou SQLite.', 'Do not publish Prometheus or SQLite.')}
@@ -506,8 +506,8 @@ docker start dashlab-plus`}</code>
               </li>
               <li>
                 {text(
-                  'O atualizador interno usa o socket do Docker e um token local; mantenha o arquivo ~/.dashlab-plus/.env protegido.',
-                  'The internal updater uses the Docker socket and a local token; keep ~/.dashlab-plus/.env protected.',
+                  'O atualizador interno usa o socket do Docker; mantenha a porta 3000 restrita à LAN/VPN ou ao proxy reverso.',
+                  'The internal updater uses the Docker socket; keep port 3000 restricted to your LAN/VPN or reverse proxy.',
                 )}
               </li>
               <li>
