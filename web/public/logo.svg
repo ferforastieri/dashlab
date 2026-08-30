@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">DashLab+</title>
-  <desc id="desc">Sinal de mais laranja em uma moldura escura.</desc>
+  <desc id="desc">Quatro módulos coloridos formando um sinal de mais.</desc>
   <defs>
     <style>
       :root { --logo-dark: #0B0F12; --logo-light: #F7F4ED; --logo-accent: #FF7A1A; }
@@ -8,8 +8,15 @@
         :root { --logo-dark: #111719; --logo-light: #111719; --logo-accent: #D95F0B; }
       }
     </style>
+    <mask id="plus-cutout">
+      <rect width="512" height="512" fill="#fff"/>
+      <path fill="#000" d="M232 164h48v68h68v48h-68v68h-48v-68h-68v-48h68z"/>
+    </mask>
   </defs>
-  <rect x="48" y="48" width="416" height="416" rx="72" fill="var(--logo-dark, #0B0F12)" stroke="var(--logo-accent, #FF7A1A)" stroke-width="12"/>
-  <path fill="var(--logo-accent, #FF7A1A)" d="M214 92h84v120h122v84H298v124h-84V296H92v-84h122z"/>
-  <path fill="var(--logo-light, #F7F4ED)" opacity=".9" d="M92 92h72v18H92zM348 402h72v18h-72z"/>
+  <g mask="url(#plus-cutout)">
+    <rect x="48" y="40" width="216" height="216" rx="38" fill="var(--logo-accent)" stroke="var(--logo-dark)" stroke-width="6"/>
+    <path fill="var(--logo-light)" stroke="var(--logo-dark)" stroke-width="6" d="M248 40h78c76 0 138 62 138 138v78H248z"/>
+    <path fill="var(--logo-light)" stroke="var(--logo-dark)" stroke-width="6" d="M48 256h216v110l-98 106H86c-21 0-38-17-38-38z"/>
+    <path fill="var(--logo-accent)" stroke="var(--logo-dark)" stroke-width="6" d="M248 256h216v70c0 81-65 146-146 146H210l38-41z"/>
+  </g>
 </svg>
