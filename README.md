@@ -1,6 +1,6 @@
 # DashLab+
 
-Dashboard pessoal, single-user e self-hosted para organizar serviços, atalhos e métricas de um homelab.
+Dashboard self-hosted multiusuário para organizar serviços, atalhos e métricas de um homelab.
 
 Site público: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
 

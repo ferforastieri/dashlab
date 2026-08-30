@@ -28,10 +28,10 @@ const features = [
   ],
   [
     '◇',
-    'Identidade própria',
-    'Your own identity',
-    'Wallpaper, logo, favicon, cores, opacidade, tipografia e comportamento mobile configurados na interface.',
-    'Configure wallpaper, logo, favicon, colors, opacity, typography, and mobile behavior from the interface.',
+    'Identidade e acesso',
+    'Identity and access',
+    'Cada instalação cria um administrador, que pode convidar usuários comuns. Branding, permissões e preferências ficam no seu banco local.',
+    'Each installation creates an administrator who can add regular users. Branding, permissions, and preferences stay in your local database.',
   ],
   [
     '▣',
@@ -108,7 +108,7 @@ export function LandingPage() {
         <section className="hero" id="inicio">
           <div className="hero-copy reveal">
             <p className="eyebrow">
-              <span /> SINGLE-USER · SELF-HOSTED · OPEN SOURCE
+              <span /> MULTI-USER · SELF-HOSTED · OPEN SOURCE
             </p>
             <h1>
               {text('Seu homelab,', 'Your homelab,')}
@@ -297,8 +297,8 @@ export function LandingPage() {
             </h2>
             <p>
               {text(
-                'Construído para um proprietário, vários dispositivos e um homelab de verdade.',
-                'Built for one owner, multiple devices, and a real homelab.',
+                'Construído para sua equipe, vários dispositivos e um homelab de verdade.',
+                'Built for your team, multiple devices, and a real homelab.',
               )}
             </p>
           </header>
@@ -324,8 +324,8 @@ export function LandingPage() {
             </h2>
             <p>
               {text(
-                'Sem autenticação artificial, ORM ou banco remoto. O limite de confiança é sua própria rede.',
-                'No artificial authentication, ORM, or remote database. Your own network is the trust boundary.',
+                'Autenticação local, sem ORM ou banco remoto. Você define os usuários e o limite de confiança da sua rede.',
+                'Local authentication, with no ORM or remote database. You define the users and your network trust boundary.',
               )}
             </p>
             <a className="text-link" href="/docs/#arquitetura">
