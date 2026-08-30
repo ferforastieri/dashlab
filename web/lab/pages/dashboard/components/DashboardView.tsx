@@ -83,7 +83,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     metrics = metricsQuery.data || {},
     history = historyQuery.data || {},
     statuses = Object.fromEntries(((statusesQuery.data || []) as any[]).map((x) => [x.id, x]));
-  const [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | null>(null),
+  const [modal, setModal] = useState<'app' | 'widget' | 'section' | 'element' | 'brand' | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
@@ -150,7 +150,23 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
   }, [isMobile, dash]);
 
   async function updateLayout(id: string, values: Partial<Pick<Layout, 'x' | 'y' | 'w' | 'h'>>) {
-    const next = layouts.map((layout) => (layout.id === id ? { ...layout, ...values } : layout));
+    if (!dash) return;
+    const current = layouts.find((layout) => layout.id === id);
+    if (!current) return;
+    const moved = { ...current, ...values };
+    let next = layouts.map((layout) => (layout.id === id ? moved : layout));
+    if (current.kind === 'SECTION' && current.sectionId) {
+      const dx = moved.x - current.x;
+      const dy = moved.y - current.y;
+      const sectionAppIds = new Set(
+        dash.applications.filter((app) => app.sectionId === current.sectionId).map((app) => app.id),
+      );
+      next = next.map((layout) =>
+        layout.kind === 'APPLICATION' && layout.applicationId && sectionAppIds.has(layout.applicationId)
+          ? { ...layout, x: layout.x + dx, y: layout.y + dy }
+          : layout,
+      );
+    }
     setLayouts(next);
     await saveLayout.mutateAsync(
       next.map(({ kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h }) => ({
@@ -166,6 +182,25 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       })),
     );
   }
+  async function addDashboardElement(elementKey: Layout['elementKey']) {
+    if (!elementKey) return;
+    const elements = layouts.filter((layout) => layout.kind === 'DASHBOARD_ELEMENT');
+    const index = elements.length;
+    const nextLayout: Layout = {
+      id: `element-${elementKey.toLowerCase()}-${Date.now()}`,
+      kind: 'DASHBOARD_ELEMENT',
+      elementKey,
+      order: layouts.length ? Math.max(...layouts.map((layout) => layout.order)) + 1 : 1,
+      x: 24 + (index % 4) * 240,
+      y: 24 + Math.floor(index / 4) * 88,
+      w: elementKey === 'SEARCH' ? 360 : elementKey === 'FOOTER' ? 760 : 180,
+      h: elementKey === 'FOOTER' ? 48 : 64,
+    };
+    const next = [...layouts, nextLayout];
+    setLayouts(next);
+    await saveLayout.mutateAsync(next.map(({ kind, applicationId, widgetId, sectionId, elementKey: key, x, y, w, h }) => ({ kind, applicationId, widgetId, sectionId, elementKey: key, x, y, w, h })));
+    await dashboardQuery.refetch();
+  }
   async function remove(kind: string, id: string) {
     await (kind === 'applications'
       ? deleteApp.mutateAsync(id)
@@ -173,6 +208,13 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
         ? deleteSection.mutateAsync(id)
         : deleteWidget.mutateAsync(id));
     setMenu(null);
+  }
+  async function removeDashboardElement(id: string) {
+    const next = layouts.filter((layout) => layout.id !== id);
+    setLayouts(next);
+    await saveLayout.mutateAsync(next.map(({ kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h }) => ({ kind, applicationId, widgetId, sectionId, elementKey, x, y, w, h })));
+    await dashboardQuery.refetch();
+    setSelectedLayoutId(null);
   }
   if (!dash) return null;
   const branding = { ...defaultBranding, ...(dash.branding || {}) };
@@ -273,7 +315,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       return (
         <button
           className="chrome-add-button"
-          onClick={() => setModal('app')}
+          onClick={() => setModal('element')}
           aria-label="Adicionar aplicativo"
         >
           <Plus />
@@ -330,6 +372,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             )
               return null;
             if (!app && !widget && !dashboardSection && !dashboardElement) return null;
+            if (app?.sectionId) return null;
             const display = displayLayout(layout);
             return (
               <Rnd
@@ -364,7 +407,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                   selectedLayoutId === layout.id &&
                   !dashboardSection?.collapsed
                 }
-                dragHandleClassName={dashboardElement ? 'dashboard-element' : undefined}
+                dragHandleClassName="canvas-drag-handle"
                 resizeHandleClasses={
                   layoutEdit && !isMobile && selectedLayoutId === layout.id
                     ? resizeHandleClasses
@@ -394,17 +437,34 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                     className={`dashboard-element dashboard-element-${dashboardElement.toLowerCase()}`}
                     onClickCapture={(event) => {
                       if (!layoutEdit) return;
+                      if ((event.target as HTMLElement).closest('button')) return;
                       event.preventDefault();
                       event.stopPropagation();
                     }}
                   >
-                    {layoutEdit && <div className="chrome-drag-handle" aria-hidden="true" />}
+                    {layoutEdit && <div className="chrome-drag-handle canvas-drag-handle" aria-hidden="true" />}
+                    {layoutEdit && (
+                      <div className="dashboard-element-controls">
+                        <button
+                          type="button"
+                          title="Remover elemento"
+                          aria-label="Remover elemento"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void removeDashboardElement(layout.id);
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                     {renderDashboardElement(dashboardElement)}
                   </div>
                 ) : dashboardSection ? (
                   <div
                     className={`section-card ${dashboardSection.collapsed ? 'is-collapsed' : ''}`}
                   >
+                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover seção" />}
                     <header className="section-header">
                       <h3>{dashboardSection.name}</h3>
                       <div className="section-actions">
@@ -485,6 +545,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                   </div>
                 ) : app ? (
                   <div className={cn('app-wrap')}>
+                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover aplicativo" />}
                     <a
                       className="app-icon"
                       href={app.url}
@@ -534,19 +595,22 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                     )}
                   </div>
                 ) : (
-                  <WidgetCard
-                    widget={widget!}
-                    metrics={metrics}
-                    history={history}
-                    onEdit={() => {
-                      setEditing(widget!);
-                      setModal('widget');
-                    }}
-                    editingLayout={layoutEdit}
-                    onDelete={() =>
-                      setConfirmDelete({ kind: 'widgets', id: widget!.id, name: widget!.title })
-                    }
-                  />
+                  <>
+                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover widget" />}
+                    <WidgetCard
+                      widget={widget!}
+                      metrics={metrics}
+                      history={history}
+                      onEdit={() => {
+                        setEditing(widget!);
+                        setModal('widget');
+                      }}
+                      editingLayout={layoutEdit}
+                      onDelete={() =>
+                        setConfirmDelete({ kind: 'widgets', id: widget!.id, name: widget!.title })
+                      }
+                    />
+                  </>
                 )}
               </Rnd>
             );
@@ -593,7 +657,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           <div className="flex shrink-0 gap-1">
             {mobileLayout === 'GRID' && (
               <button
-                onClick={() => setModal('app')}
+                onClick={() => setModal('element')}
                 className="grid h-10 w-10 place-items-center rounded-[var(--element-radius)] text-[var(--muted)]"
                 aria-label="Adicionar aplicativo"
               >
@@ -684,7 +748,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  setModal('app');
+                  setModal('element');
                 }}
                 className="rounded-[var(--element-radius)] border border-[var(--border-color)] bg-transparent p-3 text-sm"
               >
@@ -716,7 +780,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             Apps
           </button>
           <button
-            onClick={() => setModal('app')}
+            onClick={() => setModal('element')}
             className="grid min-h-12 place-items-center gap-0.5 text-xs text-[var(--muted)]"
           >
             <Plus size={18} />
@@ -736,6 +800,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           type={modal}
           dash={dash}
           editing={editing}
+          onAddElement={addDashboardElement}
           close={() => setModal(null)}
           done={() => {
             setModal(null);

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { AppWindow, Grid2X2, Layers3, PanelBottom, PanelLeft, X } from 'lucide-react';
+import { AppWindow, Clock3, CloudSun, Grid2X2, Layers3, PanelBottom, PanelLeft, PanelBottom as FooterIcon, Search, SlidersHorizontal, Plus, X } from 'lucide-react';
 import { useCreateApplicationMutation } from '../../../api/applications/useCreateApplicationMutation';
 import { useUpdateApplicationMutation } from '../../../api/applications/useUpdateApplicationMutation';
 import { useCreateWidgetMutation } from '../../../api/widgets/useCreateWidgetMutation';
@@ -14,6 +14,7 @@ import {
   DashboardData as Dash,
   DashboardSection as Section,
   DashboardWidget as Widget,
+  DashboardLayout as Layout,
 } from '../dashboard.types';
 import { dashboardClassNames as ui, dashboardCn as cn } from '../dashboard.styles';
 import { apiClient } from '../../../api/core/apiClient';
@@ -39,12 +40,14 @@ export function DashboardEditor({
   type,
   dash,
   editing,
+  onAddElement,
   close,
   done,
 }: {
   type: string;
   dash: Dash;
   editing: AppItem | Widget | Section | null;
+  onAddElement?: (elementKey: Layout['elementKey']) => Promise<void> | void;
   close: () => void;
   done: () => void;
 }) {
@@ -75,6 +78,7 @@ export function DashboardEditor({
       targetLabels: '',
       networkLabels: 'device!="lo"',
       diskLabels: 'device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"',
+      elementKey: 'CLOCK',
     });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
@@ -91,6 +95,8 @@ export function DashboardEditor({
         ? `${editing ? 'Editar' : 'Novo'} aplicativo`
         : mode === 'section'
           ? `${editing ? 'Editar' : 'Nova'} seção`
+          : mode === 'element'
+            ? 'Adicionar elemento'
           : `${editing ? 'Editar' : 'Novo'} widget`;
   async function save(e: FormEvent) {
     e.preventDefault();
@@ -152,6 +158,8 @@ export function DashboardEditor({
           networkLabels: form.networkLabels || '',
           diskLabels: form.diskLabels || '',
         });
+      } else if (mode === 'element') {
+        await onAddElement?.(form.elementKey as Layout['elementKey']);
       } else return;
       done();
     } catch {
@@ -191,7 +199,41 @@ export function DashboardEditor({
             >
               <Layers3 aria-hidden="true" /> Seção
             </button>
+            <button
+              type="button"
+              className={mode === 'element' ? ui.active : ''}
+              onClick={() => setMode('element')}
+            >
+              <SlidersHorizontal aria-hidden="true" /> Elemento
+            </button>
           </div>
+        )}
+        {mode === 'element' && (
+          <fieldset className="element-picker">
+            <legend>Elemento do dashboard</legend>
+            <p>Escolha um controle para adicionar. Depois, use “Editar organização” para mover e redimensionar.</p>
+            <div className="element-picker-grid">
+              {([
+                ['BRAND', 'Marca', AppWindow],
+                ['CLOCK', 'Relógio', Clock3],
+                ['WEATHER', 'Clima', CloudSun],
+                ['SEARCH', 'Pesquisa', Search],
+                ['ACTIONS', 'Controles', SlidersHorizontal],
+                ['ADD', 'Adicionar', Plus],
+                ['FOOTER', 'Rodapé', FooterIcon],
+              ] as const).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={form.elementKey === value ? 'is-selected' : ''}
+                  onClick={() => setForm({ ...form, elementKey: value })}
+                >
+                  <Icon aria-hidden="true" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
         )}
         {mode === 'app' && (
           <>

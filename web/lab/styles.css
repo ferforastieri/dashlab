@@ -312,7 +312,7 @@ a {
   width: 100%;
   max-width: 100%;
   overflow-x: clip;
-  min-height: 620px;
+  min-height: max(620px, calc(var(--app-viewport-height) - 112px));
   transition: background-color 140ms ease;
 }
 .free-canvas.is-editing {
@@ -354,9 +354,23 @@ a {
 }
 .canvas-item.is-editing.is-selected {
   z-index: 20;
-  cursor: move !important;
+  cursor: default !important;
   outline: 1px solid var(--accent);
   outline-offset: 3px;
+}
+.canvas-drag-handle {
+  position: absolute;
+  z-index: 55;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 10px;
+  border-top: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  cursor: grab !important;
+  pointer-events: auto;
+}
+.canvas-drag-handle:active {
+  cursor: grabbing !important;
 }
 .application-canvas-item.is-editing.is-selected {
   outline: 0;
@@ -382,6 +396,37 @@ a {
   height: 100%;
   min-width: 0;
   overflow: hidden;
+}
+.dashboard-element-controls {
+  position: absolute;
+  z-index: 60;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+.dashboard-element:hover .dashboard-element-controls,
+.canvas-item.is-selected .dashboard-element-controls {
+  opacity: 1;
+  pointer-events: auto;
+}
+.dashboard-element-controls button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--element-radius);
+  background: var(--panel-color);
+  color: var(--text-color);
+  cursor: pointer;
+}
+.dashboard-element-controls button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .chrome-drag-handle {
   position: absolute;
@@ -586,6 +631,9 @@ a {
 }
 .application-canvas-item .app-wrap > a,
 .application-canvas-item .app-wrap > button {
+  pointer-events: auto;
+}
+.application-canvas-item .app-wrap > .canvas-drag-handle {
   pointer-events: auto;
 }
 .app-wrap:hover .app-icon {
@@ -1255,6 +1303,50 @@ a {
   width: 16px;
   height: 16px;
 }
+.element-picker {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+}
+.element-picker legend {
+  font-size: 14px;
+  font-weight: 600;
+}
+.element-picker p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.element-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.element-picker-grid button {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--element-radius);
+  background: var(--panel-color);
+  padding: 12px;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+}
+.element-picker-grid button:hover,
+.element-picker-grid button.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel-color));
+  color: var(--text-color);
+}
+.element-picker-grid svg {
+  flex: none;
+  color: var(--accent);
+}
 .button-primary,
 .button-secondary {
   display: inline-flex;
@@ -1829,6 +1921,9 @@ a {
       max(18px, env(safe-area-inset-left));
     box-shadow: 0 -18px 60px color-mix(in srgb, var(--surface-bg) 72%, transparent);
     animation: sheet-enter 180ms ease-out both;
+  }
+  .modal-panel.is-expanded {
+    max-height: min(96dvh, calc(var(--app-viewport-height) - max(6px, env(safe-area-inset-top))));
   }
   .modal-panel::before {
     content: '';

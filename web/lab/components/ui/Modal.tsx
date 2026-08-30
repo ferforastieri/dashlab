@@ -1,4 +1,4 @@
-import { PropsWithChildren, useEffect, useRef } from 'react';
+import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 
 type ModalProps = PropsWithChildren<{
   onClose?: () => void;
@@ -8,6 +8,7 @@ type ModalProps = PropsWithChildren<{
 
 export function Modal({ children, onClose, className = '', labelledBy }: ModalProps) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -27,7 +28,7 @@ export function Modal({ children, onClose, className = '', labelledBy }: ModalPr
       onMouseDown={(event) => event.target === event.currentTarget && onClose?.()}
     >
       <section
-        className={`modal-panel ${className}`.trim()}
+        className={`modal-panel ${expanded ? 'is-expanded' : ''} ${className}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
@@ -40,7 +41,11 @@ export function Modal({ children, onClose, className = '', labelledBy }: ModalPr
           touchStart.current = null;
           if (!start) return;
           const touch = event.changedTouches[0];
-          if (touch.clientY - start.y > 90 && Math.abs(touch.clientY - start.y) > Math.abs(touch.clientX - start.x)) onClose?.();
+          const dy = touch.clientY - start.y;
+          if (Math.abs(dy) < 70 || Math.abs(dy) <= Math.abs(touch.clientX - start.x)) return;
+          if (dy < 0) setExpanded(true);
+          else if (expanded) setExpanded(false);
+          else onClose?.();
         }}
       >
         {children}
