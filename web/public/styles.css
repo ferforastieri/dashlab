@@ -239,7 +239,9 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
 }
 
 @media(min-width:1051px){
-  .hero{align-items:start;padding-top:96px;padding-bottom:120px}
-  .hero-copy{align-self:start;padding-top:18px}
-  .dashboard-stage{align-self:start;place-items:start center}
+  .hero{align-items:center;padding-top:112px;padding-bottom:112px}
+  .hero-copy{display:grid;align-self:center;align-content:center;gap:34px;padding-top:0}
+  .hero-copy .hero-intro,.hero-copy .hero-actions{margin-top:0}
+  .hero-proof{position:static;transform:none;width:100%;margin-top:0}
+  .dashboard-stage{align-self:center;place-items:center}
 }
