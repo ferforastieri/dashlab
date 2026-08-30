@@ -2,10 +2,6 @@ package app
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,12 +23,10 @@ type Server struct {
 	store             *Store
 	integrations      *Integrations
 	logger            *slog.Logger
-	updateURL         string
-	updateToken       string
-	authUser          string
-	authPassword      string
 	outboundAllowlist map[string]struct{}
 	limiter           *requestLimiter
+	sessions          map[string]authIdentity
+	sessionsMu        sync.RWMutex
 }
 
 type rateWindow struct {
@@ -77,8 +71,12 @@ func Run() {
 		os.Exit(1)
 	}
 	defer store.Close()
+	if err := store.ensureUsers(context.Background()); err != nil {
+		logger.Error("initialize users", "error", err)
+		os.Exit(1)
+	}
 
-	outboundAllowlist := parseAllowlist(os.Getenv("OUTBOUND_ALLOWLIST"))
+	outboundAllowlist := map[string]struct{}{"*": {}}
 	integrations := NewIntegrations()
 	integrations.allowlist = outboundAllowlist
 	if settings, settingsErr := store.Settings(context.Background()); settingsErr == nil {
@@ -88,15 +86,12 @@ func Run() {
 		store:             store,
 		integrations:      integrations,
 		logger:            logger,
-		updateURL:         strings.TrimRight(env("UPDATE_SERVICE_URL", ""), "/"),
-		updateToken:       strings.TrimSpace(env("UPDATE_TOKEN", "")),
-		authUser:          env("DASHLAB_AUTH_USER", "dashlab"),
-		authPassword:      strings.TrimSpace(os.Getenv("DASHLAB_AUTH_PASSWORD")),
 		outboundAllowlist: outboundAllowlist,
 		limiter:           newRequestLimiter(),
+		sessions:          make(map[string]authIdentity),
 	}
 	httpServer := &http.Server{
-		Addr:              ":" + env("PORT", "3001"),
+		Addr:              ":" + env("PORT", "3000"),
 		Handler:           server.routes(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -124,6 +119,12 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/version", s.version)
+	mux.HandleFunc("GET /api/auth/status", s.authStatus)
+	mux.HandleFunc("POST /api/auth/bootstrap", s.bootstrap)
+	mux.HandleFunc("POST /api/auth/login", s.login)
+	mux.HandleFunc("GET /api/auth/users", s.listUsers)
+	mux.HandleFunc("POST /api/auth/users", s.createUser)
+	mux.HandleFunc("DELETE /api/auth/users/{id}", s.deleteUser)
 	mux.HandleFunc("GET /api/settings", s.settings)
 	mux.HandleFunc("PUT /api/settings", s.saveSettings)
 	mux.HandleFunc("POST /api/update", s.update)
@@ -157,39 +158,38 @@ func (s *Server) routes() http.Handler {
 // Health remains public so Docker can perform its health check.
 func (s *Server) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/api/health" || r.URL.Path == "/api/version" {
+		if !strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/api/health" || r.URL.Path == "/api/version" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/bootstrap" || r.URL.Path == "/api/auth/login" {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if cookie, err := r.Cookie("dashlab_session"); err == nil && s.validSession(cookie.Value) {
-			next.ServeHTTP(w, r)
-			return
+		if cookie, err := r.Cookie("dashlab_session"); err == nil {
+			s.sessionsMu.RLock()
+			identity, valid := s.sessions[cookie.Value]
+			s.sessionsMu.RUnlock()
+			if valid {
+				r = r.WithContext(context.WithValue(r.Context(), authContextKey{}, identity))
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 		user, password, ok := r.BasicAuth()
-		if !ok || s.authPassword == "" || subtle.ConstantTimeCompare([]byte(user), []byte(s.authUser)) != 1 || subtle.ConstantTimeCompare([]byte(password), []byte(s.authPassword)) != 1 {
+		identity, valid := authIdentity{}, false
+		if ok {
+			identity, valid = s.store.authenticateUser(r.Context(), user, password)
+		}
+		if !valid {
 			w.Header().Set("WWW-Authenticate", `Basic realm="DashLab+", charset="UTF-8"`)
 			writeError(w, http.StatusUnauthorized, "Autenticação necessária")
 			return
 		}
-		http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: s.sessionToken(), Path: "/", MaxAge: 30 * 24 * 60 * 60, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
+		token := randomSession()
+		s.sessionsMu.Lock()
+		s.sessions[token] = identity
+		s.sessionsMu.Unlock()
+		http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: token, Path: "/", MaxAge: 30 * 24 * 60 * 60, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
+		r = r.WithContext(context.WithValue(r.Context(), authContextKey{}, identity))
 		next.ServeHTTP(w, r)
 	})
-}
-
-func (s *Server) sessionToken() string {
-	mac := hmac.New(sha256.New, []byte(s.authPassword))
-	mac.Write([]byte(s.authUser))
-	return hex.EncodeToString(mac.Sum(nil))
-}
-
-func (s *Server) validSession(value string) bool {
-	expected := s.sessionToken()
-	provided, err := hex.DecodeString(value)
-	if err != nil {
-		return false
-	}
-	actual, err := hex.DecodeString(expected)
-	return err == nil && subtle.ConstantTimeCompare(provided, actual) == 1
 }
 
 func (s *Server) originCheck(next http.Handler) http.Handler {
@@ -211,6 +211,139 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "name": "DashLab+", "storage": "sqlite"})
 }
 
+func (s *Server) authStatus(w http.ResponseWriter, r *http.Request) {
+	users, err := s.store.users(r.Context())
+	if err != nil {
+		s.fail(w, 500, err)
+		return
+	}
+	identity := s.sessionIdentity(r)
+	writeJSON(w, 200, map[string]any{"setup": len(users) == 0, "authenticated": identity.Username != ""})
+}
+func (s *Server) sessionIdentity(r *http.Request) authIdentity {
+	if cookie, err := r.Cookie("dashlab_session"); err == nil {
+		s.sessionsMu.RLock()
+		identity := s.sessions[cookie.Value]
+		s.sessionsMu.RUnlock()
+		return identity
+	}
+	return authIdentity{}
+}
+func (s *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
+	users, err := s.store.users(r.Context())
+	if err != nil {
+		s.fail(w, 500, err)
+		return
+	}
+	if len(users) > 0 {
+		writeError(w, 409, "Administrador já configurado")
+		return
+	}
+	var p struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if !decodeJSON(w, r, &p) {
+		return
+	}
+	user, err := s.store.createUser(r.Context(), p.Username, p.Password, "admin")
+	if err != nil {
+		writeError(w, 400, "Administrador inválido")
+		return
+	}
+	s.startSession(w, r, authIdentity{Username: user.Username, Role: "admin"})
+	writeJSON(w, 201, user)
+}
+func (s *Server) login(w http.ResponseWriter, r *http.Request) {
+	var p struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if !decodeJSON(w, r, &p) {
+		return
+	}
+	identity, ok := s.store.authenticateUser(r.Context(), p.Username, p.Password)
+	if !ok {
+		writeError(w, 401, "Credenciais inválidas")
+		return
+	}
+	s.startSession(w, r, identity)
+	writeJSON(w, 200, map[string]string{"role": identity.Role})
+}
+func (s *Server) startSession(w http.ResponseWriter, r *http.Request, identity authIdentity) {
+	token := randomSession()
+	s.sessionsMu.Lock()
+	s.sessions[token] = identity
+	s.sessionsMu.Unlock()
+	http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: token, Path: "/", MaxAge: 30 * 24 * 60 * 60, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
+}
+
+func currentIdentity(r *http.Request) authIdentity {
+	identity, _ := r.Context().Value(authContextKey{}).(authIdentity)
+	return identity
+}
+func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	if currentIdentity(r).Role != "admin" {
+		writeError(w, http.StatusForbidden, "Permissão de administrador necessária")
+		return false
+	}
+	return true
+}
+func (s *Server) listUsers(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	users, err := s.store.users(r.Context())
+	if err != nil {
+		s.fail(w, 500, err)
+		return
+	}
+	writeJSON(w, 200, users)
+}
+func (s *Server) createUser(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	var payload struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Role     string `json:"role"`
+	}
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	if payload.Role == "" {
+		payload.Role = "user"
+	}
+	user, err := s.store.createUser(r.Context(), payload.Username, payload.Password, payload.Role)
+	if err != nil {
+		writeError(w, 400, "Usuário inválido ou já existente")
+		return
+	}
+	writeJSON(w, 201, user)
+}
+func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	id := r.PathValue("id")
+	identity := currentIdentity(r)
+	var username string
+	if err := s.store.db.QueryRowContext(r.Context(), `SELECT username FROM users WHERE id=?`, id).Scan(&username); err != nil {
+		writeError(w, 404, "Usuário não encontrado")
+		return
+	}
+	if username == identity.Username {
+		writeError(w, 400, "Não é possível remover o usuário atual")
+		return
+	}
+	if _, err := s.store.db.ExecContext(r.Context(), `DELETE FROM users WHERE id=?`, id); err != nil {
+		s.fail(w, 500, err)
+		return
+	}
+	writeJSON(w, 200, messageResponse{OK: true, Message: "Usuário removido com sucesso"})
+}
+
 func (s *Server) version(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, map[string]string{"version": BuildVersion})
@@ -226,6 +359,9 @@ func (s *Server) settings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
 	var payload struct {
 		PrometheusURL string `json:"prometheusUrl"`
 		TargetLabels  string `json:"targetLabels"`
@@ -259,16 +395,14 @@ func (s *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) update(w http.ResponseWriter, r *http.Request) {
-	if s.updateURL == "" || s.updateToken == "" {
-		writeError(w, http.StatusServiceUnavailable, "Atualização automática não está disponível nesta instalação")
+	if !requireAdmin(w, r) {
 		return
 	}
-	request, err := http.NewRequest(http.MethodPost, s.updateURL+"/v1/update", nil)
+	request, err := http.NewRequest(http.MethodPost, "http://dashlab-plus-updater:8080/v1/update", nil)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "Não foi possível iniciar a atualização")
 		return
 	}
-	request.Header.Set("Authorization", "Bearer "+s.updateToken)
 	client := &http.Client{Timeout: 8 * time.Second}
 	go func() {
 		response, err := client.Do(request)
@@ -819,6 +953,9 @@ func outboundURLAllowed(value string, allowlist map[string]struct{}) bool {
 	}
 	host := strings.ToLower(parsed.Hostname())
 	if _, explicitlyAllowed := allowlist[host]; explicitlyAllowed {
+		return true
+	}
+	if _, allAllowed := allowlist["*"]; allAllowed {
 		return true
 	}
 	if host == "localhost" || strings.HasSuffix(host, ".localhost") || strings.HasSuffix(host, ".local") {

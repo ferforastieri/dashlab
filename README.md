@@ -65,13 +65,11 @@ Para uma instalação reprodutível, baixe o instalador de uma release e execute
 
 O instalador cria `~/.dashlab-plus`, gera o token interno do updater e inicia a aplicação. Acesse `http://IP-DO-HOST:3000`. Executar o comando novamente atualiza a instalação sem remover o volume de dados.
 
-Execução manual (defina também as credenciais):
+Execução manual:
 
 ```bash
 docker run -d --name dashlab-plus --restart unless-stopped \
-  -p 127.0.0.1:3000:3000 -v dashlab_plus_data:/data \
-  -e DASHLAB_AUTH_USER=dashlab -e DASHLAB_AUTH_PASSWORD='troque-este-valor' \
-  -e UPDATE_TOKEN='gere-um-token' \
+  -p 0.0.0.0:3000:3000 -v dashlab_plus_data:/data \
   ghcr.io/ferforastieri/dashlab-plus:latest
 ```
 
@@ -79,20 +77,12 @@ docker run -d --name dashlab-plus --restart unless-stopped \
 
 Após iniciar o Lab, abra **Personalizar → Integrações** para informar a URL do Prometheus e os filtros de labels. Esses valores podem ser alterados sem editar o Compose.
 
-As variáveis abaixo continuam disponíveis para automação ou primeiro boot:
+As configurações são definidas no primeiro acesso e persistidas no SQLite:
 
-| Variável | Padrão | Função |
-| --- | --- | --- |
-| `WEB_PORT` | `3000` | Porta publicada no host |
-| `UPDATE_TOKEN` | gerado pelo instalador | Autoriza o updater interno |
-| `DASHLAB_AUTH_USER` | `dashlab` | Usuário Basic da interface/API |
-| `DASHLAB_AUTH_PASSWORD` | gerado pelo instalador | Senha Basic; mantenha em segredo |
-| `DASHLAB_IMAGE` | `ghcr.io/ferforastieri/dashlab-plus:latest` | Imagem acompanhada pelo updater |
-| `OUTBOUND_ALLOWLIST` | vazio | Hosts privados explicitamente autorizados para checks/Prometheus |
-| `PROMETHEUS_URL` | vazio | Endpoint do Prometheus |
-| `PROMETHEUS_TARGET_LABELS` | vazio | Filtro de targets |
-| `PROMETHEUS_NETWORK_LABELS` | `device!="lo"` | Filtro de interfaces |
-| `PROMETHEUS_DISK_LABELS` | NVMe/SATA | Filtro de discos |
+| Configuração | Onde alterar |
+| --- | --- |
+| Prometheus e filtros | Personalizar → Integrações |
+| Usuários e permissões | Lab → Gerenciar usuários |
 
 Prometheus é opcional. Tokens e preferências adicionais podem ser configurados no Lab e são persistidos no SQLite.
 

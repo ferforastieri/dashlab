@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func testServer(t *testing.T) (*Server, http.Handler) {
@@ -21,7 +20,13 @@ func testServer(t *testing.T) (*Server, http.Handler) {
 	t.Cleanup(func() { _ = store.Close() })
 	integrations := NewIntegrations()
 	integrations.allowlist = parseAllowlist("proxmox.local")
-	server := &Server{store: store, integrations: integrations, logger: slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), authUser: "test", authPassword: "test-password", outboundAllowlist: parseAllowlist("proxmox.local")}
+	if err := store.ensureUsers(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.createUser(t.Context(), "test", "test-password", "admin"); err != nil {
+		t.Fatal(err)
+	}
+	server := &Server{store: store, integrations: integrations, logger: slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), outboundAllowlist: parseAllowlist("proxmox.local"), sessions: make(map[string]authIdentity)}
 	return server, server.routes()
 }
 
@@ -139,51 +144,6 @@ func TestVersionEndpointIsNotCached(t *testing.T) {
 	}
 	if payload["version"] != BuildVersion {
 		t.Fatalf("version = %q", payload["version"])
-	}
-}
-
-func TestUpdateEndpointRequiresUpdater(t *testing.T) {
-	_, handler := testServer(t)
-	response := requestJSON(t, handler, http.MethodPost, "/api/update", nil)
-	if response.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
-	}
-}
-
-func TestUpdateEndpointTriggersInternalUpdater(t *testing.T) {
-	var gotAuthorization string
-	var gotPath string
-	var gotMethod string
-	requestReceived := make(chan struct{})
-	updater := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuthorization = r.Header.Get("Authorization")
-		gotPath = r.URL.RequestURI()
-		gotMethod = r.Method
-		close(requestReceived)
-		w.WriteHeader(http.StatusAccepted)
-	}))
-	defer updater.Close()
-
-	server, handler := testServer(t)
-	server.updateURL = updater.URL
-	server.updateToken = "test-token"
-	response := requestJSON(t, handler, http.MethodPost, "/api/update", nil)
-	if response.Code != http.StatusAccepted {
-		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
-	}
-	select {
-	case <-requestReceived:
-	case <-time.After(time.Second):
-		t.Fatal("updater was not called")
-	}
-	if gotAuthorization != "Bearer test-token" {
-		t.Fatalf("authorization = %q", gotAuthorization)
-	}
-	if gotMethod != http.MethodPost {
-		t.Fatalf("request method = %q", gotMethod)
-	}
-	if gotPath != "/v1/update" {
-		t.Fatalf("request path = %q", gotPath)
 	}
 }
 

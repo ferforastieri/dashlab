@@ -34,7 +34,6 @@ WORKDIR /app
 COPY --from=api /out/dashlab-plus /usr/local/bin/dashlab-plus
 COPY --from=web /src/web/dist /app/web
 USER dashlabplus
-ENV PORT=3000 DATABASE_PATH=/data/dashlab-plus.db WEB_ROOT=/app/web
 EXPOSE 3000
 VOLUME ["/data"]
 HEALTHCHECK --interval=20s --timeout=5s --retries=6 CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1

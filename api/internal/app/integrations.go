@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,11 +43,9 @@ func NewIntegrations() *Integrations {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	return &Integrations{
 		client:        &http.Client{Timeout: 6 * time.Second, Transport: transport, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }},
-		allowlist:     parseAllowlist(os.Getenv("OUTBOUND_ALLOWLIST")),
-		prometheusURL: strings.TrimRight(os.Getenv("PROMETHEUS_URL"), "/"),
-		targetLabels:  os.Getenv("PROMETHEUS_TARGET_LABELS"),
-		networkLabels: env("PROMETHEUS_NETWORK_LABELS", `device!="lo"`),
-		diskLabels:    env("PROMETHEUS_DISK_LABELS", `device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`),
+		allowlist:     map[string]struct{}{},
+		networkLabels: `device!="lo"`,
+		diskLabels:    `device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`,
 	}
 }
 
@@ -68,9 +65,7 @@ func (i *Integrations) metric(name string, labels ...string) string {
 }
 
 func configuredQuery(name, fallback string) string {
-	if value := strings.TrimSpace(os.Getenv("PROMETHEUS_" + name + "_QUERY")); value != "" {
-		return value
-	}
+	_ = name
 	return fallback
 }
 
