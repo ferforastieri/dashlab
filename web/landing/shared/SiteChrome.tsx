@@ -15,7 +15,7 @@ export function PublicHeader({ language, theme, text, toggleLanguage, toggleThem
   const prefix = landing ? '' : '/';
   return <header className={`site-header ${scrolled ? 'is-scrolled' : ''}`} data-header>
     <a className="brand" href={`${prefix}#inicio`} onClick={close} aria-label="DashLab+">
-      <span><img src="/logo.svg" alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small>
+      <span><img src="/logo.png" alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small>
     </a>
     <button className="menu-button" type="button" aria-expanded={menuOpen} aria-label={text('Abrir menu', 'Open menu')} onClick={() => setMenuOpen((open) => !open)}><span /><span /></button>
     <nav className={menuOpen ? 'is-open' : ''} aria-label={text('Navegação principal', 'Main navigation')}>
@@ -28,5 +28,5 @@ export function PublicHeader({ language, theme, text, toggleLanguage, toggleThem
 }
 
 export function PublicFooter({ text }: Pick<ChromeProps, 'language' | 'text'>) {
-  return <footer className="site-footer"><a className="brand footer-brand" href="/#inicio"><span><img src="/logo.svg" alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small></a><p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p><nav><a href="/docs/">{text('Documentação', 'Documentation')}</a><a href="/releases/">Releases</a><a href="https://github.com/ferforastieri/dashlab">GitHub</a><a href="/#inicio">{text('Voltar ao topo ↑', 'Back to top ↑')}</a></nav><small>© {new Date().getFullYear()} DashLab+ · Self-hosted</small></footer>;
+  return <footer className="site-footer"><a className="brand footer-brand" href="/#inicio"><span><img src="/logo.png" alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small></a><p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p><nav><a href="/docs/">{text('Documentação', 'Documentation')}</a><a href="/releases/">Releases</a><a href="https://github.com/ferforastieri/dashlab">GitHub</a><a href="/#inicio">{text('Voltar ao topo ↑', 'Back to top ↑')}</a></nav><small>© {new Date().getFullYear()} DashLab+ · Self-hosted</small></footer>;
 }
