@@ -19,14 +19,7 @@ export function ReleasesPage() {
   return (
     <>
       <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
-      <div className="docs-layout releases-layout">
-        <aside className="docs-sidebar">
-          <nav aria-label={text('Releases', 'Releases')}>
-            <strong>RELEASES</strong>
-            <a href="#historico">{text('Histórico de versões', 'Version history')}</a>
-          </nav>
-        </aside>
-        <main className="docs-content releases-page">
+      <main className="docs-content releases-page">
           <div className="docs-hero">
             <p className="eyebrow"><span /> RELEASES</p>
             <h1>{text('Versões publicadas.', 'Published versions.')}</h1>
@@ -46,8 +39,7 @@ export function ReleasesPage() {
             </article>)}
           </div>
           </section>
-        </main>
-      </div>
+      </main>
       <PublicFooter language={language} text={text} />
     </>
   );
