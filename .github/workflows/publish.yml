@@ -84,4 +84,7 @@ jobs:
             --generate-notes \
             web/public/install.sh \
             docker-compose.yml \
-            .env.example
+            updater/Dockerfile \
+            updater/go.mod \
+            updater/go.sum \
+            updater/main.go
