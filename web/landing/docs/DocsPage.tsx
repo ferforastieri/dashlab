@@ -23,7 +23,7 @@ export function DocsPage() {
     {
       title: text('CONFIGURAÇÃO', 'CONFIGURATION'),
       links: [
-        ['#ambiente', text('Variáveis de ambiente', 'Environment variables')],
+        ['#ambiente', text('Configuração', 'Configuration')],
         ['#prometheus', 'Prometheus'],
         ['#primeiro-uso', text('Primeiro uso', 'First use')],
       ],
@@ -73,11 +73,11 @@ export function DocsPage() {
               )}
             </p>
             <div className="docs-callout">
-              <strong>{text('Modelo single-user', 'Single-user model')}</strong>
+              <strong>{text('Acesso e usuários', 'Access and users')}</strong>
               <p>
                 {text(
-                  'O DashLab+ não possui contas ou autenticação própria. Publique-o apenas em uma rede confiável, atrás de VPN ou de autenticação no proxy reverso.',
-                  'O primeiro usuário é administrador e pode criar usuários comuns. Mantenha o Lab atrás de VPN ou proxy autenticado.',
+                  'O primeiro usuário criado durante a configuração se torna administrador e pode criar usuários comuns. O acesso ao Lab e à API exige login.',
+                  'The first user created during setup becomes an administrator and can create regular users. Access to the Lab and API requires login.',
                 )}
               </p>
             </div>
@@ -188,78 +188,33 @@ export function DocsPage() {
 
           <section id="ambiente">
             <p className="doc-index">03</p>
-            <h2>{text('Variáveis de ambiente', 'Environment variables')}</h2>
+            <h2>{text('Configuração', 'Configuration')}</h2>
+            <p>
+              {text(
+                'A instalação normal não exige arquivo .env nem variáveis de ambiente. Usuários, preferências, integrações e dados do dashboard são salvos no banco SQLite do volume dashlab_plus_data.',
+                'A normal installation does not require a .env file or environment variables. Users, preferences, integrations, and dashboard data are stored in the SQLite database in the dashlab_plus_data volume.',
+              )}
+            </p>
             <div className="docs-table">
               <table>
                 <thead>
                   <tr>
-                    <th>{text('Variável', 'Variable')}</th>
-                    <th>{text('Padrão', 'Default')}</th>
+                    <th>{text('Configuração', 'Setting')}</th>
+                    <th>{text('Onde definir', 'Where to set')}</th>
                     <th>{text('Finalidade', 'Purpose')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>
-                      <code>WEB_PORT</code>
-                    </td>
-                    <td>
-                      <code>3000</code>
-                    </td>
-                    <td>
-                      {text('Porta publicada pelo container.', 'Port published by the container.')}
-                    </td>
-                  </tr>
-                  <tr><td><code>Updater</code></td><td>interno</td><td>{text('Serviço interno acionado pelo botão Atualizar.', 'Internal service triggered by the Update button.')}</td></tr>
-                  <tr>
-                    <td>
-                      <code>PROMETHEUS_URL</code>
-                    </td>
-                    <td>—</td>
-                    <td>
-                      {text('Compatibilidade; prefira configurar em Personalizar → Integrações.', 'Compatibility fallback; prefer Customize → Integrations.')}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <code>PROMETHEUS_TARGET_LABELS</code>
-                    </td>
-                    <td>{text('vazio', 'empty')}</td>
-                    <td>
-                      {text(
-                        'Labels comuns ao host monitorado.',
-                        'Labels shared by the monitored host.',
-                      )}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <code>PROMETHEUS_NETWORK_LABELS</code>
-                    </td>
-                    <td>
-                      <code>device!=&quot;lo&quot;</code>
-                    </td>
-                    <td>
-                      {text(
-                        'Interfaces incluídas nas métricas.',
-                        'Interfaces included in metrics.',
-                      )}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <code>PROMETHEUS_DISK_LABELS</code>
-                    </td>
-                    <td>NVMe / sdX</td>
-                    <td>{text('Discos incluídos nas consultas.', 'Disks included in queries.')}</td>
-                  </tr>
+                  <tr><td><code>Usuário administrador</code></td><td>{text('Primeiro acesso', 'First access')}</td><td>{text('Criado na tela inicial; pode criar outros usuários.', 'Created on the first-use screen; can create regular users.')}</td></tr>
+                  <tr><td><code>Prometheus</code></td><td>{text('Personalizar → Integrações', 'Customize → Integrations')}</td><td>{text('URL e filtros das métricas.', 'Metrics URL and filters.')}</td></tr>
+                  <tr><td><code>Aplicações e widgets</code></td><td>{text('Lab → Editar', 'Lab → Edit')}</td><td>{text('Atalhos, status, layouts e aparência.', 'Shortcuts, status, layouts, and appearance.')}</td></tr>
                 </tbody>
               </table>
             </div>
             <p>
               {text(
-                'DATABASE_PATH, WEB_ROOT e PORT já são definidos pela imagem. Altere-os somente ao executar o binário Go fora do Docker.',
-                'DATABASE_PATH, WEB_ROOT, and PORT are already defined by the image. Change them only when running the Go binary outside Docker.',
+                'DATABASE_PATH, WEB_ROOT e PORT são opções técnicas com valores padrão na imagem e não precisam ser configuradas no uso normal.',
+                'DATABASE_PATH, WEB_ROOT, and PORT are technical options with image defaults and do not need configuration in normal use.',
               )}
             </p>
           </section>
@@ -269,16 +224,10 @@ export function DocsPage() {
             <h2>Prometheus</h2>
             <p>
               {text(
-                'Configure a URL e o token em Lab → Personalizar → Integrações. A URL precisa ser resolvida de dentro do container dashlab-plus. Use um IP da LAN ou um nome DNS disponível na mesma rede Docker.',
-                'Configure the URL and token in Lab → Customize → Integrations. The URL must resolve from inside the dashlab-plus container. Use a LAN IP or a DNS name available on the same Docker network.',
+                'Configure a URL e os filtros em Lab → Personalizar → Integrações. A URL precisa ser resolvida de dentro do container dashlab-plus. Use um IP da LAN ou um nome DNS disponível na mesma rede Docker.',
+                'Configure the URL and filters in Lab → Customize → Integrations. The URL must resolve from inside the dashlab-plus container. Use a LAN IP or a DNS name available on the same Docker network.',
               )}
             </p>
-            <pre>
-              <code>{`PROMETHEUS_URL=http://192.168.15.20:9090
-PROMETHEUS_TARGET_LABELS=instance="node-exporter:9100"
-PROMETHEUS_NETWORK_LABELS=device=~"enp.*|eth.*",device!="lo"
-PROMETHEUS_DISK_LABELS=device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`}</code>
-            </pre>
             <p>
               {text(
                 'Sem PROMETHEUS_URL, o dashboard continua funcionando, mas os widgets de sistema, armazenamento e rede ficam indisponíveis.',
@@ -291,6 +240,12 @@ PROMETHEUS_DISK_LABELS=device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`}</code>
             <p className="doc-index">05</p>
             <h2>{text('Primeiro uso', 'First use')}</h2>
             <ol>
+              <li>
+                {text(
+                  'No primeiro acesso, crie o usuário administrador. Nos acessos seguintes, entre com seu usuário e senha; administradores podem criar usuários comuns pelo botão de usuários no Lab.',
+                  'On first access, create the administrator account. On later visits, sign in; administrators can create regular users with the users button in the Lab.',
+                )}
+              </li>
               <li>
                 {text(
                   'Abra Personalizar para definir nome, cores, logo, favicon, wallpaper, escala e comportamento mobile.',
@@ -386,6 +341,8 @@ PROMETHEUS_DISK_LABELS=device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`}</code>
               <li><code>POST/PATCH/DELETE /api/widgets</code> — widgets e configurações.</li>
               <li><code>GET /api/metrics/*</code> — métricas do Prometheus.</li>
               <li><code>GET /api/applications/status</code> — disponibilidade dos serviços.</li>
+              <li><code>GET/POST /api/auth/*</code> — primeiro acesso, login e gerenciamento de usuários.</li>
+              <li><code>POST /api/update</code> — atualiza frontend e backend pelo updater interno (administrador).</li>
             </ul>
           </section>
 
@@ -460,6 +417,12 @@ docker start dashlab-plus`}</code>
                 'When a published version is detected, DashLab+ shows a notice. Click Update to pull the new image and recreate the container; frontend and backend update together.',
               )}
             </p>
+            <p>
+              {text(
+                'O aviso de atualização aparece somente no Lab instalado no servidor. A landing page pública e a documentação não exibem esse aviso. A atualização mantém o volume dashlab_plus_data.',
+                'The update notice appears only in the Lab installed on your server. The public landing page and documentation do not show it. Updates preserve the dashlab_plus_data volume.',
+              )}
+            </p>
           </section>
 
           <section id="seguranca">
@@ -474,8 +437,8 @@ docker start dashlab-plus`}</code>
               </strong>
               <p>
                 {text(
-                  'A interface e a API exigem autenticação Basic. Mantenha a porta atrás de um proxy HTTPS e limite o acesso à LAN/VPN.',
-                  'The interface and API require Basic authentication. Keep the port behind an HTTPS proxy and limit access to your LAN/VPN.',
+                  'A interface e a API exigem login. Mantenha a porta atrás de um proxy HTTPS e limite o acesso à LAN/VPN.',
+                  'The interface and API require sign-in. Keep the port behind an HTTPS proxy and limit access to your LAN/VPN.',
                 )}
               </p>
             </div>
@@ -527,8 +490,8 @@ docker start dashlab-plus`}</code>
             </h3>
             <p>
               {text(
-                'Confira PROMETHEUS_URL, labels e conectividade a partir do container.',
-                'Check PROMETHEUS_URL, labels, and connectivity from the container.',
+                'Confira a URL e os filtros em Personalizar → Integrações e a conectividade a partir do container.',
+                'Check the URL and filters in Customize → Integrations and connectivity from the container.',
               )}
             </p>
             <h3>{text('Um serviço aparece offline', 'A service appears offline')}</h3>
