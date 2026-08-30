@@ -273,7 +273,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       );
     if (elementKey === 'SEARCH')
       return (
-        <form className={cn('search')} onSubmit={(event) => {
+        <form className="search-shell" onSubmit={(event) => {
           event.preventDefault();
           const normalized = query.trim().toLocaleLowerCase();
           if (!normalized) return;
@@ -282,11 +282,38 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           );
           window.open(application?.url || `https://www.google.com/search?q=${encodeURIComponent(query.trim())}`, '_blank', 'noopener,noreferrer');
         }}>
+          <div className={cn('search')}>
           <Search size={18} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} list="dashlab-applications" placeholder="Pesquisar aplicações ou na web" />
-          <datalist id="dashlab-applications">
-            {dash.applications.filter((item) => item.visible !== false).map((item) => <option key={item.id} value={item.name} />)}
-          </datalist>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Pesquisar aplicações ou na web"
+            aria-label="Pesquisar aplicações ou na web"
+            aria-expanded={Boolean(query.trim())}
+          />
+          </div>
+          {query.trim() && (
+            <div className="search-results" role="listbox" aria-label="Aplicações encontradas">
+              {dash.applications
+                .filter((item) => item.visible !== false && item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()))
+                .slice(0, 8)
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="option"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
+                  >
+                    <span className="search-result-icon">{item.icon ? <img src={item.icon} alt="" /> : item.name.slice(0, 1).toUpperCase()}</span>
+                    <span><strong>{item.name}</strong><small>{item.url}</small></span>
+                  </button>
+                ))}
+              {!dash.applications.some((item) => item.visible !== false && item.name.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())) && (
+                <p>Nenhuma aplicação encontrada. Pressione Enter para pesquisar na web.</p>
+              )}
+            </div>
+          )}
         </form>
       );
     if (elementKey === 'ACTIONS')

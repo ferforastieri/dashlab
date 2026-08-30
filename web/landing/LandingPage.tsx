@@ -129,6 +129,23 @@ export function LandingPage() {
                 {text('Ler documentação', 'Read the docs')}
               </a>
             </div>
+            <div className="hero-proof" aria-label={text('Resumo do produto', 'Product summary')}>
+              <div>
+                <strong>01</strong>
+                <span>{text('Servidor local', 'Local server')}</span>
+                <small>{text('Seus dados permanecem no homelab.', 'Your data stays in the homelab.')}</small>
+              </div>
+              <div>
+                <strong>02</strong>
+                <span>{text('Acesso por papéis', 'Role-based access')}</span>
+                <small>{text('Admin e usuários no mesmo workspace.', 'Admins and users in one workspace.')}</small>
+              </div>
+              <div>
+                <strong>03</strong>
+                <span>{text('Atualização em um clique', 'One-click updates')}</span>
+                <small>{text('Frontend e API seguem juntos.', 'Frontend and API move together.')}</small>
+              </div>
+            </div>
           </div>
           <div
             className="dashboard-stage reveal"
@@ -226,6 +243,16 @@ export function LandingPage() {
               </footer>
             </div>
           </div>
+          <aside className="hero-bridge reveal" aria-label={text('O que o DashLab+ protege', 'What DashLab+ protects')}>
+            <span>{text('LOCAL-FIRST', 'LOCAL-FIRST')}</span>
+            <i />
+            <p>
+              {text(
+                'Acesso por usuário. Métricas na rede privada. Atualizações sem tocar nos seus dados.',
+                'User access. Metrics on the private network. Updates without touching your data.',
+              )}
+            </p>
+          </aside>
           <a className="scroll-cue" href="#manifesto">
             {text('EXPLORE O SISTEMA', 'EXPLORE THE SYSTEM')} <span>↓</span>
           </a>
