@@ -38,12 +38,7 @@ export function HeaderWeather({ widget }: { widget?: DashboardWidget }) {
     <span className="header-weather">
       <CloudSun aria-hidden="true" />
       <strong>{Math.round(weather.current.temperature_2m)}°</strong>
-      {location && (
-        <span>
-          <MapPin aria-hidden="true" />
-          {location}
-        </span>
-      )}
+      {location && <span><MapPin aria-hidden="true" />{location}</span>}
     </span>
   );
 }

@@ -1,15 +1,12 @@
 import {
   Activity,
-  CloudSun,
   Edit3,
   HardDrive,
   MemoryStick,
   Network,
-  Search,
   Server,
   X,
 } from 'lucide-react';
-import { useWeatherQuery } from '../../../api/weather/useWeatherQuery';
 import { useWidgetDataQuery } from '../../../api/widgets/useWidgetDataQuery';
 import { DashboardWidget } from '../dashboard.types';
 import { dashboardClassNames, dashboardCn } from '../dashboard.styles';
@@ -31,15 +28,9 @@ export function WidgetCard({
   onEdit,
   editingLayout,
 }: WidgetCardProps) {
-  const { latitude = -23.55, longitude = -46.63 } = widget.config || {};
   const prometheusQuery = useWidgetDataQuery(widget.id, widget.type === 'PROMQL');
-  const weatherQuery = useWeatherQuery(latitude, longitude, widget.type === 'WEATHER');
-  const remote = widget.type === 'PROMQL' ? prometheusQuery.data : weatherQuery.data;
+  const remote = prometheusQuery.data;
   const prometheusValue = remote?.data?.result?.[0]?.value?.[1];
-  const weatherValue =
-    remote?.current?.temperature_2m != null
-      ? `${Math.round(remote.current.temperature_2m)}°C`
-      : '—';
   const formatRate = (value: number | null | undefined) =>
     value == null ? '—' : `${(value / 1e6).toFixed(1)} MB/s`;
   const formatDiskRate = (value: number | null | undefined) =>
@@ -50,16 +41,6 @@ export function WidgetCard({
         : `${(value / 1e3).toFixed(0)} KB/s`;
   const values: any = {
     CLOCK: [Server, 'Agora', new Date().toLocaleTimeString('pt-BR')],
-    WEATHER: [
-      CloudSun,
-      'Temperatura',
-      weatherValue,
-      'Sensação',
-      remote?.current?.apparent_temperature != null
-        ? `${Math.round(remote.current.apparent_temperature)}°C`
-        : '—',
-    ],
-    SEARCH: [Search, 'Pesquisa', 'Google'],
     STATUS: [Activity, 'Serviços', 'Veja os indicadores nos aplicativos'],
     PROMQL: [
       Activity,

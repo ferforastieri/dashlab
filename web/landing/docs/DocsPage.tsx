@@ -17,6 +17,7 @@ export function DocsPage() {
         ['#visao-geral', text('Visão geral', 'Overview')],
         ['#requisitos', text('Requisitos', 'Requirements')],
         ['#instalacao', text('Instalação', 'Installation')],
+        ['#lab', text('Como funciona o Lab', 'How the Lab works')],
       ],
     },
     {
@@ -158,8 +159,8 @@ export function DocsPage() {
             <h3>{text('2. Configure, se necessário', '2. Configure if needed')}</h3>
             <p>
               {text(
-                'Edite ~/.dashlab-plus/.env apenas para alterar a porta. Para conectar o Prometheus e seus tokens, abra Personalizar no Lab; a configuração é salva no SQLite.',
-                'Edit ~/.dashlab-plus/.env only to change the port. To connect Prometheus and its tokens, open Customize in the Lab; the configuration is saved in SQLite.',
+                'Edite ~/.dashlab-plus/.env apenas para alterar a porta. Para conectar o Prometheus e ajustar os filtros, abra Personalizar no Lab.',
+                'Edit ~/.dashlab-plus/.env only to change the port. To connect Prometheus and adjust its filters, open Customize in the Lab.',
               )}
             </p>
             <h3>{text('3. Confirme a saúde', '3. Check health')}</h3>
@@ -321,8 +322,8 @@ PROMETHEUS_DISK_LABELS=device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`}</code>
               </li>
               <li>
                 {text(
-                  'Crie widgets de sistema, armazenamento, rede, relógio, clima, pesquisa, status, PromQL ou divisória.',
-                  'Create system, storage, network, clock, weather, search, status, PromQL, or divider widgets.',
+                  'Crie widgets de sistema, armazenamento, rede, relógio, status, PromQL ou divisória.',
+                  'Create system, storage, network, clock, status, PromQL, or divider widgets.',
                 )}
               </li>
               <li>
@@ -352,8 +353,55 @@ PROMETHEUS_DISK_LABELS=device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"`}</code>
             </p>
           </section>
 
-          <section id="arquitetura">
+          <section id="lab">
             <p className="doc-index">06</p>
+            <h2>{text('Como funciona o Lab', 'How the Lab works')}</h2>
+            <p>
+              {text(
+                'O Lab é o dashboard operacional do DashLab+. Ele roda no seu servidor e concentra atalhos para aplicações, métricas, status dos serviços e personalização visual em uma única tela. Não existem contas ou perfis: a instalação é single-user e o acesso deve ficar restrito à sua rede.',
+                'The Lab is DashLab+’s operational dashboard. It runs on your server and brings application shortcuts, metrics, service status, and visual customization into one screen. There are no accounts or profiles: the installation is single-user and should remain restricted to your network.',
+              )}
+            </p>
+            <h3>{text('Aplicações e seções', 'Applications and sections')}</h3>
+            <p>
+              {text(
+                'Cadastre cada serviço com nome, URL, descrição, ícone, URL de status e deep link mobile. Aplicações podem ser agrupadas em seções recolhíveis; o indicador de disponibilidade consulta a URL de status (ou a URL principal quando ela não existe).',
+                'Register each service with a name, URL, description, icon, status URL, and mobile deep link. Applications can be grouped into collapsible sections; the availability indicator checks the status URL (or the main URL when none is provided).',
+              )}
+            </p>
+            <h3>{text('Widgets e métricas', 'Widgets and metrics')}</h3>
+            <p>
+              {text(
+                'Widgets de sistema, armazenamento e rede usam métricas do Prometheus. Status resume as verificações das aplicações, PromQL executa uma consulta configurada por você e relógio mostra a hora local. O clima exibido no cabeçalho usa localização configurada ou geolocalização do navegador; não é um widget editável.',
+                'System, storage, and network widgets use Prometheus metrics. Status summarizes application checks, PromQL runs a query you configure, and the clock shows local time. Weather shown in the header uses configured coordinates or browser geolocation; it is not an editable widget.',
+              )}
+            </p>
+            <h3>{text('Organização e personalização', 'Layout and customization')}</h3>
+            <p>
+              {text(
+                'No desktop, ative Editar organização para selecionar, arrastar e redimensionar elementos. No celular, o Lab aplica o modo Grade, Menu lateral ou Barra inferior escolhido em Personalizar. Nome, cores, logo, favicon, wallpaper, escala e opacidade são salvos no dashboard.',
+                'On desktop, enable Edit layout to select, drag, and resize elements. On mobile, the Lab applies the Grid, Side menu, or Bottom bar mode chosen in Customize. Name, colors, logo, favicon, wallpaper, scale, and opacity are saved with the dashboard.',
+              )}
+            </p>
+            <h3>{text('API do Lab', 'Lab API')}</h3>
+            <p>
+              {text(
+                'O frontend React conversa somente com a API Go local. A API valida e persiste alterações, consulta integrações e serve os arquivos estáticos. Os principais recursos são:',
+                'The React frontend communicates only with the local Go API. The API validates and persists changes, queries integrations, and serves static files. Its main resources are:',
+              )}
+            </p>
+            <ul>
+              <li><code>GET /api/dashboard</code> — estado do dashboard e layouts.</li>
+              <li><code>PUT /api/branding</code> — preferências visuais.</li>
+              <li><code>POST/PATCH/DELETE /api/applications</code> — atalhos e serviços.</li>
+              <li><code>POST/PATCH/DELETE /api/widgets</code> — widgets e configurações.</li>
+              <li><code>GET /api/metrics/*</code> — métricas do Prometheus.</li>
+              <li><code>GET /api/applications/status</code> — disponibilidade dos serviços.</li>
+            </ul>
+          </section>
+
+          <section id="arquitetura">
+            <p className="doc-index">07</p>
             <h2>{text('Arquitetura', 'Architecture')}</h2>
             <pre className="diagram">
               <code>{`Navegador
@@ -383,7 +431,7 @@ DashLab+ :3000
           </section>
 
           <section id="persistencia">
-            <p className="doc-index">07</p>
+            <p className="doc-index">08</p>
             <h2>{text('Persistência e backup', 'Persistence and backup')}</h2>
             <p>
               {text(
@@ -406,7 +454,7 @@ docker start dashlab-plus`}</code>
           </section>
 
           <section id="atualizacao">
-            <p className="doc-index">08</p>
+            <p className="doc-index">09</p>
             <h2>{text('Atualização', 'Updating')}</h2>
             <pre>
               <code>{installCommand}</code>
@@ -426,7 +474,7 @@ docker start dashlab-plus`}</code>
           </section>
 
           <section id="seguranca">
-            <p className="doc-index">09</p>
+            <p className="doc-index">10</p>
             <h2>{text('Segurança', 'Security')}</h2>
             <div className="docs-callout warning">
               <strong>
@@ -480,7 +528,7 @@ docker start dashlab-plus`}</code>
           </section>
 
           <section id="problemas">
-            <p className="doc-index">10</p>
+            <p className="doc-index">11</p>
             <h2>{text('Solução de problemas', 'Troubleshooting')}</h2>
             <h3>
               {text('Widgets exibem zero ou indisponível', 'Widgets show zero or unavailable')}

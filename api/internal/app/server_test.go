@@ -52,7 +52,7 @@ func TestDashboardStartsWithSingleUserDefaults(t *testing.T) {
 	if dashboard.ID != "dashlab-plus-local" {
 		t.Fatalf("dashboard id = %q", dashboard.ID)
 	}
-	if len(dashboard.Widgets) != 6 {
+	if len(dashboard.Widgets) != 4 {
 		t.Fatalf("widgets = %d", len(dashboard.Widgets))
 	}
 	if len(dashboard.Layouts) == 0 {

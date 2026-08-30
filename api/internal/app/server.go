@@ -155,13 +155,15 @@ func (s *Server) settings(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, http.StatusInternalServerError, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"prometheusUrl": settings["prometheus_url"], "hasPrometheusToken": settings["prometheus_token"] != ""})
+	writeJSON(w, http.StatusOK, map[string]any{"prometheusUrl": settings["prometheus_url"], "targetLabels": settings["prometheus_target_labels"], "networkLabels": settings["prometheus_network_labels"], "diskLabels": settings["prometheus_disk_labels"]})
 }
 
 func (s *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		PrometheusURL   string `json:"prometheusUrl"`
-		PrometheusToken string `json:"prometheusToken"`
+		PrometheusURL string `json:"prometheusUrl"`
+		TargetLabels  string `json:"targetLabels"`
+		NetworkLabels string `json:"networkLabels"`
+		DiskLabels    string `json:"diskLabels"`
 	}
 	if !decodeJSON(w, r, &payload) {
 		return
@@ -174,15 +176,15 @@ func (s *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	settings := map[string]string{"prometheus_url": strings.TrimSpace(payload.PrometheusURL)}
-	if strings.TrimSpace(payload.PrometheusToken) != "" {
-		settings["prometheus_token"] = strings.TrimSpace(payload.PrometheusToken)
-	}
+	settings["prometheus_target_labels"] = strings.TrimSpace(payload.TargetLabels)
+	settings["prometheus_network_labels"] = strings.TrimSpace(payload.NetworkLabels)
+	settings["prometheus_disk_labels"] = strings.TrimSpace(payload.DiskLabels)
 	if err := s.store.SaveSettings(r.Context(), settings); err != nil {
 		s.fail(w, http.StatusInternalServerError, err)
 		return
 	}
 	s.integrations.Configure(settings)
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "hasPrometheusToken": settings["prometheus_token"] != ""})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 func (s *Server) update(w http.ResponseWriter, r *http.Request) {
@@ -716,7 +718,7 @@ func filterLayouts(items []Layout, keep func(Layout) bool) []Layout {
 	return result
 }
 func validWidgetType(value string) bool {
-	return map[string]bool{"SYSTEM": true, "STORAGE": true, "NETWORK": true, "CLOCK": true, "WEATHER": true, "SEARCH": true, "STATUS": true, "PROMQL": true, "DIVIDER": true}[value]
+	return map[string]bool{"SYSTEM": true, "STORAGE": true, "NETWORK": true, "CLOCK": true, "STATUS": true, "PROMQL": true, "DIVIDER": true}[value]
 }
 func applicationsExist(items []Application, ids []string) bool {
 	found := map[string]bool{}
@@ -757,7 +759,7 @@ func validLayout(dashboard Dashboard, layout Layout) bool {
 	case "SECTION":
 		return findSection(dashboard.Sections, layout.SectionID) >= 0
 	case "DASHBOARD_ELEMENT":
-		return map[string]bool{"BRAND": true, "CLOCK": true, "WEATHER": true, "SEARCH": true, "ACTIONS": true, "ADD": true, "FOOTER": true}[layout.ElementKey]
+		return map[string]bool{"BRAND": true, "CLOCK": true, "WEATHER": true, "ACTIONS": true, "ADD": true, "FOOTER": true}[layout.ElementKey]
 	default:
 		return false
 	}

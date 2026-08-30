@@ -9,7 +9,6 @@ import { Rnd } from 'react-rnd';
 import {
   MoreVertical,
   Plus,
-  Search,
   Settings,
   Edit3,
   Pencil,
@@ -84,8 +83,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     metrics = metricsQuery.data || {},
     history = historyQuery.data || {},
     statuses = Object.fromEntries(((statusesQuery.data || []) as any[]).map((x) => [x.id, x]));
-  const [query, setQuery] = useState(''),
-    [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | null>(null),
+  const [modal, setModal] = useState<'app' | 'widget' | 'section' | 'brand' | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
@@ -254,24 +252,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           <HeaderWeather widget={weatherWidget} />
         </div>
       );
-    if (elementKey === 'SEARCH')
-      return (
-        <form
-          className={cn('search')}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (query)
-              window.open(`https://google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-          }}
-        >
-          <Search size={18} />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Pesquisar na web"
-          />
-        </form>
-      );
     if (elementKey === 'ACTIONS')
       return (
         <div className={`${cn('header-tools')} chrome-actions`}>
@@ -340,7 +320,11 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                 ? dash.applications.find((a) => a.id === layout.applicationId)
                 : null;
             const widget =
-              layout.kind === 'WIDGET' ? dash.widgets.find((w) => w.id === layout.widgetId) : null;
+              layout.kind === 'WIDGET'
+                ? dash.widgets.find(
+                    (w) => w.id === layout.widgetId && w.type !== 'WEATHER' && w.type !== 'SEARCH',
+                  )
+                : null;
             const dashboardSection =
               layout.kind === 'SECTION'
                 ? dash.sections.find((section) => section.id === layout.sectionId)
@@ -509,10 +493,13 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                 ) : app ? (
                   <div className={cn('app-wrap')}>
                     <a
-                      className={cn('app-icon', layoutEdit && 'pointer-events-none')}
+                      className="app-icon"
                       href={app.url}
                       target="_blank"
                       rel="noreferrer"
+                      onClick={(event) => {
+                        if (layoutEdit) event.preventDefault();
+                      }}
                     >
                       {app.icon && <img src={app.icon} alt="" />}
                     </a>

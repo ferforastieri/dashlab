@@ -72,14 +72,16 @@ export function DashboardEditor({
           : [],
       query: (editing as Widget | null)?.config?.query || '',
       prometheusUrl: '',
-      prometheusToken: '',
+      targetLabels: '',
+      networkLabels: 'device!="lo"',
+      diskLabels: 'device=~"nvme[0-9]+n[0-9]+|sd[a-z]+"',
     });
   const [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   useEffect(() => {
     if (mode !== 'brand') return;
     void apiClient.get('/settings').then(({ data }) => {
-      setForm((current: any) => ({ ...current, prometheusUrl: data.prometheusUrl || '' }));
+      setForm((current: any) => ({ ...current, prometheusUrl: data.prometheusUrl || '', targetLabels: data.targetLabels || '', networkLabels: data.networkLabels || current.networkLabels, diskLabels: data.diskLabels || current.diskLabels }));
     }).catch(() => undefined);
   }, [mode]);
   const title =
@@ -146,7 +148,9 @@ export function DashboardEditor({
         });
         await apiClient.put('/settings', {
           prometheusUrl: form.prometheusUrl || '',
-          prometheusToken: form.prometheusToken || '',
+          targetLabels: form.targetLabels || '',
+          networkLabels: form.networkLabels || '',
+          diskLabels: form.diskLabels || '',
         });
       } else return;
       done();
@@ -303,8 +307,6 @@ export function DashboardEditor({
                   ['STORAGE', 'Armazenamento'],
                   ['NETWORK', 'Rede'],
                   ['CLOCK', 'Relógio'],
-                  ['WEATHER', 'Clima'],
-                  ['SEARCH', 'Pesquisa'],
                   ['STATUS', 'Status'],
                   ['PROMQL', 'Consulta PromQL'],
                   ['DIVIDER', 'Divisória'],
@@ -335,47 +337,6 @@ export function DashboardEditor({
                 </label>
               </>
             )}
-            {form.type === 'WEATHER' && (
-              <div className={cn('field-row')}>
-                <label>
-                  Latitude
-                  <input
-                    type="number"
-                    step="any"
-                    value={form.config?.latitude ?? -23.55}
-                    onChange={(e) =>
-                      setForm({ ...form, config: { ...form.config, latitude: +e.target.value } })
-                    }
-                  />
-                </label>
-                <label>
-                  Longitude
-                  <input
-                    type="number"
-                    step="any"
-                    value={form.config?.longitude ?? -46.63}
-                    onChange={(e) =>
-                      setForm({ ...form, config: { ...form.config, longitude: +e.target.value } })
-                    }
-                  />
-                </label>
-              </div>
-            )}
-            {form.type === 'SEARCH' && (
-              <label>
-                Provedor
-                <select
-                  value={form.config?.provider || 'google'}
-                  onChange={(e) =>
-                    setForm({ ...form, config: { ...form.config, provider: e.target.value } })
-                  }
-                >
-                  <option value="google">Google</option>
-                  <option value="duckduckgo">DuckDuckGo</option>
-                  <option value="bing">Bing</option>
-                </select>
-              </label>
-            )}
           </>
         )}
         {mode === 'brand' && (
@@ -391,18 +352,11 @@ export function DashboardEditor({
                   onChange={(e) => setForm({ ...form, prometheusUrl: e.target.value })}
                 />
               </label>
-              <label>
-                Token do Prometheus (opcional)
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="Deixe vazio para manter o token atual"
-                  value={form.prometheusToken || ''}
-                  onChange={(e) => setForm({ ...form, prometheusToken: e.target.value })}
-                />
-              </label>
+              <label>Labels dos targets<input value={form.targetLabels || ''} placeholder='job="node-exporter"' onChange={(e) => setForm({ ...form, targetLabels: e.target.value })} /></label>
+              <label>Labels de rede<input value={form.networkLabels || ''} placeholder='device!="lo"' onChange={(e) => setForm({ ...form, networkLabels: e.target.value })} /></label>
+              <label>Labels de disco<input value={form.diskLabels || ''} placeholder='device=~"nvme.*|sd.*"' onChange={(e) => setForm({ ...form, diskLabels: e.target.value })} /></label>
               <p className="m-0 text-xs leading-relaxed text-[var(--muted)]">
-                As credenciais ficam no SQLite local e não são exibidas na interface.
+                Os filtros são aplicados pela API local.
               </p>
             </fieldset>
             <label>

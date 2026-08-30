@@ -71,7 +71,11 @@ docker run -d --name dashlab-plus --restart unless-stopped \
   ghcr.io/ferforastieri/dashlab-plus:latest
 ```
 
-## Configuração
+## Configuração inicial
+
+Após iniciar o Lab, abra **Personalizar → Integrações** para informar a URL do Prometheus e os filtros de labels. Esses valores podem ser alterados sem editar o Compose.
+
+As variáveis abaixo continuam disponíveis para automação ou primeiro boot:
 
 | Variável | Padrão | Função |
 | --- | --- | --- |

@@ -14,13 +14,12 @@ import (
 )
 
 type Integrations struct {
-	client          *http.Client
-	prometheusURL   string
-	targetLabels    string
-	networkLabels   string
-	diskLabels      string
-	mu              sync.RWMutex
-	prometheusToken string
+	client        *http.Client
+	prometheusURL string
+	targetLabels  string
+	networkLabels string
+	diskLabels    string
+	mu            sync.RWMutex
 }
 
 func (i *Integrations) Configure(settings map[string]string) {
@@ -29,8 +28,14 @@ func (i *Integrations) Configure(settings map[string]string) {
 	if value, ok := settings["prometheus_url"]; ok {
 		i.prometheusURL = strings.TrimRight(strings.TrimSpace(value), "/")
 	}
-	if value, ok := settings["prometheus_token"]; ok {
-		i.prometheusToken = strings.TrimSpace(value)
+	if value, ok := settings["prometheus_target_labels"]; ok {
+		i.targetLabels = strings.TrimSpace(value)
+	}
+	if value, ok := settings["prometheus_network_labels"]; ok {
+		i.networkLabels = strings.TrimSpace(value)
+	}
+	if value, ok := settings["prometheus_disk_labels"]; ok {
+		i.diskLabels = strings.TrimSpace(value)
 	}
 }
 
@@ -248,21 +253,18 @@ func (i *Integrations) Weather(ctx context.Context, latitude, longitude float64)
 
 func (i *Integrations) prometheus(ctx context.Context, path string, params map[string]string) (any, error) {
 	i.mu.RLock()
-	baseURL, token := i.prometheusURL, i.prometheusToken
+	baseURL := i.prometheusURL
 	i.mu.RUnlock()
 	values := url.Values{}
 	for key, value := range params {
 		values.Set(key, value)
 	}
-	return i.fetch(ctx, baseURL+path+"?"+values.Encode(), token)
+	return i.fetch(ctx, baseURL+path+"?"+values.Encode())
 }
-func (i *Integrations) fetch(ctx context.Context, target string, tokens ...string) (any, error) {
+func (i *Integrations) fetch(ctx context.Context, target string) (any, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
 		return nil, err
-	}
-	if len(tokens) > 0 && tokens[0] != "" {
-		request.Header.Set("Authorization", "Bearer "+tokens[0])
 	}
 	response, err := i.client.Do(request)
 	if err != nil {
