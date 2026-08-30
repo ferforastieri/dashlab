@@ -243,16 +243,6 @@ export function LandingPage() {
               </footer>
             </div>
           </div>
-          <aside className="hero-bridge reveal" aria-label={text('O que o DashLab+ protege', 'What DashLab+ protects')}>
-            <span>{text('LOCAL-FIRST', 'LOCAL-FIRST')}</span>
-            <i />
-            <p>
-              {text(
-                'Acesso por usuário. Métricas na rede privada. Atualizações sem tocar nos seus dados.',
-                'User access. Metrics on the private network. Updates without touching your data.',
-              )}
-            </p>
-          </aside>
           <a className="scroll-cue" href="#manifesto">
             {text('EXPLORE O SISTEMA', 'EXPLORE THE SYSTEM')} <span>↓</span>
           </a>
