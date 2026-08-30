@@ -91,8 +91,8 @@ a {
   display: flex;
   flex-direction: column;
   min-height: var(--app-viewport-height);
-  padding: max(4px, env(safe-area-inset-top)) max(0px, env(safe-area-inset-right))
-    max(18px, env(safe-area-inset-bottom)) max(0px, env(safe-area-inset-left));
+  padding: max(4px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left));
   color: var(--text-color);
   background-color: var(--surface-bg);
   background-size: cover;
