@@ -42,10 +42,18 @@ export function HeaderWeather({ widget }: { widget?: DashboardWidget }) {
   );
   const weather = weatherQuery.data;
   if (!weather?.current) {
+    const waitingForWeather = permission === 'loading' || weatherQuery.isLoading;
+    const failed = Boolean(coordinates) && weatherQuery.isError;
     return (
-      <button type="button" className="header-weather header-weather-prompt" onClick={requestLocation} disabled={permission === 'loading'}>
+      <button
+        type="button"
+        className="header-weather header-weather-prompt"
+        onClick={() => (coordinates ? void weatherQuery.refetch() : requestLocation())}
+        disabled={waitingForWeather}
+        title={failed ? 'Tentar carregar o clima novamente' : undefined}
+      >
         <CloudSun aria-hidden="true" />
-        <span>{permission === 'loading' ? 'Localizando…' : permission === 'denied' ? 'Permitir localização' : 'Carregar clima'}</span>
+        <span>{waitingForWeather ? 'Carregando clima…' : failed ? 'Tentar novamente' : permission === 'denied' ? 'Permitir localização' : 'Carregar clima'}</span>
       </button>
     );
   }

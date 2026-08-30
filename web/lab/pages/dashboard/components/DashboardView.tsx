@@ -6,7 +6,6 @@ import {
 } from 'react';
 import { Rnd } from 'react-rnd';
 import {
-  MoreVertical,
   Plus,
   Search,
   Settings,
@@ -91,7 +90,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [layouts, setLayouts] = useState<Layout[]>([]),
     [canvasWidth, setCanvasWidth] = useState(0),
-    [menu, setMenu] = useState<string | null>(null),
     [query, setQuery] = useState(''),
     [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string } | null>(
       null,
@@ -208,7 +206,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       : kind === 'sections'
         ? deleteSection.mutateAsync(id)
         : deleteWidget.mutateAsync(id));
-    setMenu(null);
   }
   async function removeDashboardElement(id: string) {
     const next = layouts.filter((layout) => layout.id !== id);
@@ -448,6 +445,17 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                       <div className="dashboard-element-controls">
                         <button
                           type="button"
+                          title="Selecionar elemento"
+                          aria-label="Selecionar elemento"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedLayoutId(layout.id);
+                          }}
+                        >
+                          <Edit3 size={14} />
+                        </button>
+                        <button
+                          type="button"
                           title="Remover elemento"
                           aria-label="Remover elemento"
                           onClick={(event) => {
@@ -547,6 +555,25 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                 ) : app ? (
                   <div className={cn('app-wrap')}>
                     {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover aplicativo"><GripHorizontal size={14} /></div>}
+                    {layoutEdit && (
+                      <div className="canvas-item-controls" aria-label="Controles do aplicativo">
+                        <button
+                          type="button"
+                          title="Editar aplicativo"
+                          aria-label="Editar aplicativo"
+                          onClick={() => {
+                            setEditing(app);
+                            setModal('app');
+                          }}
+                        ><Edit3 size={14} /></button>
+                        <button
+                          type="button"
+                          title="Excluir aplicativo"
+                          aria-label="Excluir aplicativo"
+                          onClick={() => setConfirmDelete({ kind: 'applications', id: app.id, name: app.name })}
+                        ><Trash2 size={14} /></button>
+                      </div>
+                    )}
                     <a
                       className="app-icon"
                       href={app.url}
@@ -568,32 +595,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                           : 'Verificando'
                       }
                     />
-                    <button
-                      className={cn('item-menu', !layoutEdit && 'item-control')}
-                      onClick={() => setMenu(menu === app.id ? null : app.id)}
-                    >
-                      <MoreVertical />
-                    </button>
-                    {menu === app.id && (
-                      <div className={cn('context')}>
-                        <button
-                          onClick={() => {
-                            setEditing(app);
-                            setModal('app');
-                            setMenu(null);
-                          }}
-                        >
-                          <Edit3 /> Editar
-                        </button>
-                        <button
-                          onClick={() =>
-                            setConfirmDelete({ kind: 'applications', id: app.id, name: app.name })
-                          }
-                        >
-                          <Trash2 /> Excluir
-                        </button>
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <>
