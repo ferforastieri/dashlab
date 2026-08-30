@@ -1,4 +1,4 @@
-FROM node:22-alpine AS web
+FROM --platform=$BUILDPLATFORM node:22-alpine AS web
 ARG BUILD_VERSION=development
 ENV VITE_BUILD_VERSION=$BUILD_VERSION
 WORKDIR /src/web
@@ -7,14 +7,16 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-FROM golang:1.24-alpine AS api
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS api
 ARG BUILD_VERSION=development
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src/api
 RUN apk add --no-cache ca-certificates
 COPY api/go.mod api/go.sum* ./
 RUN go mod download
 COPY api/ ./
-RUN go test ./... && CGO_ENABLED=0 go build -trimpath \
+RUN go test ./... && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
   -ldflags="-s -w -X github.com/ferforastieri/dashlab/api/internal/app.BuildVersion=${BUILD_VERSION}" \
   -o /out/dashlab-plus ./cmd/server
 
