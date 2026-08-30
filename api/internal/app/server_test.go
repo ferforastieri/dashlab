@@ -85,6 +85,24 @@ func TestAPIRequiresBasicAuthentication(t *testing.T) {
 	}
 }
 
+func TestBasicLoginCreatesReusableSession(t *testing.T) {
+	_, handler := testServer(t)
+	login := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
+	login.SetBasicAuth("test", "test-password")
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, login)
+	if first.Code != http.StatusOK || len(first.Result().Cookies()) != 1 {
+		t.Fatalf("login status = %d, cookies = %d", first.Code, len(first.Result().Cookies()))
+	}
+	followUp := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
+	followUp.AddCookie(first.Result().Cookies()[0])
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, followUp)
+	if second.Code != http.StatusOK {
+		t.Fatalf("session status = %d, body = %s", second.Code, second.Body.String())
+	}
+}
+
 func TestMutatingRequestsRejectCrossOrigin(t *testing.T) {
 	_, handler := testServer(t)
 	request := httptest.NewRequest(http.MethodPost, "/api/update", nil)

@@ -2,7 +2,10 @@ package app
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -158,14 +161,35 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		if cookie, err := r.Cookie("dashlab_session"); err == nil && s.validSession(cookie.Value) {
+			next.ServeHTTP(w, r)
+			return
+		}
 		user, password, ok := r.BasicAuth()
 		if !ok || s.authPassword == "" || subtle.ConstantTimeCompare([]byte(user), []byte(s.authUser)) != 1 || subtle.ConstantTimeCompare([]byte(password), []byte(s.authPassword)) != 1 {
 			w.Header().Set("WWW-Authenticate", `Basic realm="DashLab+", charset="UTF-8"`)
 			writeError(w, http.StatusUnauthorized, "Autenticação necessária")
 			return
 		}
+		http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: s.sessionToken(), Path: "/", MaxAge: 30 * 24 * 60 * 60, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) sessionToken() string {
+	mac := hmac.New(sha256.New, []byte(s.authPassword))
+	mac.Write([]byte(s.authUser))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func (s *Server) validSession(value string) bool {
+	expected := s.sessionToken()
+	provided, err := hex.DecodeString(value)
+	if err != nil {
+		return false
+	}
+	actual, err := hex.DecodeString(expected)
+	return err == nil && subtle.ConstantTimeCompare(provided, actual) == 1
 }
 
 func (s *Server) originCheck(next http.Handler) http.Handler {
