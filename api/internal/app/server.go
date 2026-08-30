@@ -150,7 +150,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/assets/{id}", s.deleteAsset)
 	mux.HandleFunc("GET /api/pwa/{dashboardId}/manifest.webmanifest", s.pwaManifest)
 	mux.HandleFunc("GET /api/pwa/{dashboardId}/icon/{file}", s.pwaIcon)
-	mux.Handle("/", webHandler(env("WEB_ROOT", "")))
+	mux.Handle("/", webHandler(env("WEB_ROOT", "/app/web")))
 	return s.securityHeaders(s.auth(s.originCheck(s.rateLimit(s.recoverPanic(s.logRequests(mux))))))
 }
 
