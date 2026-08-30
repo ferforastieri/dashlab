@@ -124,6 +124,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /api/auth/branding/logo", s.publicBrandingLogo)
 	mux.HandleFunc("POST /api/auth/bootstrap", s.bootstrap)
 	mux.HandleFunc("POST /api/auth/login", s.login)
+	mux.HandleFunc("POST /api/auth/logout", s.logout)
 	mux.HandleFunc("GET /api/auth/users", s.listUsers)
 	mux.HandleFunc("POST /api/auth/users", s.createUser)
 	mux.HandleFunc("DELETE /api/auth/users/{id}", s.deleteUser)
@@ -320,6 +321,20 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]string{"role": identity.Role})
+}
+func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("dashlab_session")
+	if err == nil {
+		if err := s.store.deleteSession(r.Context(), cookie.Value); err != nil {
+			s.fail(w, http.StatusInternalServerError, err)
+			return
+		}
+		s.sessionsMu.Lock()
+		delete(s.sessions, cookie.Value)
+		s.sessionsMu.Unlock()
+	}
+	http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 func (s *Server) startSession(w http.ResponseWriter, r *http.Request, identity authIdentity) error {
 	token := randomSession()

@@ -12,6 +12,7 @@ import {
   Edit3,
   Pencil,
   Users,
+  LogOut,
   Menu,
   Trash2,
   X,
@@ -97,7 +98,8 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string } | null>(
       null,
     ),
-    [canManageUsers, setCanManageUsers] = useState(false);
+    [canManageUsers, setCanManageUsers] = useState(false),
+    [loggingOut, setLoggingOut] = useState(false);
   const canvasRef = useRef<HTMLElement | null>(null);
   const drawerTouchStart = useRef<{ x: number; y: number } | null>(null);
   const load = () => dashboardQuery.refetch();
@@ -110,6 +112,12 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     if (manifest) manifest.href = `/api/pwa/${dash.id}/manifest.webmanifest`;
     const backgroundColor = dash.branding?.backgroundColor;
     const accentColor = dash.branding?.accent;
+    const root = document.documentElement;
+    root.style.setProperty('--accent', dash.branding?.accent || defaultBranding.accent);
+    root.style.setProperty('--surface-bg', dash.branding?.backgroundColor || defaultBranding.backgroundColor);
+    root.style.setProperty('--panel-color', dash.branding?.panelColor || defaultBranding.panelColor);
+    root.style.setProperty('--text-color', dash.branding?.textColor || defaultBranding.textColor);
+    root.style.setProperty('--border-color', dash.branding?.borderColor || defaultBranding.borderColor);
     const themeColor = document.querySelector<HTMLMetaElement>("meta[name='theme-color']");
     if (themeColor && (accentColor || backgroundColor))
       themeColor.content = accentColor || backgroundColor;
@@ -219,6 +227,16 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     await dashboardQuery.refetch();
     setSelectedLayoutId(null);
   }
+  async function logout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await apiClient.post('/auth/logout');
+      window.location.reload();
+    } catch {
+      setLoggingOut(false);
+    }
+  }
   if (!dash) return null;
   const branding = { ...defaultBranding, ...(dash.branding || {}) };
   const mobileLayout = branding.mobileLayout || 'GRID';
@@ -326,6 +344,9 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             <Settings />
           </button>
           {canManageUsers && <button className={cn('icon-button')} onClick={() => setModal('users')} title="Gerenciar usuários"><Users /></button>}
+          <button className={cn('icon-button')} onClick={() => void logout()} disabled={loggingOut} title="Sair" aria-label="Sair">
+            <LogOut />
+          </button>
           {!isMobile && (
             <button
               className={cn('icon-button', layoutEdit && 'active')}

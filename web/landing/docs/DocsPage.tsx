@@ -76,8 +76,8 @@ export function DocsPage() {
               <strong>{text('Acesso e usuários', 'Access and users')}</strong>
               <p>
                 {text(
-                  'O primeiro usuário criado durante a configuração se torna administrador e pode criar usuários comuns. O acesso ao Lab e à API exige login.',
-                  'The first user created during setup becomes an administrator and can create regular users. Access to the Lab and API requires login.',
+                  'O primeiro usuário criado durante a configuração se torna administrador e pode criar usuários comuns. O acesso ao Lab e à API exige login; a sessão permanece ativa durante atualizações e o botão Sair encerra o acesso no dispositivo atual.',
+                  'The first user created during setup becomes an administrator and can create regular users. Access to the Lab and API requires login; the session stays active through updates, and the Sign out button ends access on the current device.',
                 )}
               </p>
             </div>
@@ -242,8 +242,8 @@ export function DocsPage() {
             <ol>
               <li>
                 {text(
-                  'No primeiro acesso, crie o usuário administrador. Nos acessos seguintes, entre com seu usuário e senha; administradores podem criar usuários comuns pelo botão de usuários no Lab.',
-                  'On first access, create the administrator account. On later visits, sign in; administrators can create regular users with the users button in the Lab.',
+                  'No primeiro acesso, crie o usuário administrador. Nos acessos seguintes, entre com seu usuário e senha; administradores podem criar usuários comuns pelo botão de usuários no Lab. Use o botão Sair na barra de ações para encerrar sua sessão neste dispositivo.',
+                  'On first access, create the administrator account. On later visits, sign in; administrators can create regular users with the users button in the Lab. Use the Sign out button in the action bar to end your session on this device.',
                 )}
               </li>
               <li>
@@ -341,7 +341,7 @@ export function DocsPage() {
               <li><code>POST/PATCH/DELETE /api/widgets</code> — widgets e configurações.</li>
               <li><code>GET /api/metrics/*</code> — métricas do Prometheus.</li>
               <li><code>GET /api/applications/status</code> — disponibilidade dos serviços.</li>
-              <li><code>GET/POST /api/auth/*</code> — primeiro acesso, login e gerenciamento de usuários.</li>
+              <li><code>GET/POST /api/auth/*</code> — primeiro acesso, login, logout e gerenciamento de usuários.</li>
               <li><code>POST /api/update</code> — atualiza frontend e backend pelo updater interno (administrador).</li>
             </ul>
           </section>
@@ -413,8 +413,8 @@ docker start dashlab-plus`}</code>
             </p>
             <p>
               {text(
-                'Quando uma versão publicada for detectada, o DashLab+ mostra um aviso. Clique em Atualizar para baixar a imagem nova e recriar o container; frontend e backend são atualizados juntos.',
-                'When a published version is detected, DashLab+ shows a notice. Click Update to pull the new image and recreate the container; frontend and backend update together.',
+                'Quando uma versão publicada for detectada, o DashLab+ mostra um aviso com as cores do tema atual. Clique em Atualizar para baixar a imagem nova e recriar o container; frontend e backend são atualizados juntos e sua sessão continua ativa.',
+                'When a published version is detected, DashLab+ shows a notice in the current theme colors. Click Update to pull the new image and recreate the container; frontend and backend update together and your session remains active.',
               )}
             </p>
             <p>

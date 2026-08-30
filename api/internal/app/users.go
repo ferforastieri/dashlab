@@ -70,6 +70,13 @@ func (s *Store) deleteSessionsForUser(ctx context.Context, username string) erro
 	return err
 }
 
+func (s *Store) deleteSession(ctx context.Context, token string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE token=?`, token)
+	return err
+}
+
 func (s *Store) users(ctx context.Context) ([]User, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id,username,role,created_at FROM users ORDER BY username`)
 	if err != nil {

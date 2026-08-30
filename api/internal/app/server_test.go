@@ -111,6 +111,32 @@ func TestBasicLoginCreatesReusableSession(t *testing.T) {
 	}
 }
 
+func TestLogoutRevokesSession(t *testing.T) {
+	_, handler := testServer(t)
+	login := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
+	login.SetBasicAuth("test", "test-password")
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, login)
+	if first.Code != http.StatusOK || len(first.Result().Cookies()) != 1 {
+		t.Fatalf("login status = %d, cookies = %d", first.Code, len(first.Result().Cookies()))
+	}
+	cookie := first.Result().Cookies()[0]
+	logout := httptest.NewRequest(http.MethodPost, "/api/auth/logout", nil)
+	logout.AddCookie(cookie)
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, logout)
+	if second.Code != http.StatusOK {
+		t.Fatalf("logout status = %d, body = %s", second.Code, second.Body.String())
+	}
+	followUp := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
+	followUp.AddCookie(cookie)
+	third := httptest.NewRecorder()
+	handler.ServeHTTP(third, followUp)
+	if third.Code != http.StatusUnauthorized {
+		t.Fatalf("revoked session status = %d, body = %s", third.Code, third.Body.String())
+	}
+}
+
 func TestMutatingRequestsRejectCrossOrigin(t *testing.T) {
 	_, handler := testServer(t)
 	request := httptest.NewRequest(http.MethodPost, "/api/update", nil)
