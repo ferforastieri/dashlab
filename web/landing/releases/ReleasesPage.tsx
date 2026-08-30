@@ -9,13 +9,17 @@ export function ReleasesPage() {
   });
   const [releases, setReleases] = useState<Array<{ tag_name: string; name: string; html_url: string; published_at: string; body: string | null }>>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const perPage = 5;
   useEffect(() => {
-    fetch('https://api.github.com/repos/ferforastieri/dashlab/releases?per_page=20', { headers: { Accept: 'application/vnd.github+json' } })
+    fetch('https://api.github.com/repos/ferforastieri/dashlab/releases?per_page=100', { headers: { Accept: 'application/vnd.github+json' } })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('releases unavailable')))
-      .then((data) => setReleases(Array.isArray(data) ? data : []))
+      .then((data) => { setReleases(Array.isArray(data) ? data : []); setPage(1); })
       .catch(() => setReleases([]))
       .finally(() => setLoading(false));
   }, []);
+  const pageCount = Math.max(1, Math.ceil(releases.length / perPage));
+  const visibleReleases = releases.slice((page - 1) * perPage, page * perPage);
   return (
     <>
       <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
@@ -31,13 +35,20 @@ export function ReleasesPage() {
           {loading && <p>{text('Carregando releases…', 'Loading releases…')}</p>}
           {!loading && releases.length === 0 && <p>{text('Não foi possível carregar a lista agora. Consulte os releases diretamente no GitHub.', 'The list could not be loaded right now. Check the releases directly on GitHub.')}</p>}
           <div className="release-list">
-            {releases.map((release) => <article className="release-card" key={release.tag_name}>
+            {visibleReleases.map((release) => <article className="release-card" key={release.tag_name}>
               <div><span className="release-tag">{release.tag_name}</span><time dateTime={release.published_at}>{new Date(release.published_at).toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')}</time></div>
               <h3>{release.name || release.tag_name}</h3>
               <p>{(release.body || text('Release publicado automaticamente pela pipeline.', 'Release published automatically by the pipeline.')).slice(0, 280)}</p>
               <a href={release.html_url}>{text('Ver detalhes', 'View details')} ↗</a>
             </article>)}
           </div>
+          {!loading && releases.length > perPage && (
+            <nav className="release-pagination" aria-label={text('Paginação de releases', 'Release pagination')}>
+              <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}>← {text('Anteriores', 'Previous')}</button>
+              <span>{page} / {pageCount}</span>
+              <button type="button" onClick={() => setPage((current) => Math.min(pageCount, current + 1))} disabled={page === pageCount}>{text('Próximas', 'Next')} →</button>
+            </nav>
+          )}
           </section>
       </main>
       <PublicFooter language={language} text={text} />
