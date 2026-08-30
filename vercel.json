@@ -8,7 +8,8 @@
   "trailingSlash": true,
   "redirects": [
     { "source": "/lab", "destination": "/docs/#instalacao", "permanent": false },
-    { "source": "/lab/", "destination": "/docs/#instalacao", "permanent": false }
+    { "source": "/lab/", "destination": "/docs/#instalacao", "permanent": false },
+    { "source": "/lab/index.html", "destination": "/docs/#instalacao", "permanent": false }
   ],
   "headers": [
     {

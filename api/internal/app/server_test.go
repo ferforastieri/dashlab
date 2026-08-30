@@ -19,7 +19,9 @@ func testServer(t *testing.T) (*Server, http.Handler) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = store.Close() })
-	server := &Server{store: store, integrations: NewIntegrations(), logger: slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil))}
+	integrations := NewIntegrations()
+	integrations.allowlist = parseAllowlist("proxmox.local")
+	server := &Server{store: store, integrations: integrations, logger: slog.New(slog.NewTextHandler(&bytes.Buffer{}, nil)), authUser: "test", authPassword: "test-password", outboundAllowlist: parseAllowlist("proxmox.local")}
 	return server, server.routes()
 }
 
@@ -33,6 +35,7 @@ func requestJSON(t *testing.T, handler http.Handler, method, path string, body a
 	}
 	request := httptest.NewRequest(method, path, &payload)
 	request.Header.Set("Content-Type", "application/json")
+	request.SetBasicAuth("test", "test-password")
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	return response
@@ -69,6 +72,37 @@ func TestDashboardStartsWithSingleUserDefaults(t *testing.T) {
 		if _, ok := raw[field].([]any); !ok {
 			t.Fatalf("%s must be a JSON array, got %T", field, raw[field])
 		}
+	}
+}
+
+func TestAPIRequiresBasicAuthentication(t *testing.T) {
+	_, handler := testServer(t)
+	request := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestMutatingRequestsRejectCrossOrigin(t *testing.T) {
+	_, handler := testServer(t)
+	request := httptest.NewRequest(http.MethodPost, "/api/update", nil)
+	request.SetBasicAuth("test", "test-password")
+	request.Header.Set("Origin", "https://evil.example")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestOutboundURLBlocksPrivateDestinationsUnlessAllowlisted(t *testing.T) {
+	if outboundURLAllowed("http://127.0.0.1:9090", nil) {
+		t.Fatal("loopback URL must be blocked")
+	}
+	if !outboundURLAllowed("http://127.0.0.1:9090", parseAllowlist("127.0.0.1")) {
+		t.Fatal("explicitly allowlisted loopback URL must be accepted")
 	}
 }
 

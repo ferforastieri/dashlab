@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,12 +21,15 @@ import (
 )
 
 type Server struct {
-	store        *Store
-	integrations *Integrations
-	logger       *slog.Logger
-	updateURL    string
-	updateToken  string
-	limiter      *requestLimiter
+	store             *Store
+	integrations      *Integrations
+	logger            *slog.Logger
+	updateURL         string
+	updateToken       string
+	authUser          string
+	authPassword      string
+	outboundAllowlist map[string]struct{}
+	limiter           *requestLimiter
 }
 
 type rateWindow struct {
@@ -70,17 +75,22 @@ func Run() {
 	}
 	defer store.Close()
 
+	outboundAllowlist := parseAllowlist(os.Getenv("OUTBOUND_ALLOWLIST"))
 	integrations := NewIntegrations()
+	integrations.allowlist = outboundAllowlist
 	if settings, settingsErr := store.Settings(context.Background()); settingsErr == nil {
 		integrations.Configure(settings)
 	}
 	server := &Server{
-		store:        store,
-		integrations: integrations,
-		logger:       logger,
-		updateURL:    strings.TrimRight(env("UPDATE_SERVICE_URL", ""), "/"),
-		updateToken:  strings.TrimSpace(env("UPDATE_TOKEN", "")),
-		limiter:      newRequestLimiter(),
+		store:             store,
+		integrations:      integrations,
+		logger:            logger,
+		updateURL:         strings.TrimRight(env("UPDATE_SERVICE_URL", ""), "/"),
+		updateToken:       strings.TrimSpace(env("UPDATE_TOKEN", "")),
+		authUser:          env("DASHLAB_AUTH_USER", "dashlab"),
+		authPassword:      strings.TrimSpace(os.Getenv("DASHLAB_AUTH_PASSWORD")),
+		outboundAllowlist: outboundAllowlist,
+		limiter:           newRequestLimiter(),
 	}
 	httpServer := &http.Server{
 		Addr:              ":" + env("PORT", "3001"),
@@ -137,7 +147,40 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /api/pwa/{dashboardId}/manifest.webmanifest", s.pwaManifest)
 	mux.HandleFunc("GET /api/pwa/{dashboardId}/icon/{file}", s.pwaIcon)
 	mux.Handle("/", webHandler(env("WEB_ROOT", "")))
-	return s.securityHeaders(s.rateLimit(s.recoverPanic(s.logRequests(mux))))
+	return s.securityHeaders(s.auth(s.originCheck(s.rateLimit(s.recoverPanic(s.logRequests(mux))))))
+}
+
+// auth protects the single-user API and UI with HTTP Basic authentication.
+// Health remains public so Docker can perform its health check.
+func (s *Server) auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/health" || r.URL.Path == "/api/version" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		user, password, ok := r.BasicAuth()
+		if !ok || s.authPassword == "" || subtle.ConstantTimeCompare([]byte(user), []byte(s.authUser)) != 1 || subtle.ConstantTimeCompare([]byte(password), []byte(s.authPassword)) != 1 {
+			w.Header().Set("WWW-Authenticate", `Basic realm="DashLab+", charset="UTF-8"`)
+			writeError(w, http.StatusUnauthorized, "Autenticação necessária")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) originCheck(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
+			if origin := strings.TrimSpace(r.Header.Get("Origin")); origin != "" {
+				parsed, err := url.Parse(origin)
+				if err != nil || parsed.Host == "" || !strings.EqualFold(parsed.Host, r.Host) {
+					writeError(w, http.StatusForbidden, "Origem não permitida")
+					return
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -172,6 +215,10 @@ func (s *Server) saveSettings(w http.ResponseWriter, r *http.Request) {
 		parsed, err := url.Parse(strings.TrimSpace(payload.PrometheusURL))
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil {
 			writeError(w, http.StatusBadRequest, "URL do Prometheus inválida")
+			return
+		}
+		if err := validateOutboundURL(parsed.String(), s.outboundAllowlist); err != nil {
+			writeError(w, http.StatusBadRequest, "Destino do Prometheus não permitido")
 			return
 		}
 	}
@@ -243,6 +290,11 @@ func (s *Server) branding(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &values) {
 		return
 	}
+	values, err := sanitizeBranding(values)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "Personalização inválida")
+		return
+	}
 	dashboard, err := s.store.Update(r.Context(), func(dashboard *Dashboard) error {
 		if name, ok := values["name"].(string); ok && strings.TrimSpace(name) != "" {
 			dashboard.Name = truncate(strings.TrimSpace(name), 80)
@@ -259,17 +311,58 @@ func (s *Server) branding(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, withMessage(dashboard, "Personalização salva com sucesso"))
 }
 
+func sanitizeBranding(values map[string]any) (map[string]any, error) {
+	allowed := map[string]bool{"name": true, "wallpaper": true, "logo": true, "favicon": true, "accent": true, "theme": true, "backgroundColor": true, "panelColor": true, "textColor": true, "borderColor": true, "radius": true, "panelOpacity": true, "wallpaperOverlay": true, "fontScale": true, "mobileLayout": true}
+	result := map[string]any{}
+	for key, value := range values {
+		if !allowed[key] {
+			continue
+		}
+		if key == "wallpaper" || key == "logo" || key == "favicon" {
+			text, ok := value.(string)
+			if !ok || (text != "" && !strings.HasPrefix(text, "/api/assets/files/")) {
+				return nil, errors.New("invalid asset URL")
+			}
+		}
+		if strings.HasSuffix(strings.ToLower(key), "color") || key == "accent" {
+			if _, ok := value.(string); !ok || !regexp.MustCompile(`^#[0-9a-fA-F]{6}$`).MatchString(value.(string)) {
+				return nil, errors.New("invalid color")
+			}
+		}
+		if key == "theme" {
+			text, ok := value.(string)
+			if !ok || (text != "dark" && text != "light") {
+				return nil, errors.New("invalid theme")
+			}
+		}
+		if key == "mobileLayout" {
+			text, ok := value.(string)
+			if !ok || (text != "GRID" && text != "DRAWER" && text != "BOTTOM") {
+				return nil, errors.New("invalid mobile layout")
+			}
+		}
+		if key == "radius" || key == "panelOpacity" || key == "wallpaperOverlay" || key == "fontScale" {
+			number, ok := value.(float64)
+			if !ok || number < 0 || number > 200 {
+				return nil, errors.New("invalid numeric branding value")
+			}
+		}
+		result[key] = value
+	}
+	return result, nil
+}
+
 func (s *Server) createApplication(w http.ResponseWriter, r *http.Request) {
 	var application Application
 	if !decodeJSON(w, r, &application) {
 		return
 	}
 	application.Name = truncate(strings.TrimSpace(application.Name), 80)
-	if application.Name == "" || !validHTTPURL(application.URL) {
+	if application.Name == "" || !validHTTPURL(application.URL) || !outboundURLAllowed(application.URL, s.outboundAllowlist) {
 		writeError(w, http.StatusBadRequest, "Informe um nome e uma URL HTTP válida")
 		return
 	}
-	if application.StatusURL != "" && !validHTTPURL(application.StatusURL) {
+	if application.StatusURL != "" && (!validHTTPURL(application.StatusURL) || !outboundURLAllowed(application.StatusURL, s.outboundAllowlist)) {
 		writeError(w, http.StatusBadRequest, "A URL de status é inválida")
 		return
 	}
@@ -309,7 +402,7 @@ func (s *Server) updateApplication(w http.ResponseWriter, r *http.Request) {
 			return err
 		}
 		updated = dashboard.Applications[index]
-		if updated.Name == "" || !validHTTPURL(updated.URL) {
+		if updated.Name == "" || !validHTTPURL(updated.URL) || !outboundURLAllowed(updated.URL, s.outboundAllowlist) || (updated.StatusURL != "" && (!validHTTPURL(updated.StatusURL) || !outboundURLAllowed(updated.StatusURL, s.outboundAllowlist))) {
 			return fmt.Errorf("invalid application")
 		}
 		return nil
@@ -684,6 +777,56 @@ func validHTTPURL(value string) bool {
 	parsed, err := url.ParseRequestURI(value)
 	return err == nil && (parsed.Scheme == "http" || parsed.Scheme == "https") && parsed.Host != ""
 }
+
+func parseAllowlist(value string) map[string]struct{} {
+	result := map[string]struct{}{}
+	for _, item := range strings.Split(value, ",") {
+		if host := strings.ToLower(strings.TrimSpace(item)); host != "" {
+			result[host] = struct{}{}
+		}
+	}
+	return result
+}
+
+func outboundURLAllowed(value string, allowlist map[string]struct{}) bool {
+	parsed, err := url.ParseRequestURI(strings.TrimSpace(value))
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if _, explicitlyAllowed := allowlist[host]; explicitlyAllowed {
+		return true
+	}
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") || strings.HasSuffix(host, ".local") {
+		return false
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		// Single-label names are normally Docker/LAN names; require explicit
+		// authorization. Resolve public hostnames to catch DNS pointing at LAN.
+		if !strings.Contains(host, ".") {
+			return false
+		}
+		ips, err := net.LookupIP(host)
+		if err != nil {
+			return true
+		}
+		for _, resolved := range ips {
+			if resolved.IsLoopback() || resolved.IsPrivate() || resolved.IsLinkLocalUnicast() || resolved.IsLinkLocalMulticast() || resolved.IsUnspecified() {
+				return false
+			}
+		}
+		return true
+	}
+	return !ip.IsLoopback() && !ip.IsPrivate() && !ip.IsLinkLocalUnicast() && !ip.IsLinkLocalMulticast() && !ip.IsUnspecified()
+}
+
+func validateOutboundURL(value string, allowlist map[string]struct{}) error {
+	if !outboundURLAllowed(value, allowlist) {
+		return errors.New("outbound destination blocked")
+	}
+	return nil
+}
 func findApplication(items []Application, id string) int {
 	for index := range items {
 		if items[index].ID == id {
@@ -824,6 +967,9 @@ func (s *Server) securityHeaders(next http.Handler) http.Handler {
 		// geolocation on HTTPS installations.
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
 		w.Header().Set("Cross-Origin-Resource-Policy", "same-origin")
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			w.Header().Set("Cache-Control", "no-store")
+		}
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://dashlabplus.vercel.app https://api.github.com")
 		next.ServeHTTP(w, r)
 	})

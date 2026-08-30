@@ -15,6 +15,7 @@ import (
 
 type Integrations struct {
 	client        *http.Client
+	allowlist     map[string]struct{}
 	prometheusURL string
 	targetLabels  string
 	networkLabels string
@@ -40,8 +41,10 @@ func (i *Integrations) Configure(settings map[string]string) {
 }
 
 func NewIntegrations() *Integrations {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
 	return &Integrations{
-		client:        &http.Client{Timeout: 6 * time.Second},
+		client:        &http.Client{Timeout: 6 * time.Second, Transport: transport, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }},
+		allowlist:     parseAllowlist(os.Getenv("OUTBOUND_ALLOWLIST")),
 		prometheusURL: strings.TrimRight(os.Getenv("PROMETHEUS_URL"), "/"),
 		targetLabels:  os.Getenv("PROMETHEUS_TARGET_LABELS"),
 		networkLabels: env("PROMETHEUS_NETWORK_LABELS", `device!="lo"`),
@@ -224,6 +227,10 @@ func (i *Integrations) Statuses(ctx context.Context, applications []Application)
 			if target == "" {
 				target = app.URL
 			}
+			if !outboundURLAllowed(target, i.allowlist) {
+				result[index] = map[string]any{"id": app.ID, "online": false, "status": nil, "latency": time.Since(started).Milliseconds()}
+				return
+			}
 			request, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 			status := 0
 			online := false
@@ -254,7 +261,11 @@ func (i *Integrations) Weather(ctx context.Context, latitude, longitude float64)
 func (i *Integrations) prometheus(ctx context.Context, path string, params map[string]string) (any, error) {
 	i.mu.RLock()
 	baseURL := i.prometheusURL
+	allowlist := i.allowlist
 	i.mu.RUnlock()
+	if !outboundURLAllowed(baseURL, allowlist) {
+		return nil, fmt.Errorf("destino do Prometheus não permitido")
+	}
 	values := url.Values{}
 	for key, value := range params {
 		values.Set(key, value)

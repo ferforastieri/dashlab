@@ -11,7 +11,7 @@ O projeto tem duas experiências:
 - **Landing** — apresentação pública, documentação e releases, publicada na Vercel.
 - **Lab** — dashboard que roda no servidor do usuário, junto da API e do SQLite.
 
-Na instalação Docker, uma única imagem contém o frontend compilado e o servidor Go, servindo ambos na porta `3000`.
+Na instalação Docker, uma única imagem contém o frontend compilado e o servidor Go. O Compose publica a porta somente em `127.0.0.1`; use um reverse proxy HTTPS com Basic/SSO para acesso pela LAN/VPN.
 
 ## Arquitetura
 
@@ -24,7 +24,7 @@ DashLab+ (Docker :3000)
    ├── API Go (HTTP + integrações)
    └── SQLite em /data
         ├── Prometheus (opcional)
-        └── Watchtower updater (Compose)
+        └── updater próprio (Compose)
 ```
 
 O volume `dashlab_plus_data` preserva dashboard, layout, branding, aplicações, widgets e configurações entre atualizações.
@@ -61,13 +61,17 @@ Requisitos: Docker Engine e Docker Compose v2.
 curl -fsSL https://dashlabplus.vercel.app/install.sh | sh
 ```
 
+Para uma instalação reprodutível, baixe o instalador de uma release e execute com `DASHLAB_RELEASE_REF=refs/tags/vX.Y.Z`.
+
 O instalador cria `~/.dashlab-plus`, gera o token interno do updater e inicia a aplicação. Acesse `http://IP-DO-HOST:3000`. Executar o comando novamente atualiza a instalação sem remover o volume de dados.
 
-Execução manual:
+Execução manual (defina também as credenciais):
 
 ```bash
 docker run -d --name dashlab-plus --restart unless-stopped \
-  -p 3000:3000 -v dashlab_plus_data:/data \
+  -p 127.0.0.1:3000:3000 -v dashlab_plus_data:/data \
+  -e DASHLAB_AUTH_USER=dashlab -e DASHLAB_AUTH_PASSWORD='troque-este-valor' \
+  -e UPDATE_TOKEN='gere-um-token' \
   ghcr.io/ferforastieri/dashlab-plus:latest
 ```
 
@@ -81,6 +85,10 @@ As variáveis abaixo continuam disponíveis para automação ou primeiro boot:
 | --- | --- | --- |
 | `WEB_PORT` | `3000` | Porta publicada no host |
 | `UPDATE_TOKEN` | gerado pelo instalador | Autoriza o updater interno |
+| `DASHLAB_AUTH_USER` | `dashlab` | Usuário Basic da interface/API |
+| `DASHLAB_AUTH_PASSWORD` | gerado pelo instalador | Senha Basic; mantenha em segredo |
+| `DASHLAB_IMAGE` | `ghcr.io/ferforastieri/dashlab-plus:latest` | Imagem acompanhada pelo updater |
+| `OUTBOUND_ALLOWLIST` | vazio | Hosts privados explicitamente autorizados para checks/Prometheus |
 | `PROMETHEUS_URL` | vazio | Endpoint do Prometheus |
 | `PROMETHEUS_TARGET_LABELS` | vazio | Filtro de targets |
 | `PROMETHEUS_NETWORK_LABELS` | `device!="lo"` | Filtro de interfaces |
@@ -117,7 +125,11 @@ docker run --rm -p 3000:3000 -v dashlab_plus_data:/data dashlab-plus
 
 Cada push na branch `main` testa a API, compila a imagem multi-arquitetura (`amd64` e `arm64`), publica no GHCR e cria um release no GitHub com instalador e Compose.
 
-O Lab consulta a versão pública e mostra uma notificação quando há atualização. Em instalações Compose, **Atualizar** aciona o updater e reinicia o container; o PWA atualiza a interface no navegador.
+O Lab consulta a versão pública e mostra uma notificação quando há atualização. Clique em **Atualizar** para o updater baixar a nova imagem e recriar o container; frontend e backend são atualizados juntos. Não publique a porta diretamente na internet.
+
+## Segurança operacional
+
+A API exige autenticação Basic e rejeita requisições mutáveis de origens diferentes. URLs de status e Prometheus que apontam para redes privadas precisam estar em `OUTBOUND_ALLOWLIST`; destinos locais não são aceitos por padrão. Faça backup periódico do volume `dashlab_plus_data` e mantenha o `.env` com permissão `0600`.
 
 ## Licença
 
