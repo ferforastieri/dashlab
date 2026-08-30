@@ -190,7 +190,7 @@ func (s *Server) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusServiceUnavailable, "Atualização automática não está disponível nesta instalação")
 		return
 	}
-	request, err := http.NewRequest(http.MethodGet, s.updateURL+"/v1/update", nil)
+	request, err := http.NewRequest(http.MethodPost, s.updateURL+"/v1/update", nil)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "Não foi possível iniciar a atualização")
 		return

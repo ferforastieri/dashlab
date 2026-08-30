@@ -101,10 +101,12 @@ func TestUpdateEndpointRequiresUpdater(t *testing.T) {
 func TestUpdateEndpointTriggersInternalUpdater(t *testing.T) {
 	var gotAuthorization string
 	var gotPath string
+	var gotMethod string
 	requestReceived := make(chan struct{})
 	updater := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuthorization = r.Header.Get("Authorization")
 		gotPath = r.URL.RequestURI()
+		gotMethod = r.Method
 		close(requestReceived)
 		w.WriteHeader(http.StatusAccepted)
 	}))
@@ -124,6 +126,9 @@ func TestUpdateEndpointTriggersInternalUpdater(t *testing.T) {
 	}
 	if gotAuthorization != "Bearer test-token" {
 		t.Fatalf("authorization = %q", gotAuthorization)
+	}
+	if gotMethod != http.MethodPost {
+		t.Fatalf("request method = %q", gotMethod)
 	}
 	if gotPath != "/v1/update" {
 		t.Fatalf("request path = %q", gotPath)
