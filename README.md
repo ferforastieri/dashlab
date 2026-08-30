@@ -1,73 +1,90 @@
 # DashLab+
 
-Dashboard single-user e self-hosted para organizar serviços, atalhos e métricas de um homelab.
+Dashboard pessoal, single-user e self-hosted para organizar serviços, atalhos e métricas de um homelab.
 
-Site oficial: [https://dashlabplus.vercel.app/](https://dashlabplus.vercel.app/)
+Site público: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
 
-O site público na Vercel apresenta o projeto e sua documentação. A instalação
-self-hosted usa uma única imagem Docker com landing page, Lab, API Go e
-persistência SQLite.
+## Visão geral
 
-No deploy público, a landing fica em `/`. Na instalação Docker, `/` abre diretamente o Lab; a landing é destinada à apresentação pública do projeto.
+O projeto tem duas experiências:
 
-## Acessos
+- **Landing** — apresentação pública, documentação e releases, publicada na Vercel.
+- **Lab** — dashboard que roda no servidor do usuário, junto da API e do SQLite.
 
-| Rota | Conteúdo |
+Na instalação Docker, uma única imagem contém o frontend compilado e o servidor Go, servindo ambos na porta `3000`.
+
+## Arquitetura
+
+```text
+navegador / PWA
+        │
+        ▼
+DashLab+ (Docker :3000)
+   ├── Lab React
+   ├── API Go (HTTP + integrações)
+   └── SQLite em /data
+        ├── Prometheus (opcional)
+        └── Watchtower updater (Compose)
+```
+
+O volume `dashlab_plus_data` preserva dashboard, layout, branding, aplicações, widgets e configurações entre atualizações.
+
+## Tecnologias
+
+| Camada | Tecnologia |
 | --- | --- |
-| `/` | Lab (instalação self-hosted) |
-| `/lab/` | Lab |
-| `/docs/` | Documentação |
-| `/releases/` | Histórico de releases |
-| `/api/health` | Saúde da API |
-| `/api/version` | Versão publicada instalada |
+| Interface | React 19, TypeScript, Vite 7 |
+| Estilo | CSS responsivo |
+| Ícones | Lucide React |
+| PWA | Service Worker e manifest |
+| API | Go 1.24, `net/http` |
+| Persistência | SQLite (`modernc.org/sqlite`) |
+| Integrações | Prometheus, clima e disponibilidade |
+| Distribuição | Docker, Compose, GHCR e Vercel |
 
-## Instalação rápida
+## Rotas
 
-Requer Docker Engine e Docker Compose v2:
+| Rota | Função |
+| --- | --- |
+| `/` | Landing na Vercel; Lab na instalação self-hosted |
+| `/lab/` | Dashboard Lab |
+| `/docs/` | Documentação de instalação e operação |
+| `/releases/` | Releases publicados no GitHub |
+| `/api/health` | Health check |
+| `/api/version` | Versão do servidor instalado |
+
+## Instalação
+
+Requisitos: Docker Engine e Docker Compose v2.
 
 ```bash
 curl -fsSL https://dashlabplus.vercel.app/install.sh | sh
 ```
 
-O instalador salva a configuração em `~/.dashlab-plus`, gera um token interno para o atualizador, baixa a imagem pública do GHCR e preserva os dados no volume Docker. Execute o mesmo comando para atualizar.
+O instalador cria `~/.dashlab-plus`, gera o token interno do updater e inicia a aplicação. Acesse `http://IP-DO-HOST:3000`. Executar o comando novamente atualiza a instalação sem remover o volume de dados.
 
-O Lab compara a versão instalada com a última versão publicada. Um único aviso cobre interface e servidor: atualizações do PWA são aplicadas no navegador; quando a imagem Docker mudou, clique em **Atualizar** para iniciar a atualização e reiniciar o container automaticamente. Esse botão funciona na instalação Compose feita pelo instalador; em um `docker run` direto, use o comando manual abaixo.
-
-O atualizador interno precisa do socket do Docker e é protegido pelo token gerado no arquivo `~/.dashlab-plus/.env`; mantenha esse arquivo privado e restrinja o acesso ao Lab à sua LAN ou VPN.
-
-Também é possível iniciar diretamente:
+Execução manual:
 
 ```bash
-docker run -d \
-  --name dashlab-plus \
-  --restart unless-stopped \
-  -p 3000:3000 \
-  -v dashlab_plus_data:/data \
+docker run -d --name dashlab-plus --restart unless-stopped \
+  -p 3000:3000 -v dashlab_plus_data:/data \
   ghcr.io/ferforastieri/dashlab-plus:latest
 ```
 
-Acesse `http://IP-DO-HOST:3000`.
-
 ## Configuração
 
-| Variável | Padrão | Uso |
+| Variável | Padrão | Função |
 | --- | --- | --- |
-| `WEB_PORT` | `3000` | Porta HTTP publicada pelo container. |
-| `PROMETHEUS_URL` | vazio | URL do Prometheus acessível pela API. |
-| `PROMETHEUS_TARGET_LABELS` | vazio | Labels comuns ao host monitorado. |
-| `PROMETHEUS_NETWORK_LABELS` | `device!="lo"` | Filtro das interfaces de rede. |
-| `PROMETHEUS_DISK_LABELS` | discos NVMe/SATA | Filtro dos discos monitorados. |
+| `WEB_PORT` | `3000` | Porta publicada no host |
+| `UPDATE_TOKEN` | gerado pelo instalador | Autoriza o updater interno |
+| `PROMETHEUS_URL` | vazio | Endpoint do Prometheus |
+| `PROMETHEUS_TARGET_LABELS` | vazio | Filtro de targets |
+| `PROMETHEUS_NETWORK_LABELS` | `device!="lo"` | Filtro de interfaces |
+| `PROMETHEUS_DISK_LABELS` | NVMe/SATA | Filtro de discos |
 
-O Prometheus é opcional. Sem `PROMETHEUS_URL`, apenas os widgets dependentes de métricas ficam indisponíveis.
+Prometheus é opcional. Tokens e preferências adicionais podem ser configurados no Lab e são persistidos no SQLite.
 
-## Desenvolvimento
-
-| Pasta | Responsabilidade |
-| --- | --- |
-| `web/landing` | Landing e documentação React. |
-| `web/lab` | Lab React e cliente da API. |
-| `web/public` | Assets estáticos, PWA e instalador. |
-| `api` | Servidor Go, integrações e SQLite. |
+## Desenvolvimento local
 
 Frontend:
 
@@ -77,7 +94,7 @@ npm ci
 npm run dev
 ```
 
-API, com Go 1.24:
+API:
 
 ```bash
 cd api
@@ -85,22 +102,18 @@ go test ./...
 DATABASE_PATH=./dashlab-plus.db go run ./cmd/server
 ```
 
-O Vite encaminha `/api` para `http://localhost:3001`.
-
-Imagem completa:
+O Vite encaminha `/api` para `http://localhost:3001`. Para validar a imagem completa:
 
 ```bash
 docker build -t dashlab-plus .
 docker run --rm -p 3000:3000 -v dashlab_plus_data:/data dashlab-plus
 ```
 
-## Persistência
+## Releases e atualização
 
-O volume `dashlab_plus_data` armazena `/data/dashlab-plus.db`. Para backups consistentes, pare o container `dashlab-plus` antes de copiar o volume.
+Cada push na branch `main` testa a API, compila a imagem multi-arquitetura (`amd64` e `arm64`), publica no GHCR e cria um release no GitHub com instalador e Compose.
 
-## Segurança
-
-O DashLab+ não possui autenticação própria. Utilize somente em rede confiável, VPN ou atrás de autenticação no proxy reverso. A API aplica limites básicos por endereço (incluindo limite estrito no endpoint de atualização), limita corpos JSON e uploads, valida URLs do Prometheus e envia headers de isolamento/CSP. Não exponha SQLite, Prometheus, o socket Docker ou outros serviços internos.
+O Lab consulta a versão pública e mostra uma notificação quando há atualização. Em instalações Compose, **Atualizar** aciona o updater e reinicia o container; o PWA atualiza a interface no navegador.
 
 ## Licença
 
