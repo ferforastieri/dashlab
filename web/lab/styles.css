@@ -1456,6 +1456,124 @@ a {
 .confirm-dialog-actions button {
   min-width: 110px;
 }
+.user-management-dialog {
+  max-width: 560px;
+}
+.modal-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+.user-create-form,
+.user-list-section,
+.user-removal {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--element-radius);
+  background: color-mix(in srgb, var(--surface-bg) 70%, transparent);
+  padding: 16px;
+}
+.user-form-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-color);
+  font-size: 13px;
+}
+.user-create-form > .button-primary {
+  justify-self: start;
+}
+.user-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+.user-list-heading small {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--panel-color);
+  color: var(--text-color);
+  font-size: 11px;
+}
+.user-list {
+  display: grid;
+  gap: 8px;
+}
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  padding-bottom: 8px;
+}
+.user-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.user-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 62%, var(--border-color));
+  border-radius: 50%;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+.user-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+.user-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.user-copy small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.user-remove {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--element-radius);
+  background: transparent;
+  color: var(--muted);
+}
+.user-remove:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.user-removal p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.user-removal strong {
+  color: var(--text-color);
+}
 
 .image-upload {
   display: grid;

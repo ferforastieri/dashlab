@@ -41,6 +41,7 @@ import { DashboardEditor } from './DashboardEditor';
 import { WidgetCard } from './WidgetCard';
 import { HeaderWeather } from './HeaderWeather';
 import { apiClient } from '../../../api/core/apiClient';
+import { UserManagementDialog } from './UserManagementDialog';
 
 const defaultBranding = {
   accent: '#ff7a1a',
@@ -84,7 +85,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     metrics = metricsQuery.data || {},
     history = historyQuery.data || {},
     statuses = Object.fromEntries(((statusesQuery.data || []) as any[]).map((x) => [x.id, x]));
-  const [modal, setModal] = useState<'app' | 'widget' | 'section' | 'element' | 'brand' | null>(null),
+  const [modal, setModal] = useState<'app' | 'widget' | 'section' | 'element' | 'brand' | 'users' | null>(null),
     [editing, setEditing] = useState<AppItem | Widget | Section | null>(null),
     [layoutEdit, setLayoutEdit] = useState(false),
     [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
@@ -100,12 +101,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
   const drawerTouchStart = useRef<{ x: number; y: number } | null>(null);
   const load = () => dashboardQuery.refetch();
   useEffect(() => { void apiClient.get('/auth/users').then(() => setCanManageUsers(true)).catch(() => setCanManageUsers(false)); }, []);
-  async function addUser() {
-    const username = window.prompt('Nome do novo usuário'); if (!username) return;
-    const password = window.prompt('Senha do novo usuário'); if (!password) return;
-    const role = window.prompt('Permissão (admin ou user)', 'user') || 'user';
-    try { await apiClient.post('/auth/users', { username, password, role }); window.alert('Usuário criado com sucesso.'); } catch { /* toast interceptor */ }
-  }
   useEffect(() => {
     if (!dash) return;
     setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
@@ -304,7 +299,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           >
             <Settings />
           </button>
-          {canManageUsers && <button className={cn('icon-button')} onClick={addUser} title="Gerenciar usuários"><span aria-hidden="true">♙</span></button>}
+          {canManageUsers && <button className={cn('icon-button')} onClick={() => setModal('users')} title="Gerenciar usuários"><span aria-hidden="true">♙</span></button>}
           {!isMobile && (
             <button
               className={cn('icon-button', layoutEdit && 'active')}
@@ -807,7 +802,8 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           </button>
         </nav>
       )}
-      {modal && (
+      {modal === 'users' && <UserManagementDialog close={() => setModal(null)} />}
+      {modal && modal !== 'users' && (
         <DashboardEditor
           type={modal}
           dash={dash}
