@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
   ChevronDown,
+  GripHorizontal,
 } from 'lucide-react';
 import { useMetricsOverviewQuery } from '../../../api/metrics/useMetricsOverviewQuery';
 import { useMetricsHistoryQuery } from '../../../api/metrics/useMetricsHistoryQuery';
@@ -442,7 +443,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                       event.stopPropagation();
                     }}
                   >
-                    {layoutEdit && <div className="chrome-drag-handle canvas-drag-handle" aria-hidden="true" />}
+                    {layoutEdit && <div className="chrome-drag-handle canvas-drag-handle" aria-label="Mover elemento"><GripHorizontal size={14} /></div>}
                     {layoutEdit && (
                       <div className="dashboard-element-controls">
                         <button
@@ -464,7 +465,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                   <div
                     className={`section-card ${dashboardSection.collapsed ? 'is-collapsed' : ''}`}
                   >
-                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover seção" />}
+                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover seção"><GripHorizontal size={14} /></div>}
                     <header className="section-header">
                       <h3>{dashboardSection.name}</h3>
                       <div className="section-actions">
@@ -520,8 +521,8 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                               rel="noreferrer"
                               className={layoutEdit ? 'pointer-events-none' : ''}
                             >
-                              <span className="section-app-icon">
-                                {item.icon && <img src={item.icon} alt="" />}
+                          <span className="section-app-icon">
+                                {item.icon && <img src={item.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} />}
                               </span>
                               <span>
                                 <strong>{item.name}</strong>
@@ -545,7 +546,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                   </div>
                 ) : app ? (
                   <div className={cn('app-wrap')}>
-                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover aplicativo" />}
+                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover aplicativo"><GripHorizontal size={14} /></div>}
                     <a
                       className="app-icon"
                       href={app.url}
@@ -555,7 +556,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                         if (layoutEdit) event.preventDefault();
                       }}
                     >
-                      {app.icon && <img src={app.icon} alt="" />}
+                      {app.icon && <img src={app.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} />}
                     </a>
                     <b>{app.name}</b>
                     <small className="app-description">{app.description || 'Sem descrição'}</small>
@@ -596,7 +597,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                   </div>
                 ) : (
                   <>
-                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover widget" />}
+                    {layoutEdit && <div className="canvas-drag-handle" aria-label="Mover widget"><GripHorizontal size={14} /></div>}
                     <WidgetCard
                       widget={widget!}
                       metrics={metrics}

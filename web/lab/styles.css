@@ -173,6 +173,23 @@ a {
   gap: 7px;
   white-space: nowrap;
 }
+.header-weather-prompt {
+  min-height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--element-radius);
+  background: color-mix(in srgb, var(--panel-color) 80%, transparent);
+  padding: 0 10px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.header-weather-prompt:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text-color);
+}
+.header-weather-prompt:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
 .header-weather > svg {
   width: 21px;
   height: 21px;
@@ -365,9 +382,18 @@ a {
   right: 0;
   left: 0;
   height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-top: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
   cursor: grab !important;
   pointer-events: auto;
+}
+.canvas-drag-handle svg {
+  width: 18px;
+  height: 12px;
+  color: var(--accent);
+  opacity: 0.9;
 }
 .canvas-drag-handle:active {
   cursor: grabbing !important;
@@ -400,7 +426,7 @@ a {
 .dashboard-element-controls {
   position: absolute;
   z-index: 60;
-  top: 8px;
+  top: 16px;
   right: 8px;
   display: flex;
   gap: 6px;
@@ -703,8 +729,8 @@ a {
 .widget-actions {
   position: absolute;
   z-index: 10;
-  top: 5px;
-  right: 7px;
+  top: 16px;
+  right: 8px;
   display: flex;
   gap: 2px;
   padding: 2px;
@@ -773,6 +799,10 @@ a {
 .section-actions {
   display: flex;
   gap: 3px;
+}
+.section-actions button {
+  position: relative;
+  flex: none;
 }
 .section-actions button,
 .section-app > button {

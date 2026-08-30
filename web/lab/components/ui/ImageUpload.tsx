@@ -1,5 +1,5 @@
 import { ImagePlus, LoaderCircle, Trash2 } from 'lucide-react';
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useUploadAssetMutation } from '../../api/assets/useUploadAssetMutation';
 
 type ImageUploadProps = {
@@ -13,12 +13,27 @@ export function ImageUpload({ label, value, onChange, hint }: ImageUploadProps) 
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const upload = useUploadAssetMutation();
+  const [error, setError] = useState('');
 
   async function select(file?: File) {
     if (!file) return;
-    const asset = await upload.mutateAsync(file);
-    onChange(asset.url);
-    if (input.current) input.current.value = '';
+    setError('');
+    if (!file.type.startsWith('image/')) {
+      setError('Escolha um arquivo de imagem válido.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('A imagem deve ter no máximo 5 MB.');
+      return;
+    }
+    try {
+      const asset = await upload.mutateAsync(file);
+      if (!asset?.url) throw new Error('Resposta inválida do servidor');
+      onChange(asset.url);
+      if (input.current) input.current.value = '';
+    } catch {
+      setError('Não foi possível enviar a imagem. Tente novamente.');
+    }
   }
 
   return (
@@ -35,7 +50,14 @@ export function ImageUpload({ label, value, onChange, hint }: ImageUploadProps) 
           {upload.isPending ? (
             <LoaderCircle className="image-upload-spinner" />
           ) : value ? (
-            <img src={value} alt={`Prévia de ${label.toLowerCase()}`} />
+            <img
+              src={value}
+              alt={`Prévia de ${label.toLowerCase()}`}
+              onError={() => {
+                setError('A imagem enviada não pôde ser carregada.');
+                onChange('');
+              }}
+            />
           ) : (
             <ImagePlus />
           )}
@@ -55,7 +77,7 @@ export function ImageUpload({ label, value, onChange, hint }: ImageUploadProps) 
             </button>
           )}
           <small className="image-upload-hint">
-            {hint || 'PNG, JPG, WebP ou GIF · máximo de 5 MB'}
+            {error || hint || 'PNG, JPG, WebP ou GIF · máximo de 5 MB'}
           </small>
         </div>
       </div>
