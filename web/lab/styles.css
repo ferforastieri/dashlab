@@ -613,6 +613,15 @@ a {
     border-color 150ms ease,
     background 150ms ease;
 }
+/* Keep the hit area limited to the actual application controls. Transparent
+   space around a nearby icon must not steal its click. */
+.application-canvas-item:not(.is-editing) .app-wrap {
+  pointer-events: none;
+}
+.application-canvas-item:not(.is-editing) .app-wrap > a,
+.application-canvas-item:not(.is-editing) .app-wrap > button {
+  pointer-events: auto;
+}
 .app-wrap:hover .app-icon {
   color: var(--accent);
 }

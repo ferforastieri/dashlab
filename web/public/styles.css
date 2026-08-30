@@ -169,6 +169,8 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
 .docs-layout{padding-top:82px}
 .docs-sidebar{top:82px;height:calc(100svh - 82px)}
 .releases-page{padding-top:150px}
+.releases-page .docs-hero>p{display:block;margin-top:28px;max-width:62ch}
+.releases-layout .docs-sidebar{display:block}
 .release-list{display:grid;gap:14px;margin-top:28px}
 .release-card{padding:22px;border:1px solid var(--line);background:var(--ink-soft)}
 .release-card>div{display:flex;justify-content:space-between;gap:16px;color:var(--muted);font:500 .68rem var(--mono)}
@@ -217,3 +219,4 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
   .docs-header-nav{display:none}
   .releases-page{padding-top:112px}
 }
+@media(max-width:800px){.releases-layout .docs-sidebar{display:none}}

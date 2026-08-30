@@ -19,13 +19,20 @@ export function ReleasesPage() {
   return (
     <>
       <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
-      <main className="docs-content releases-page">
-        <div className="docs-hero">
-          <p className="eyebrow"><span /> RELEASES</p>
-          <h1>{text('Versões publicadas.', 'Published versions.')}</h1>
-          <p>{text('Histórico de versões, imagens Docker e mudanças do DashLab+.', 'Version history, Docker images, and changes for DashLab+ .')}</p>
-        </div>
-        <section className="release-list-section">
+      <div className="docs-layout releases-layout">
+        <aside className="docs-sidebar">
+          <nav aria-label={text('Releases', 'Releases')}>
+            <strong>RELEASES</strong>
+            <a href="#historico">{text('Histórico de versões', 'Version history')}</a>
+          </nav>
+        </aside>
+        <main className="docs-content releases-page">
+          <div className="docs-hero">
+            <p className="eyebrow"><span /> RELEASES</p>
+            <h1>{text('Versões publicadas.', 'Published versions.')}</h1>
+            <p>{text('Histórico de versões, imagens Docker e mudanças do DashLab+.', 'Version history, Docker images, and changes for DashLab+ .')}</p>
+          </div>
+          <section className="release-list-section" id="historico">
           <p className="doc-index">HISTORY</p>
           <h2>{text('Histórico de versões.', 'Version history.')}</h2>
           {loading && <p>{text('Carregando releases…', 'Loading releases…')}</p>}
@@ -38,8 +45,9 @@ export function ReleasesPage() {
               <a href={release.html_url}>{text('Ver detalhes', 'View details')} ↗</a>
             </article>)}
           </div>
-        </section>
-      </main>
+          </section>
+        </main>
+      </div>
       <PublicFooter language={language} text={text} />
     </>
   );
