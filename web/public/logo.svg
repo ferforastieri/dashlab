@@ -14,9 +14,10 @@
     </mask>
   </defs>
   <g mask="url(#plus-cutout)">
-    <rect x="48" y="40" width="216" height="216" rx="38" fill="var(--logo-accent)" stroke="var(--logo-dark)" stroke-width="6"/>
-    <path fill="var(--logo-light)" stroke="var(--logo-dark)" stroke-width="6" d="M248 40h78c76 0 138 62 138 138v78H248z"/>
-    <path fill="var(--logo-light)" stroke="var(--logo-dark)" stroke-width="6" d="M48 256h216v110l-98 106H86c-21 0-38-17-38-38z"/>
-    <path fill="var(--logo-accent)" stroke="var(--logo-dark)" stroke-width="6" d="M248 256h216v70c0 81-65 146-146 146H210l38-41z"/>
+    <rect x="48" y="40" width="216" height="216" rx="38" fill="var(--logo-dark, #0B0F12)" stroke="var(--logo-dark, #0B0F12)" stroke-width="6"/>
+    <path fill="var(--logo-light, #F7F4ED)" stroke="var(--logo-dark, #0B0F12)" stroke-width="6" d="M248 40h78c76 0 138 62 138 138v78H248z"/>
+    <path fill="var(--logo-light, #F7F4ED)" stroke="var(--logo-dark, #0B0F12)" stroke-width="6" d="M48 256h216v110l-98 106H86c-21 0-38-17-38-38z"/>
+    <path fill="var(--logo-dark, #0B0F12)" stroke="var(--logo-dark, #0B0F12)" stroke-width="6" d="M248 256h216v70c0 81-65 146-146 146H210l38-41z"/>
   </g>
+  <path fill="var(--logo-accent, #FF7A1A)" stroke="var(--logo-dark, #0B0F12)" stroke-width="8" stroke-linejoin="round" d="M232 164h48v68h68v48h-68v68h-48v-68h-68v-48h68z"/>
 </svg>
