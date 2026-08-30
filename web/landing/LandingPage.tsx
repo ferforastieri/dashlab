@@ -144,6 +144,7 @@ export function LandingPage() {
             {text('Instalação', 'Installation')}
           </a>
           <a href="/docs/">{text('Documentação', 'Documentation')}</a>
+          <a href="/releases/">Releases</a>
           <a href="https://github.com/ferforastieri/dashlab">GitHub</a>
         </nav>
         <SiteTools

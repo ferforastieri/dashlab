@@ -54,6 +54,7 @@ export function DocsPage() {
           toggleLanguage={toggleLanguage}
           toggleTheme={toggleTheme}
         />
+        <a href="/releases/">Releases</a>
         <a href="https://github.com/ferforastieri/dashlab">GitHub ↗</a>
       </header>
 
