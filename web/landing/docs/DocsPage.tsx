@@ -48,13 +48,17 @@ export function DocsPage() {
           <strong>DASHLAB+</strong>
           <small>DOCUMENTATION</small>
         </a>
+        <nav className="docs-header-nav" aria-label={text('Navegação principal', 'Main navigation')}>
+          <a href="/">{text('Início', 'Home')}</a>
+          <a href="/docs/">{text('Documentação', 'Documentation')}</a>
+          <a href="/releases/">Releases</a>
+        </nav>
         <SiteTools
           language={language}
           theme={theme}
           toggleLanguage={toggleLanguage}
           toggleTheme={toggleTheme}
         />
-        <a href="/releases/">Releases</a>
         <a href="https://github.com/ferforastieri/dashlab">GitHub ↗</a>
       </header>
 

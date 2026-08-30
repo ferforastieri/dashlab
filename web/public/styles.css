@@ -163,6 +163,10 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
 .footer-brand small{font-size:.5rem;letter-spacing:.15em;color:var(--muted)}
 .site-footer p{max-width:240px;margin:0;font-size:.76rem;line-height:1.6}
 .site-footer nav{align-self:start;gap:28px}
+.docs-header-nav{display:flex;align-items:center;gap:clamp(16px,2.4vw,32px);margin-left:auto;font:500 var(--utility-size) var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.docs-header-nav a{color:var(--muted);transition:color .2s}
+.docs-header-nav a:hover,.docs-header-nav a:focus-visible{color:var(--paper)}
+.releases-page{padding-top:150px}
 @media(max-width:650px){
   .manifesto-copy{gap:20px}
   .principle-list{grid-template-columns:1fr;margin-top:16px;gap:8px}
@@ -201,4 +205,6 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
   .site-footer p{max-width:28ch;text-align:center}
   .site-footer nav{justify-items:center;text-align:center}
   .site-footer>small{text-align:center}
+  .docs-header-nav{display:none}
+  .releases-page{padding-top:112px}
 }
