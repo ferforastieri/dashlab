@@ -251,7 +251,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       return (
         <div className="chrome-brand has-logo">
           <div className={cn('brand-mark small')}>
-            <img src={branding.logo || '/logo.png'} alt="" />
+            <img src={branding.logo || '/logo.svg'} alt="" />
           </div>
           <div className="brand-copy">
             <span>WORKSPACE</span>
@@ -560,7 +560,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                               className={layoutEdit ? 'pointer-events-none' : ''}
                             >
                           <span className="section-app-icon">
-                                {item.icon && <img src={item.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.png'; }} />}
+                                {item.icon && <img src={item.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} />}
                               </span>
                               <span>
                                 <strong>{item.name}</strong>
@@ -613,7 +613,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                         if (layoutEdit) event.preventDefault();
                       }}
                     >
-                      {app.icon && <img src={app.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.png'; }} />}
+                      {app.icon && <img src={app.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} />}
                     </a>
                     <b>{app.name}</b>
                     <small className="app-description">{app.description || 'Sem descrição'}</small>
@@ -675,7 +675,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             <span
               className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden bg-transparent text-sm font-bold"
             >
-              <img src={branding.logo || '/logo.png'} alt="" className="h-full w-full object-contain" />
+              <img src={branding.logo || '/logo.svg'} alt="" className="h-full w-full object-contain" />
             </span>
             <span className="min-w-0">
               <small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">

@@ -233,7 +233,7 @@ func (s *Server) publicBranding(w http.ResponseWriter, r *http.Request) {
 	if logo != "" {
 		logo = "/api/auth/branding/logo"
 	} else {
-		logo = "/logo.png"
+		logo = "/logo.svg"
 	}
 	name := stringValue(dashboard.Branding["name"])
 	if name == "" {

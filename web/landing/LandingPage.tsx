@@ -140,7 +140,7 @@ export function LandingPage() {
               <div className="window-bar">
                 <div className="mini-brand">
                   <b>
-                    <img src="/logo.png" alt="" />
+                    <img src="/logo.svg" alt="" />
                   </b>
                   <span>
                     DASHLAB+<small>WORKSPACE</small>

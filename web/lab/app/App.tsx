@@ -4,7 +4,7 @@ import { DashboardPage } from '../pages/dashboard/DashboardPage';
 
 export function App() {
   const [state, setState] = useState<{ setup: boolean; authenticated: boolean } | null>(null);
-  const [branding, setBranding] = useState({ name: 'DashLab+', logo: '/logo.png' });
+  const [branding, setBranding] = useState({ name: 'DashLab+', logo: '/logo.svg' });
   useEffect(() => {
     void fetch('/api/auth/status').then((r) => r.json()).then(setState).catch(() => setState({ setup: false, authenticated: false }));
     void fetch('/api/auth/branding').then((r) => r.ok ? r.json() : null).then((value) => {
@@ -42,7 +42,7 @@ function AccessForm({ setup, branding, onDone }: { setup: boolean; branding: { n
       <div className="access-glow" aria-hidden="true" />
       <form onSubmit={submit} className="access-card">
         <div className="access-brand">
-          <span className="access-logo"><img src={branding.logo} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.png'; }} /></span>
+          <span className="access-logo"><img src={branding.logo} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} /></span>
           <span><small>WORKSPACE</small><strong>{branding.name}</strong></span>
         </div>
         <div className="access-heading">
