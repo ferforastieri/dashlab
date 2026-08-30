@@ -18,19 +18,13 @@ export function ReleasesPage() {
   }, []);
   return (
     <>
-      <PublicHeader compact sectionLabel="RELEASES" language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
+      <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
       <main className="docs-content releases-page">
         <div className="docs-hero">
           <p className="eyebrow"><span /> RELEASES</p>
           <h1>{text('Versões publicadas.', 'Published versions.')}</h1>
           <p>{text('Histórico de versões, imagens Docker e mudanças do DashLab+.', 'Version history, Docker images, and changes for DashLab+ .')}</p>
         </div>
-        <section>
-          <p className="doc-index">LATEST</p>
-          <h2>{text('Sempre atualizado.', 'Always current.')}</h2>
-          <p>{text('Cada publicação na branch principal gera uma nova imagem no GHCR e um release no GitHub. Consulte as notas completas no repositório.', 'Every publication on the main branch creates a new GHCR image and a GitHub release. Read the complete notes in the repository.')}</p>
-          <a className="button primary" href="https://github.com/ferforastieri/dashlab/releases">{text('Ver releases no GitHub', 'View GitHub releases')} <span>↗</span></a>
-        </section>
         <section className="release-list-section">
           <p className="doc-index">HISTORY</p>
           <h2>{text('Histórico de versões.', 'Version history.')}</h2>

@@ -102,7 +102,7 @@ export function LandingPage() {
         <i />
         <i />
       </div>
-      <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
+      <PublicHeader landing language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
 
       <main>
         <section className="hero" id="inicio">

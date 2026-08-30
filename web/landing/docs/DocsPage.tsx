@@ -41,7 +41,7 @@ export function DocsPage() {
 
   return (
     <>
-      <PublicHeader compact language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
+      <PublicHeader language={language} theme={theme} text={text} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
 
       <div className="docs-layout">
         <aside className="docs-sidebar">
@@ -521,9 +521,9 @@ docker start dashlab-plus`}</code>
             </p>
           </section>
 
-          <PublicFooter compact language={language} text={text} />
         </main>
       </div>
+      <PublicFooter language={language} text={text} />
     </>
   );
 }
