@@ -91,7 +91,7 @@ func TestAPIRequiresBasicAuthentication(t *testing.T) {
 }
 
 func TestBasicLoginCreatesReusableSession(t *testing.T) {
-	_, handler := testServer(t)
+	server, handler := testServer(t)
 	login := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
 	login.SetBasicAuth("test", "test-password")
 	first := httptest.NewRecorder()
@@ -99,6 +99,9 @@ func TestBasicLoginCreatesReusableSession(t *testing.T) {
 	if first.Code != http.StatusOK || len(first.Result().Cookies()) != 1 {
 		t.Fatalf("login status = %d, cookies = %d", first.Code, len(first.Result().Cookies()))
 	}
+	server.sessionsMu.Lock()
+	server.sessions = make(map[string]authIdentity)
+	server.sessionsMu.Unlock()
 	followUp := httptest.NewRequest(http.MethodGet, "/api/dashboard", nil)
 	followUp.AddCookie(first.Result().Cookies()[0])
 	second := httptest.NewRecorder()

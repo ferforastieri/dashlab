@@ -60,6 +60,12 @@ func (s *Store) migrate(ctx context.Context) error {
             value TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )`,
+		`CREATE TABLE IF NOT EXISTS auth_sessions (
+            token TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
+            role TEXT NOT NULL,
+            expires_at INTEGER NOT NULL
+        )`,
 	}
 	for _, statement := range statements {
 		if _, err := s.db.ExecContext(ctx, statement); err != nil {

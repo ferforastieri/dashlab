@@ -214,7 +214,7 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
   .hero{padding-top:104px;padding-bottom:64px}
   .hero-copy{max-width:34rem;margin-inline:auto;text-align:center}
   .hero-copy .eyebrow{justify-content:center}
-  .hero h1{font-size:clamp(2.8rem,12.5vw,4rem);line-height:.96;letter-spacing:-.045em}
+  .hero h1{max-width:9.5ch;margin-inline:auto;text-align:center;font-size:clamp(2.8rem,12.5vw,4rem);line-height:.96;letter-spacing:-.045em}
   .hero-intro{max-width:33ch;margin-left:auto;margin-right:auto;text-align:center}
   .hero-proof{position:static;grid-template-columns:1fr;width:auto;margin-top:34px;transform:none}
   .hero-proof>div{min-height:0;grid-template-columns:38px 1fr;align-items:center;gap:3px 10px;padding:12px}
@@ -236,4 +236,10 @@ main{position:relative;z-index:1}.hero{position:relative;min-height:100svh;displ
   .site-footer>small{text-align:center}
   .docs-header-nav{display:none}
   .releases-page{padding-top:112px}
+}
+
+@media(min-width:1051px){
+  .hero{align-items:start;padding-top:96px;padding-bottom:120px}
+  .hero-copy{align-self:start;padding-top:18px}
+  .dashboard-stage{align-self:start;place-items:start center}
 }

@@ -164,15 +164,10 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		if cookie, err := r.Cookie("dashlab_session"); err == nil {
-			s.sessionsMu.RLock()
-			identity, valid := s.sessions[cookie.Value]
-			s.sessionsMu.RUnlock()
-			if valid {
-				r = r.WithContext(context.WithValue(r.Context(), authContextKey{}, identity))
-				next.ServeHTTP(w, r)
-				return
-			}
+		if identity := s.sessionIdentity(r); identity.Username != "" {
+			r = r.WithContext(context.WithValue(r.Context(), authContextKey{}, identity))
+			next.ServeHTTP(w, r)
+			return
 		}
 		user, password, ok := r.BasicAuth()
 		identity, valid := authIdentity{}, false
@@ -183,11 +178,10 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			writeError(w, http.StatusUnauthorized, "Autenticação necessária")
 			return
 		}
-		token := randomSession()
-		s.sessionsMu.Lock()
-		s.sessions[token] = identity
-		s.sessionsMu.Unlock()
-		http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: token, Path: "/", MaxAge: 30 * 24 * 60 * 60, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
+		if err := s.startSession(w, r, identity); err != nil {
+			s.fail(w, http.StatusInternalServerError, err)
+			return
+		}
 		r = r.WithContext(context.WithValue(r.Context(), authContextKey{}, identity))
 		next.ServeHTTP(w, r)
 	})
@@ -268,7 +262,15 @@ func (s *Server) sessionIdentity(r *http.Request) authIdentity {
 		s.sessionsMu.RLock()
 		identity := s.sessions[cookie.Value]
 		s.sessionsMu.RUnlock()
-		return identity
+		if identity.Username != "" {
+			return identity
+		}
+		if identity, valid := s.store.sessionIdentity(r.Context(), cookie.Value); valid {
+			s.sessionsMu.Lock()
+			s.sessions[cookie.Value] = identity
+			s.sessionsMu.Unlock()
+			return identity
+		}
 	}
 	return authIdentity{}
 }
@@ -294,7 +296,10 @@ func (s *Server) bootstrap(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "Administrador inválido")
 		return
 	}
-	s.startSession(w, r, authIdentity{Username: user.Username, Role: "admin"})
+	if err := s.startSession(w, r, authIdentity{Username: user.Username, Role: "admin"}); err != nil {
+		s.fail(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, 201, user)
 }
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -310,15 +315,22 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 401, "Credenciais inválidas")
 		return
 	}
-	s.startSession(w, r, identity)
+	if err := s.startSession(w, r, identity); err != nil {
+		s.fail(w, http.StatusInternalServerError, err)
+		return
+	}
 	writeJSON(w, 200, map[string]string{"role": identity.Role})
 }
-func (s *Server) startSession(w http.ResponseWriter, r *http.Request, identity authIdentity) {
+func (s *Server) startSession(w http.ResponseWriter, r *http.Request, identity authIdentity) error {
 	token := randomSession()
+	if err := s.store.createSession(r.Context(), token, identity, time.Now().Add(30*24*time.Hour)); err != nil {
+		return err
+	}
 	s.sessionsMu.Lock()
 	s.sessions[token] = identity
 	s.sessionsMu.Unlock()
 	http.SetCookie(w, &http.Cookie{Name: "dashlab_session", Value: token, Path: "/", MaxAge: 30 * 24 * 60 * 60, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: r.TLS != nil})
+	return nil
 }
 
 func currentIdentity(r *http.Request) authIdentity {
@@ -381,6 +393,10 @@ func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := s.store.db.ExecContext(r.Context(), `DELETE FROM users WHERE id=?`, id); err != nil {
+		s.fail(w, 500, err)
+		return
+	}
+	if err := s.store.deleteSessionsForUser(r.Context(), username); err != nil {
 		s.fail(w, 500, err)
 		return
 	}

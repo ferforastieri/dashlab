@@ -6,7 +6,6 @@ const SHELL = [
   '/lab/',
   '/manifest.webmanifest',
   '/lab.webmanifest',
-  '/update.css',
 ];
 
 self.addEventListener('install', (event) => {

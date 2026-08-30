@@ -38,6 +38,38 @@ func (s *Store) authenticateUser(ctx context.Context, username, password string)
 	return authIdentity{Username: username, Role: role}, true
 }
 
+func (s *Store) createSession(ctx context.Context, token string, identity authIdentity, expiresAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE expires_at <= ?`, time.Now().UTC().Unix()); err != nil {
+		return err
+	}
+	_, err := s.db.ExecContext(ctx, `INSERT INTO auth_sessions(token,username,role,expires_at) VALUES(?,?,?,?)`, token, identity.Username, identity.Role, expiresAt.UTC().Unix())
+	return err
+}
+
+func (s *Store) sessionIdentity(ctx context.Context, token string) (authIdentity, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var identity authIdentity
+	var expiresAt int64
+	if err := s.db.QueryRowContext(ctx, `SELECT username,role,expires_at FROM auth_sessions WHERE token=?`, token).Scan(&identity.Username, &identity.Role, &expiresAt); err != nil {
+		return authIdentity{}, false
+	}
+	if expiresAt <= time.Now().UTC().Unix() {
+		_, _ = s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE token=?`, token)
+		return authIdentity{}, false
+	}
+	return identity, true
+}
+
+func (s *Store) deleteSessionsForUser(ctx context.Context, username string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := s.db.ExecContext(ctx, `DELETE FROM auth_sessions WHERE username=?`, username)
+	return err
+}
+
 func (s *Store) users(ctx context.Context) ([]User, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id,username,role,created_at FROM users ORDER BY username`)
 	if err != nil {

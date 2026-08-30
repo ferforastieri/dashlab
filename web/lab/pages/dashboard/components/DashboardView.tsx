@@ -11,6 +11,7 @@ import {
   Settings,
   Edit3,
   Pencil,
+  Users,
   Menu,
   Trash2,
   X,
@@ -324,7 +325,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           >
             <Settings />
           </button>
-          {canManageUsers && <button className={cn('icon-button')} onClick={() => setModal('users')} title="Gerenciar usuários"><span aria-hidden="true">♙</span></button>}
+          {canManageUsers && <button className={cn('icon-button')} onClick={() => setModal('users')} title="Gerenciar usuários"><Users /></button>}
           {!isMobile && (
             <button
               className={cn('icon-button', layoutEdit && 'active')}
