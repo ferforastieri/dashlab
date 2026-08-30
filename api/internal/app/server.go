@@ -180,7 +180,6 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			identity, valid = s.store.authenticateUser(r.Context(), user, password)
 		}
 		if !valid {
-			w.Header().Set("WWW-Authenticate", `Basic realm="DashLab+", charset="UTF-8"`)
 			writeError(w, http.StatusUnauthorized, "Autenticação necessária")
 			return
 		}
