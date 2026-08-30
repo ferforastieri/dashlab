@@ -215,7 +215,7 @@ a {
   height: 64px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--accent) 72%, var(--text-color));
+  border: 0;
   border-radius: var(--element-radius);
   background: transparent;
   color: var(--surface-bg);

@@ -643,7 +643,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           )}
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <span
-              className={`grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[var(--element-radius)] text-sm font-bold ${branding.logo ? 'bg-transparent' : 'border border-[var(--border-color)] bg-[var(--accent)] text-[var(--surface-bg)]'}`}
+              className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden bg-transparent text-sm font-bold"
             >
               <img src={branding.logo || '/logo.svg'} alt="" className="h-full w-full object-contain" />
             </span>
