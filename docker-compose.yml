@@ -24,7 +24,8 @@ services:
     volumes: [dashlab_plus_data:/data]
 
   dashlab-plus-updater:
-    image: containrrr/watchtower:1.7.1
+    # Fork mantido com cliente Docker moderno (compatível com Engine 29 / API 1.44+).
+    image: nickfedor/watchtower:1.16.0
     container_name: dashlab-plus-updater
     restart: unless-stopped
     init: true

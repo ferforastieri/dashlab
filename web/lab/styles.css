@@ -56,7 +56,7 @@ html {
   background: var(--border-color);
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: transparent;
+  background: var(--accent);
 }
 *::-webkit-scrollbar-corner {
   background: var(--surface-bg);
@@ -200,7 +200,7 @@ a {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--accent) 72%, var(--text-color));
   border-radius: var(--element-radius);
-  background: var(--accent);
+  background: transparent;
   color: var(--surface-bg);
   font-size: 30px;
   font-weight: 600;
