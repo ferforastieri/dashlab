@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Grid2X2, PanelBottom, PanelLeft, X } from 'lucide-react';
+import { AppWindow, Grid2X2, Layers3, PanelBottom, PanelLeft, X } from 'lucide-react';
 import { useCreateApplicationMutation } from '../../../api/applications/useCreateApplicationMutation';
 import { useUpdateApplicationMutation } from '../../../api/applications/useUpdateApplicationMutation';
 import { useCreateWidgetMutation } from '../../../api/widgets/useCreateWidgetMutation';
@@ -175,21 +175,21 @@ export function DashboardEditor({
               className={mode === 'app' ? ui.active : ''}
               onClick={() => setMode('app')}
             >
-              Aplicativo
+              <AppWindow aria-hidden="true" /> Aplicativo
             </button>
             <button
               type="button"
               className={mode === 'widget' ? ui.active : ''}
               onClick={() => setMode('widget')}
             >
-              Widget
+              <Grid2X2 aria-hidden="true" /> Widget
             </button>
             <button
               type="button"
               className={mode === 'section' ? ui.active : ''}
               onClick={() => setMode('section')}
             >
-              Seção
+              <Layers3 aria-hidden="true" /> Seção
             </button>
           </div>
         )}
@@ -306,7 +306,6 @@ export function DashboardEditor({
                   ['SYSTEM', 'Sistema'],
                   ['STORAGE', 'Armazenamento'],
                   ['NETWORK', 'Rede'],
-                  ['CLOCK', 'Relógio'],
                   ['STATUS', 'Status'],
                   ['PROMQL', 'Consulta PromQL'],
                   ['DIVIDER', 'Divisória'],

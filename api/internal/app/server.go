@@ -718,7 +718,7 @@ func filterLayouts(items []Layout, keep func(Layout) bool) []Layout {
 	return result
 }
 func validWidgetType(value string) bool {
-	return map[string]bool{"SYSTEM": true, "STORAGE": true, "NETWORK": true, "CLOCK": true, "STATUS": true, "PROMQL": true, "DIVIDER": true}[value]
+	return map[string]bool{"SYSTEM": true, "STORAGE": true, "NETWORK": true, "STATUS": true, "PROMQL": true, "DIVIDER": true}[value]
 }
 func applicationsExist(items []Application, ids []string) bool {
 	found := map[string]bool{}
@@ -759,7 +759,7 @@ func validLayout(dashboard Dashboard, layout Layout) bool {
 	case "SECTION":
 		return findSection(dashboard.Sections, layout.SectionID) >= 0
 	case "DASHBOARD_ELEMENT":
-		return map[string]bool{"BRAND": true, "CLOCK": true, "WEATHER": true, "ACTIONS": true, "ADD": true, "FOOTER": true}[layout.ElementKey]
+		return map[string]bool{"BRAND": true, "CLOCK": true, "WEATHER": true, "SEARCH": true, "ACTIONS": true, "ADD": true, "FOOTER": true}[layout.ElementKey]
 	default:
 		return false
 	}

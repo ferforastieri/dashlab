@@ -19,7 +19,7 @@ export function HeaderWeather({ widget }: { widget?: DashboardWidget }) {
     navigator.geolocation.getCurrentPosition(({ coords }) => {
       setDetected({ latitude: coords.latitude, longitude: coords.longitude });
     });
-  }, [configured]);
+  }, [widget?.config?.latitude, widget?.config?.longitude]);
 
   const weatherQuery = useWeatherQuery(
     coordinates?.latitude ?? 0,

@@ -202,7 +202,7 @@ func defaultDashboard() Dashboard {
 		title, kind string
 		config      map[string]any
 	}{
-		{"Relógio", "CLOCK", map[string]any{}}, {"Sistema", "SYSTEM", map[string]any{}},
+		{"Sistema", "SYSTEM", map[string]any{}},
 		{"Discos", "STORAGE", map[string]any{}}, {"Rede", "NETWORK", map[string]any{}},
 	}
 	for index, preset := range presets {
@@ -218,7 +218,7 @@ func defaultDashboard() Dashboard {
 		x, y, w, h int
 	}{
 		{"BRAND", 0, 4, 230, 64}, {"CLOCK", 250, 4, 100, 64}, {"WEATHER", 370, 4, 210, 64},
-		{"ACTIONS", 600, 8, 160, 52}, {"ADD", 780, 8, 52, 52},
+		{"SEARCH", 600, 12, 480, 44}, {"ACTIONS", 1100, 8, 160, 52}, {"ADD", 1280, 8, 52, 52},
 		{"FOOTER", 0, 820, 1332, 30},
 	}
 	for index, element := range elements {

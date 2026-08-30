@@ -1,4 +1,4 @@
-import { PropsWithChildren, useEffect } from 'react';
+import { PropsWithChildren, useEffect, useRef } from 'react';
 
 type ModalProps = PropsWithChildren<{
   onClose?: () => void;
@@ -7,6 +7,7 @@ type ModalProps = PropsWithChildren<{
 }>;
 
 export function Modal({ children, onClose, className = '', labelledBy }: ModalProps) {
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -30,6 +31,17 @@ export function Modal({ children, onClose, className = '', labelledBy }: ModalPr
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          touchStart.current = { x: touch.clientX, y: touch.clientY };
+        }}
+        onTouchEnd={(event) => {
+          const start = touchStart.current;
+          touchStart.current = null;
+          if (!start) return;
+          const touch = event.changedTouches[0];
+          if (touch.clientY - start.y > 90 && Math.abs(touch.clientY - start.y) > Math.abs(touch.clientX - start.x)) onClose?.();
+        }}
       >
         {children}
       </section>

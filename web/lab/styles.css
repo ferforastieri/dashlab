@@ -373,40 +373,6 @@ a {
   pointer-events: auto;
   opacity: 1;
 }
-.canvas-height-handle {
-  position: absolute;
-  z-index: 45;
-  right: 0;
-  bottom: -8px;
-  left: 0;
-  display: flex;
-  height: 16px;
-  align-items: center;
-  justify-content: center;
-  cursor: ns-resize;
-  touch-action: none;
-}
-.canvas-height-handle::before {
-  content: '';
-  position: absolute;
-  right: 0;
-  left: 0;
-  height: 2px;
-  background: var(--accent);
-}
-.canvas-height-handle span {
-  position: relative;
-  border: 1px solid var(--border-color);
-  border-radius: var(--element-radius);
-  background: var(--surface-bg);
-  padding: 3px 8px;
-  color: var(--muted);
-  font:
-    600 8px/1 'IBM Plex Mono',
-    monospace;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 .chrome-canvas-item {
   container-type: size;
 }
@@ -692,8 +658,17 @@ a {
   top: 5px;
   right: 7px;
   display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--element-radius);
+  background: var(--panel-color);
 }
 .widget-actions button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
   border: 0;
   background: transparent;
   padding: 5px;
@@ -975,6 +950,7 @@ a {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  padding-right: 72px;
 }
 .widget-title svg {
   width: 15px;
@@ -1268,6 +1244,16 @@ a {
 .tab-list button.is-active {
   background: var(--panel-raised);
   color: var(--paper);
+}
+.tab-list button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.tab-list button svg {
+  width: 16px;
+  height: 16px;
 }
 .button-primary,
 .button-secondary {

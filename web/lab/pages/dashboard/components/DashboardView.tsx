@@ -1,6 +1,5 @@
 import {
   CSSProperties,
-  PointerEvent as ReactPointerEvent,
   useEffect,
   useRef,
   useState,
@@ -9,6 +8,7 @@ import { Rnd } from 'react-rnd';
 import {
   MoreVertical,
   Plus,
+  Search,
   Settings,
   Edit3,
   Pencil,
@@ -89,23 +89,18 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     [selectedLayoutId, setSelectedLayoutId] = useState<string | null>(null),
     [mobileMenuOpen, setMobileMenuOpen] = useState(false),
     [layouts, setLayouts] = useState<Layout[]>([]),
-    [canvasHeight, setCanvasHeight] = useState<number | null>(null),
     [canvasWidth, setCanvasWidth] = useState(0),
     [menu, setMenu] = useState<string | null>(null),
+    [query, setQuery] = useState(''),
     [confirmDelete, setConfirmDelete] = useState<{ kind: string; id: string; name: string } | null>(
       null,
     );
   const canvasRef = useRef<HTMLElement | null>(null);
+  const drawerTouchStart = useRef<{ x: number; y: number } | null>(null);
   const load = () => dashboardQuery.refetch();
   useEffect(() => {
     if (!dash) return;
     setLayouts([...dash.layouts].sort((a, b) => a.order - b.order));
-    setCanvasHeight(
-      (current) =>
-        current ??
-        (Number(dash.branding?.canvasHeight) ||
-          Math.max(620, ...dash.layouts.map((layout: Layout) => layout.y + layout.h + 24))),
-    );
     document.title = dash.branding?.name || dash.name;
     const manifest = document.querySelector<HTMLLinkElement>("link[rel='manifest']");
     if (manifest) manifest.href = `/api/pwa/${dash.id}/manifest.webmanifest`;
@@ -184,7 +179,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
   const mobileLayout = branding.mobileLayout || 'GRID';
   const mobileApps = dash.applications.filter((app) => app.visible !== false);
   const weatherWidget = dash.widgets.find((widget) => widget.type === 'WEATHER');
-  const activeCanvasHeight = canvasHeight ?? 620;
+  const activeCanvasHeight = Math.max(620, ...layouts.map((layout) => layout.y + layout.h + 24));
   const contentWidth = Math.max(1, ...layouts.map((layout) => layout.x + layout.w));
   const canvasScale = isMobile || !canvasWidth ? 1 : Math.min(1, canvasWidth / contentWidth);
   const displayLayout = (layout: Layout) => ({
@@ -193,26 +188,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
     w: Math.round(layout.w * canvasScale),
     h: Math.round(layout.h * canvasScale),
   });
-  const beginCanvasResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const startY = event.clientY;
-    const startHeight = activeCanvasHeight;
-    let nextHeight = startHeight;
-    const move = (pointerEvent: PointerEvent) => {
-      nextHeight = Math.max(
-        320,
-        Math.round(startHeight + (pointerEvent.clientY - startY) / canvasScale),
-      );
-      setCanvasHeight(nextHeight);
-    };
-    const finish = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', finish);
-      void updateBranding.mutateAsync({ canvasHeight: nextHeight });
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', finish, { once: true });
-  };
   const visualTokens = {
     '--accent': branding.accent,
     '--surface-bg': branding.backgroundColor,
@@ -251,6 +226,24 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
         <div className="chrome-weather">
           <HeaderWeather widget={weatherWidget} />
         </div>
+      );
+    if (elementKey === 'SEARCH')
+      return (
+        <form className={cn('search')} onSubmit={(event) => {
+          event.preventDefault();
+          const normalized = query.trim().toLocaleLowerCase();
+          if (!normalized) return;
+          const application = dash.applications.find((item) =>
+            item.visible !== false && item.name.toLocaleLowerCase().includes(normalized),
+          );
+          window.open(application?.url || `https://www.google.com/search?q=${encodeURIComponent(query.trim())}`, '_blank', 'noopener,noreferrer');
+        }}>
+          <Search size={18} />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} list="dashlab-applications" placeholder="Pesquisar aplicações ou na web" />
+          <datalist id="dashlab-applications">
+            {dash.applications.filter((item) => item.visible !== false).map((item) => <option key={item.id} value={item.name} />)}
+          </datalist>
+        </form>
       );
     if (elementKey === 'ACTIONS')
       return (
@@ -322,7 +315,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             const widget =
               layout.kind === 'WIDGET'
                 ? dash.widgets.find(
-                    (w) => w.id === layout.widgetId && w.type !== 'WEATHER' && w.type !== 'SEARCH',
+                    (w) => w.id === layout.widgetId && !['CLOCK', 'WEATHER', 'SEARCH'].includes(w.type),
                   )
                 : null;
             const dashboardSection =
@@ -558,11 +551,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
               </Rnd>
             );
           })}
-          {layoutEdit && !isMobile && (
-            <div className="canvas-height-handle" onPointerDown={beginCanvasResize}>
-              <span>Redimensionar área</span>
-            </div>
-          )}
         </section>
       </main>
       {layoutEdit && !isMobile && (
@@ -630,6 +618,20 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             className="fixed inset-0 z-40 bg-black/50"
           />
           <aside
+            onTouchStart={(event) => {
+              const touch = event.touches[0];
+              drawerTouchStart.current = { x: touch.clientX, y: touch.clientY };
+            }}
+            onTouchEnd={(event) => {
+              const start = drawerTouchStart.current;
+              drawerTouchStart.current = null;
+              if (!start) return;
+              const touch = event.changedTouches[0];
+              const dx = touch.clientX - start.x;
+              const dy = touch.clientY - start.y;
+              const drawer = mobileLayout === 'DRAWER';
+              if (drawer ? dx < -90 && Math.abs(dx) > Math.abs(dy) : dy > 90 && Math.abs(dy) > Math.abs(dx)) setMobileMenuOpen(false);
+            }}
             className={`fixed z-50 flex gap-4 border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl ${mobileLayout === 'DRAWER' ? 'inset-y-0 left-0 w-[min(86vw,360px)] flex-col border-r' : 'inset-x-0 bottom-0 max-h-[78dvh] flex-col rounded-t-[var(--element-radius)] border-t'}`}
           >
             <div className="flex shrink-0 items-center justify-between gap-3">

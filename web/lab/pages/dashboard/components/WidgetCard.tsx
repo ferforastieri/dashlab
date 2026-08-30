@@ -128,7 +128,7 @@ export function WidgetCard({
   return (
     <div className={dashboardCn('widget')}>
       <button
-        className={dashboardCn('widget-delete', !editingLayout && 'item-control')}
+        className={dashboardCn('widget-delete', editingLayout ? 'hidden' : 'item-control')}
         onClick={onDelete}
       >
         <X />
@@ -137,6 +137,9 @@ export function WidgetCard({
         <div className={dashboardCn('widget-actions')}>
           <button onClick={onEdit} title="Editar">
             <Edit3 />
+          </button>
+          <button onClick={onDelete} title="Excluir">
+            <X />
           </button>
         </div>
       )}
