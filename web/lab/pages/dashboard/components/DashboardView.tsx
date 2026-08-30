@@ -251,7 +251,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       return (
         <div className="chrome-brand has-logo">
           <div className={cn('brand-mark small')}>
-            <img src={branding.logo || '/logo.svg'} alt="" />
+            <img src={branding.logo || '/logo.png'} alt="" />
           </div>
           <div className="brand-copy">
             <span>WORKSPACE</span>
@@ -560,7 +560,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                               className={layoutEdit ? 'pointer-events-none' : ''}
                             >
                           <span className="section-app-icon">
-                                {item.icon && <img src={item.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} />}
+                                {item.icon && <img src={item.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.png'; }} />}
                               </span>
                               <span>
                                 <strong>{item.name}</strong>
@@ -613,7 +613,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
                         if (layoutEdit) event.preventDefault();
                       }}
                     >
-                      {app.icon && <img src={app.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} />}
+                      {app.icon && <img src={app.icon} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.png'; }} />}
                     </a>
                     <b>{app.name}</b>
                     <small className="app-description">{app.description || 'Sem descrição'}</small>
@@ -675,7 +675,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             <span
               className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden bg-transparent text-sm font-bold"
             >
-              <img src={branding.logo || '/logo.svg'} alt="" className="h-full w-full object-contain" />
+              <img src={branding.logo || '/logo.png'} alt="" className="h-full w-full object-contain" />
             </span>
             <span className="min-w-0">
               <small className="block text-[9px] tracking-[.12em] text-[var(--muted)]">
@@ -714,6 +714,9 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             className="fixed inset-0 z-40 bg-black/50"
           />
           <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Aplicativos"
             onTouchStart={(event) => {
               const touch = event.touches[0];
               drawerTouchStart.current = { x: touch.clientX, y: touch.clientY };
@@ -728,7 +731,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
               const drawer = mobileLayout === 'DRAWER';
               if (drawer ? dx < -90 && Math.abs(dx) > Math.abs(dy) : dy > 90 && Math.abs(dy) > Math.abs(dx)) setMobileMenuOpen(false);
             }}
-            className={`fixed z-50 flex gap-4 border-[var(--border-color)] bg-[var(--surface-bg)] p-5 shadow-2xl ${mobileLayout === 'DRAWER' ? 'inset-y-0 left-0 w-[min(86vw,360px)] flex-col border-r' : 'inset-x-0 bottom-0 max-h-[78dvh] flex-col rounded-t-[var(--element-radius)] border-t'}`}
+            className={`mobile-app-surface ${mobileLayout === 'DRAWER' ? 'mobile-app-drawer' : 'mobile-app-sheet'}`}
           >
             <div className="flex shrink-0 items-center justify-between gap-3">
               <div>

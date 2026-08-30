@@ -1,9 +1,10 @@
 import './update.css';
 
-const latestVersionUrl = 'https://dashlabplus.vercel.app/version.json';
+const latestReleaseUrl = 'https://api.github.com/repos/ferforastieri/dashlab/releases/latest';
 const checkInterval = 30 * 60 * 1000;
 
 type VersionResponse = { version?: unknown };
+type ReleaseResponse = { target_commitish?: unknown; draft?: unknown; prerelease?: unknown };
 
 function isPublishedVersion(value: unknown): value is string {
   return (
@@ -22,6 +23,21 @@ async function fetchVersion(url: string): Promise<string | null> {
     if (!response.ok) return null;
     const payload = (await response.json()) as VersionResponse;
     return isPublishedVersion(payload.version) ? payload.version : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchLatestReleaseVersion(): Promise<string | null> {
+  try {
+    const response = await fetch(latestReleaseUrl, {
+      cache: 'no-store',
+      headers: { Accept: 'application/vnd.github+json' },
+    });
+    if (!response.ok) return null;
+    const release = (await response.json()) as ReleaseResponse;
+    if (release.draft === true || release.prerelease === true) return null;
+    return isPublishedVersion(release.target_commitish) ? release.target_commitish : null;
   } catch {
     return null;
   }
@@ -183,7 +199,9 @@ export function registerPwa() {
         const pageVersion = document.querySelector<HTMLMetaElement>(
           'meta[name="dashlab-build-version"]',
         )?.content;
-        const latestVersion = await fetchVersion(serverVersion ? latestVersionUrl : '/version.json');
+        const latestVersion = serverVersion
+          ? await fetchLatestReleaseVersion()
+          : await fetchVersion('/version.json');
         if (
           isPublishedVersion(pageVersion) &&
           latestVersion &&
