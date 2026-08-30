@@ -1279,6 +1279,127 @@ a {
   background: var(--ink);
   color: var(--muted);
 }
+.access-screen {
+  position: relative;
+  display: grid;
+  min-height: var(--app-viewport-height);
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 78% 18%, color-mix(in srgb, var(--accent) 17%, transparent), transparent 34%), var(--surface-bg);
+  padding: 24px;
+}
+.access-glow {
+  position: absolute;
+  width: min(680px, 85vw);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  border-radius: 50%;
+  opacity: .55;
+  transform: translate(22%, -28%);
+}
+.access-card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(100%, 440px);
+  gap: 18px;
+  border: 1px solid var(--border-color);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--element-radius);
+  background: color-mix(in srgb, var(--panel-color) 94%, transparent);
+  padding: clamp(24px, 5vw, 40px);
+  color: var(--text-color);
+  box-shadow: 0 30px 90px color-mix(in srgb, var(--surface-bg) 72%, transparent);
+}
+.access-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 20px;
+}
+.access-logo {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--element-radius);
+  background: var(--surface-bg);
+}
+.access-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.access-brand > span:last-child {
+  display: grid;
+  gap: 4px;
+}
+.access-brand small,
+.access-heading > span {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+.access-brand strong {
+  font-size: 16px;
+}
+.access-heading {
+  display: grid;
+  gap: 8px;
+}
+.access-heading h1 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: clamp(24px, 6vw, 32px);
+  letter-spacing: -.04em;
+}
+.access-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.access-card label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.access-card input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--element-radius);
+  background: var(--surface-bg);
+  padding: 0 13px;
+  color: var(--text-color);
+}
+.access-card input:focus {
+  border-color: var(--accent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  outline-offset: 1px;
+}
+.access-error {
+  margin: 0;
+  color: var(--accent);
+  font-size: 12px;
+}
+.access-submit {
+  min-height: 48px;
+  border: 1px solid var(--accent);
+  border-radius: var(--element-radius);
+  background: var(--accent);
+  color: var(--surface-bg);
+  font-weight: 700;
+  cursor: pointer;
+}
+.access-submit:disabled {
+  cursor: wait;
+  opacity: .6;
+}
 .modal-panel label {
   display: grid;
   gap: 7px;
@@ -1359,6 +1480,29 @@ a {
   background: var(--surface-bg);
   padding: 0 13px;
   color: var(--paper);
+}
+.select-control {
+  position: relative;
+  display: block;
+}
+.styled-select {
+  appearance: none;
+  padding-right: 42px !important;
+  cursor: pointer;
+}
+.select-chevron {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  pointer-events: none;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+.styled-select:focus + .select-chevron {
+  color: var(--accent);
+}
+.modal-panel .responsive-field-row {
+  grid-template-columns: 1fr;
 }
 .modal-panel textarea {
   min-height: 96px;

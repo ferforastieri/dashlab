@@ -9,6 +9,7 @@ import { useCreateSectionMutation } from '../../../api/sections/useCreateSection
 import { useUpdateSectionMutation } from '../../../api/sections/useUpdateSectionMutation';
 import { ImageUpload } from '../../../components/ui/ImageUpload';
 import { Modal } from '../../../components/ui/Modal';
+import { Select } from '../../../components/ui/Select';
 import {
   DashboardApplication as AppItem,
   DashboardData as Dash,
@@ -340,7 +341,7 @@ export function DashboardEditor({
             </label>
             <label>
               Tipo
-              <select
+              <Select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
               >
@@ -356,7 +357,7 @@ export function DashboardEditor({
                     {label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
             {form.type === 'PROMQL' && (
               <>

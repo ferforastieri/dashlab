@@ -3,6 +3,7 @@ import { Trash2, UserPlus, Users, X } from 'lucide-react';
 import { apiClient, showToast } from '../../../api/core/apiClient';
 import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
+import { Select } from '../../../components/ui/Select';
 
 type LabUser = {
   id: string;
@@ -95,10 +96,10 @@ export function UserManagementDialog({ close }: { close: () => void }) {
               </label>
               <label>
                 Permissão
-                <select value={role} onChange={(event) => setRole(event.target.value as LabUser['role'])}>
+                <Select value={role} onChange={(event) => setRole(event.target.value as LabUser['role'])}>
                   <option value="user">Usuário</option>
                   <option value="admin">Administrador</option>
-                </select>
+                </Select>
               </label>
             </div>
             <label>

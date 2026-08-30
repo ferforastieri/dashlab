@@ -273,7 +273,7 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
       );
     if (elementKey === 'SEARCH')
       return (
-        <form className="search-shell" onSubmit={(event) => {
+        <form className={`${cn('search')} search-shell`} onSubmit={(event) => {
           event.preventDefault();
           const normalized = query.trim().toLocaleLowerCase();
           if (!normalized) return;
@@ -282,7 +282,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
           );
           window.open(application?.url || `https://www.google.com/search?q=${encodeURIComponent(query.trim())}`, '_blank', 'noopener,noreferrer');
         }}>
-          <div className={cn('search')}>
           <Search size={18} />
           <input
             value={query}
@@ -291,7 +290,6 @@ export function DashboardView({ dashboardQuery }: { dashboardQuery: any }) {
             aria-label="Pesquisar aplicações ou na web"
             aria-expanded={Boolean(query.trim())}
           />
-          </div>
           {query.trim() && (
             <div className="search-results" role="listbox" aria-label="Aplicações encontradas">
               {dash.applications

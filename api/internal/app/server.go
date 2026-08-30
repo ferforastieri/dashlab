@@ -120,6 +120,8 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("GET /api/health", s.health)
 	mux.HandleFunc("GET /api/version", s.version)
 	mux.HandleFunc("GET /api/auth/status", s.authStatus)
+	mux.HandleFunc("GET /api/auth/branding", s.publicBranding)
+	mux.HandleFunc("GET /api/auth/branding/logo", s.publicBrandingLogo)
 	mux.HandleFunc("POST /api/auth/bootstrap", s.bootstrap)
 	mux.HandleFunc("POST /api/auth/login", s.login)
 	mux.HandleFunc("GET /api/auth/users", s.listUsers)
@@ -158,7 +160,7 @@ func (s *Server) routes() http.Handler {
 // Health remains public so Docker can perform its health check.
 func (s *Server) auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/api/health" || r.URL.Path == "/api/version" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/bootstrap" || r.URL.Path == "/api/auth/login" {
+		if !strings.HasPrefix(r.URL.Path, "/api/") || r.URL.Path == "/api/health" || r.URL.Path == "/api/version" || r.URL.Path == "/api/auth/status" || r.URL.Path == "/api/auth/branding" || r.URL.Path == "/api/auth/branding/logo" || r.URL.Path == "/api/auth/bootstrap" || r.URL.Path == "/api/auth/login" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -219,6 +221,48 @@ func (s *Server) authStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	identity := s.sessionIdentity(r)
 	writeJSON(w, 200, map[string]any{"setup": len(users) == 0, "authenticated": identity.Username != ""})
+}
+
+func (s *Server) publicBranding(w http.ResponseWriter, r *http.Request) {
+	dashboard, err := s.store.Dashboard(r.Context())
+	if err != nil {
+		s.fail(w, http.StatusInternalServerError, err)
+		return
+	}
+	logo := stringValue(dashboard.Branding["logo"])
+	if logo != "" {
+		logo = "/api/auth/branding/logo"
+	} else {
+		logo = "/logo.svg"
+	}
+	name := stringValue(dashboard.Branding["name"])
+	if name == "" {
+		name = dashboard.Name
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, map[string]string{"name": truncate(name, 80), "logo": logo})
+}
+
+func (s *Server) publicBrandingLogo(w http.ResponseWriter, r *http.Request) {
+	dashboard, err := s.store.Dashboard(r.Context())
+	if err != nil {
+		s.fail(w, http.StatusInternalServerError, err)
+		return
+	}
+	logo := stringValue(dashboard.Branding["logo"])
+	filename := strings.TrimPrefix(logo, "/api/assets/files/")
+	if filename == logo || filename == "" {
+		http.NotFound(w, r)
+		return
+	}
+	asset, err := s.store.AssetByPath(r.Context(), filename)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", asset.MimeType)
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	_, _ = w.Write(asset.Data)
 }
 func (s *Server) sessionIdentity(r *http.Request) authIdentity {
 	if cookie, err := r.Cookie("dashlab_session"); err == nil {

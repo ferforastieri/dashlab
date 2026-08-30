@@ -1,17 +1,60 @@
-import { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { ToastHost } from '../components/ui/ToastHost';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 
 export function App() {
   const [state, setState] = useState<{ setup: boolean; authenticated: boolean } | null>(null);
-  useEffect(() => { void fetch('/api/auth/status').then((r) => r.json()).then(setState).catch(() => setState({ setup: false, authenticated: false })); }, []);
+  const [branding, setBranding] = useState({ name: 'DashLab+', logo: '/logo.svg' });
+  useEffect(() => {
+    void fetch('/api/auth/status').then((r) => r.json()).then(setState).catch(() => setState({ setup: false, authenticated: false }));
+    void fetch('/api/auth/branding').then((r) => r.ok ? r.json() : null).then((value) => {
+      if (value?.name && value?.logo) setBranding({ name: value.name, logo: value.logo });
+    }).catch(() => undefined);
+  }, []);
   if (!state) return null;
-  if (!state.authenticated) return <AccessForm setup={state.setup} onDone={() => window.location.reload()} />;
+  if (!state.authenticated) return <AccessForm setup={state.setup} branding={branding} onDone={() => window.location.reload()} />;
   return <><ToastHost /><DashboardPage /></>;
 }
 
-function AccessForm({ setup, onDone }: { setup: boolean; onDone: () => void }) {
-  const [username, setUsername] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState('');
-  async function submit(event: React.FormEvent) { event.preventDefault(); setError(''); const response = await fetch(setup ? '/api/auth/bootstrap' : '/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username,password}) }); if (!response.ok) { setError(setup ? 'Não foi possível criar o administrador.' : 'Usuário ou senha inválidos.'); return; } onDone(); }
-  return <main className="grid min-h-screen place-items-center bg-[#101416] p-6 text-[#e7eaec]"><form onSubmit={submit} className="grid w-full max-w-sm gap-4 rounded border border-[#343b3f] bg-[#181d20] p-7"><h1 className="m-0 text-xl">{setup ? 'Crie o administrador' : 'Entrar no DashLab+'}</h1><p className="m-0 text-sm text-[#b4bec3]">{setup ? 'Este será o primeiro usuário e terá permissão de administrador.' : 'Use suas credenciais para acessar o Lab.'}</p><label>Usuário<input required minLength={3} value={username} onChange={(e)=>setUsername(e.target.value)} className="mt-1 block w-full rounded border border-[#343b3f] bg-[#101416] p-3" /></label><label>Senha<input required type="password" minLength={8} value={password} onChange={(e)=>setPassword(e.target.value)} className="mt-1 block w-full rounded border border-[#343b3f] bg-[#101416] p-3" /></label>{error && <p className="m-0 text-sm text-red-300">{error}</p>}<button className="rounded bg-[#ff7a1a] p-3 font-semibold text-[#101416]">{setup ? 'Criar administrador' : 'Entrar'}</button></form></main>;
+function AccessForm({ setup, branding, onDone }: { setup: boolean; branding: { name: string; logo: string }; onDone: () => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    setError('');
+    setBusy(true);
+    try {
+      const response = await fetch(setup ? '/api/auth/bootstrap' : '/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+      if (!response.ok) {
+        setError(setup ? 'Não foi possível criar o administrador.' : 'Usuário ou senha inválidos.');
+        return;
+      }
+      onDone();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="access-screen">
+      <div className="access-glow" aria-hidden="true" />
+      <form onSubmit={submit} className="access-card">
+        <div className="access-brand">
+          <span className="access-logo"><img src={branding.logo} alt="" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo.svg'; }} /></span>
+          <span><small>WORKSPACE</small><strong>{branding.name}</strong></span>
+        </div>
+        <div className="access-heading">
+          <span>{setup ? 'PRIMEIRA CONFIGURAÇÃO' : 'ACESSO RESTRITO'}</span>
+          <h1>{setup ? 'Crie o administrador' : 'Entrar no Lab'}</h1>
+          <p>{setup ? 'Este será o primeiro usuário e terá permissão de administrador.' : 'Use suas credenciais para acessar o workspace.'}</p>
+        </div>
+        <label>Usuário<input required minLength={3} value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" /></label>
+        <label>Senha<input required type="password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={setup ? 'new-password' : 'current-password'} /></label>
+        {error && <p className="access-error" role="alert">{error}</p>}
+        <button type="submit" className="access-submit" disabled={busy}>{busy ? 'Aguarde…' : setup ? 'Criar administrador' : 'Entrar'}</button>
+      </form>
+    </main>
+  );
 }
