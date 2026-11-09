@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSitePreferences } from './shared/SiteTools';
 import { PublicFooter, PublicHeader } from './shared/SiteChrome';
 
-const installCommand = 'curl -fsSL https://dashlabplus.vercel.app/install.sh | sh';
+const installCommand = 'curl -fsSL https://dashlab.vira.ia.br/install.sh | sh';
 
 const features = [
   [

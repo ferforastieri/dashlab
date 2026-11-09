@@ -80,7 +80,7 @@ jobs:
           gh release create "$RELEASE_TAG" \
             --target "$GITHUB_SHA" \
             --title "DashLab+ $RELEASE_TAG" \
-            --notes $'Instalação rápida:\n\n```bash\ncurl -fsSL https://dashlabplus.vercel.app/install.sh | sh\n```' \
+            --notes $'Instalação rápida:\n\n```bash\ncurl -fsSL https://dashlab.vira.ia.br/install.sh | sh\n```' \
             --generate-notes \
             web/public/install.sh \
             docker-compose.yml \

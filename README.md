@@ -2,7 +2,7 @@
 
 Dashboard self-hosted multiusuário para organizar serviços, atalhos e métricas de um homelab.
 
-Site público: [dashlabplus.vercel.app](https://dashlabplus.vercel.app/)
+Site público: [dashlab.vira.ia.br](https://dashlab.vira.ia.br/)
 
 ## Visão geral
 
@@ -58,7 +58,7 @@ O volume `dashlab_plus_data` preserva dashboard, layout, branding, aplicações,
 Requisitos: Docker Engine e Docker Compose v2.
 
 ```bash
-curl -fsSL https://dashlabplus.vercel.app/install.sh | sh
+curl -fsSL https://dashlab.vira.ia.br/install.sh | sh
 ```
 
 Para uma instalação reprodutível, baixe o instalador de uma release e execute com `DASHLAB_RELEASE_REF=refs/tags/vX.Y.Z`.

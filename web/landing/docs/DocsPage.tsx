@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { useSitePreferences } from '../shared/SiteTools';
 import { PublicFooter, PublicHeader } from '../shared/SiteChrome';
 
-const installCommand = 'curl -fsSL https://dashlabplus.vercel.app/install.sh | sh';
+const installCommand = 'curl -fsSL https://dashlab.vira.ia.br/install.sh | sh';
 
 export function DocsPage() {
   const { language, theme, text, toggleLanguage, toggleTheme } = useSitePreferences({
@@ -97,8 +97,8 @@ export function DocsPage() {
               </strong>
               <p>
                 {text(
-                  'dashlabplus.vercel.app apresenta o projeto, hospeda esta documentação e entrega o instalador. O dashboard completo roda no seu servidor, normalmente em http://IP-DO-HOST:3000, com Docker, API e banco de dados.',
-                  'dashlabplus.vercel.app presents the project, hosts this documentation, and delivers the installer. The complete dashboard runs on your server, usually at http://HOST-IP:3000, with Docker, API, and database.',
+                  'dashlab.vira.ia.br apresenta o projeto, hospeda esta documentação e entrega o instalador. O dashboard completo roda no seu servidor, normalmente em http://IP-DO-HOST:3000, com Docker, API e banco de dados.',
+                  'dashlab.vira.ia.br presents the project, hosts this documentation, and delivers the installer. The complete dashboard runs on your server, usually at http://HOST-IP:3000, with Docker, API, and database.',
                 )}
               </p>
             </div>
