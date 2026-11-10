@@ -16,8 +16,8 @@ for (const file of await readdir(assets)) {
 const serviceWorker = resolve(dist, 'sw.js');
 const source = await readFile(serviceWorker, 'utf8');
 const trimmed = source
-  .replace(/^\s*'\/lab\/',\n/m, '')
-  .replace(/^\s*'\/lab\.webmanifest',\n/m, '')
-  .replaceAll("caches.match('/lab/')", "caches.match('/')");
+  .replace(/^\s*'\.\/lab\/',\n/m, '')
+  .replace(/^\s*'\.\/lab\.webmanifest',\n/m, '')
+  .replaceAll("caches.match('./lab/')", "caches.match('./')");
 
 await writeFile(serviceWorker, trimmed);

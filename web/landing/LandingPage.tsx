@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSitePreferences } from './shared/SiteTools';
 import { PublicFooter, PublicHeader } from './shared/SiteChrome';
 
-const installCommand = 'curl -fsSL https://dashlab.vira.ia.br/install.sh | sh';
+const installCommand = 'curl -fsSL https://ferforastieri.github.io/dashlab/install.sh | sh';
 
 const features = [
   [
@@ -125,7 +125,7 @@ export function LandingPage() {
               <a className="button primary" href="#instalacao">
                 {text('Ver como instalar', 'See how to install')} <span>→</span>
               </a>
-              <a className="button secondary" href="/docs/">
+              <a className="button secondary" href="docs/">
                 {text('Ler documentação', 'Read the docs')}
               </a>
             </div>
@@ -157,7 +157,7 @@ export function LandingPage() {
               <div className="window-bar">
                 <div className="mini-brand">
                   <b>
-                    <img src="/logo.png" alt="" />
+                    <img src="logo.png" alt="" />
                   </b>
                   <span>
                     DASHLAB+<small>WORKSPACE</small>
@@ -345,7 +345,7 @@ export function LandingPage() {
                 'Local authentication, with no ORM or remote database. You define the users and your network trust boundary.',
               )}
             </p>
-            <a className="text-link" href="/docs/#arquitetura">
+            <a className="text-link" href="docs/#arquitetura">
               {text('ENTENDER A ARQUITETURA', 'UNDERSTAND THE ARCHITECTURE')} <span>→</span>
             </a>
           </div>
@@ -461,7 +461,7 @@ export function LandingPage() {
             </div>
           </div>
           <div className="install-actions reveal">
-            <a className="button primary" href="/docs/#instalacao">
+            <a className="button primary" href="docs/#instalacao">
               {text('Guia completo', 'Complete guide')} <span>→</span>
             </a>
             <a className="button secondary" href="https://github.com/ferforastieri/dashlab">
@@ -487,14 +487,14 @@ export function LandingPage() {
                 'Lightweight, direct, and under your control.',
               )}
             </p>
-            <a className="button primary" href="/docs/#instalacao">
+            <a className="button primary" href="docs/#instalacao">
               {text('Ver guia de instalação', 'View installation guide')} <span>→</span>
             </a>
           </div>
         </section>
       </main>
 
-      <PublicFooter language={language} text={text} />
+      <PublicFooter landing language={language} text={text} />
     </>
   );
 }

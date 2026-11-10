@@ -12,21 +12,22 @@ export function PublicHeader({ language, theme, text, toggleLanguage, toggleThem
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
   const close = () => setMenuOpen(false);
-  const prefix = landing ? '' : '/';
+  const prefix = landing ? '' : '../';
   return <header className={`site-header ${scrolled ? 'is-scrolled' : ''}`} data-header>
     <a className="brand" href={`${prefix}#inicio`} onClick={close} aria-label="DashLab+">
-      <span><img src="/logo.png" alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small>
+      <span><img src={`${prefix}logo.png`} alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small>
     </a>
     <button className="menu-button" type="button" aria-expanded={menuOpen} aria-label={text('Abrir menu', 'Open menu')} onClick={() => setMenuOpen((open) => !open)}><span /><span /></button>
     <nav className={menuOpen ? 'is-open' : ''} aria-label={text('Navegação principal', 'Main navigation')}>
       <a href={`${prefix}#recursos`} onClick={close}>{text('Recursos', 'Features')}</a><a href={`${prefix}#arquitetura`} onClick={close}>{text('Arquitetura', 'Architecture')}</a><a href={`${prefix}#instalacao`} onClick={close}>{text('Instalação', 'Installation')}</a>
-      <a href="/docs/" onClick={close}>{text('Documentação', 'Documentation')}</a><a href="/releases/" onClick={close}>Releases</a><a href="https://github.com/ferforastieri/dashlab">GitHub</a>
+      <a href={`${prefix}docs/`} onClick={close}>{text('Documentação', 'Documentation')}</a><a href={`${prefix}releases/`} onClick={close}>Releases</a><a href="https://github.com/ferforastieri/dashlab">GitHub</a>
     </nav>
     <SiteTools language={language} theme={theme} toggleLanguage={toggleLanguage} toggleTheme={toggleTheme} />
     <a className="header-cta" href={`${prefix}#instalacao`}>{text('Ver instalação', 'See installation')} <span>→</span></a>
   </header>;
 }
 
-export function PublicFooter({ text }: Pick<ChromeProps, 'language' | 'text'>) {
-  return <footer className="site-footer"><a className="brand footer-brand" href="/#inicio"><span><img src="/logo.png" alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small></a><div className="footer-copy"><p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p><small>© {new Date().getFullYear()} Fernando Forastieri · DashLab+ · <a href="https://github.com/ferforastieri/dashlab/blob/main/LICENSE">{text('Licença MIT', 'MIT License')}</a> · Self-hosted · deploy-check-2026-11-09-2315</small></div><nav><a href="/docs/">{text('Documentação', 'Documentation')}</a><a href="/releases/">Releases</a><a href="https://github.com/ferforastieri/dashlab">GitHub</a><a href="/#inicio">{text('Voltar ao topo ↑', 'Back to top ↑')}</a></nav></footer>;
+export function PublicFooter({ text, landing = false }: Pick<ChromeProps, 'language' | 'text'> & { landing?: boolean }) {
+  const prefix = landing ? '' : '../';
+  return <footer className="site-footer"><a className="brand footer-brand" href={`${prefix}#inicio`}><span><img src={`${prefix}logo.png`} alt="" /></span><strong>DASHLAB+</strong><small>PERSONAL NODE</small></a><div className="footer-copy"><p>{text('Dashboard pessoal para homelabs.', 'A personal dashboard for homelabs.')}</p><small>© {new Date().getFullYear()} Fernando Forastieri · DashLab+ · <a href="https://github.com/ferforastieri/dashlab/blob/main/LICENSE">{text('Licença MIT', 'MIT License')}</a> · Self-hosted</small></div><nav><a href={`${prefix}docs/`}>{text('Documentação', 'Documentation')}</a><a href={`${prefix}releases/`}>Releases</a><a href="https://github.com/ferforastieri/dashlab">GitHub</a><a href={`${prefix}#inicio`}>{text('Voltar ao topo ↑', 'Back to top ↑')}</a></nav></footer>;
 }

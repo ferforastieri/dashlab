@@ -2,13 +2,13 @@
 
 Dashboard self-hosted multiusuário para organizar serviços, atalhos e métricas de um homelab.
 
-Site público: [dashlab.vira.ia.br](https://dashlab.vira.ia.br/)
+Site público: [ferforastieri.github.io/dashlab](https://ferforastieri.github.io/dashlab/)
 
 ## Visão geral
 
 O projeto tem duas experiências:
 
-- **Landing** — apresentação pública, documentação e releases, publicada na Vercel.
+- **Landing** — apresentação pública, documentação e releases, publicada no GitHub Pages.
 - **Lab** — dashboard que roda no servidor do usuário, junto da API e do SQLite.
 
 Na instalação Docker, uma única imagem contém o frontend compilado e o servidor Go. O Compose publica a porta somente em `127.0.0.1`; use um reverse proxy HTTPS com Basic/SSO para acesso pela LAN/VPN.
@@ -40,13 +40,13 @@ O volume `dashlab_plus_data` preserva dashboard, layout, branding, aplicações,
 | API | Go 1.24, `net/http` |
 | Persistência | SQLite (`modernc.org/sqlite`) |
 | Integrações | Prometheus, clima e disponibilidade |
-| Distribuição | Docker, Compose, GHCR e Vercel |
+| Distribuição | Docker, Compose, GHCR e GitHub Pages |
 
 ## Rotas
 
 | Rota | Função |
 | --- | --- |
-| `/` | Landing na Vercel; Lab na instalação self-hosted |
+| `/` | Landing no GitHub Pages; Lab na instalação self-hosted |
 | `/lab/` | Dashboard Lab |
 | `/docs/` | Documentação de instalação e operação |
 | `/releases/` | Releases publicados no GitHub |
@@ -58,7 +58,7 @@ O volume `dashlab_plus_data` preserva dashboard, layout, branding, aplicações,
 Requisitos: Docker Engine e Docker Compose v2.
 
 ```bash
-curl -fsSL https://dashlab.vira.ia.br/install.sh | sh
+curl -fsSL https://ferforastieri.github.io/dashlab/install.sh | sh
 ```
 
 Para uma instalação reprodutível, baixe o instalador de uma release e execute com `DASHLAB_RELEASE_REF=refs/tags/vX.Y.Z`.

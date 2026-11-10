@@ -28,7 +28,7 @@ func webHandler(root string) http.Handler {
 			return
 		}
 		// A self-hosted instance is the actual dashboard, so its root opens the
-		// Lab directly. The public Vercel deployment keeps the marketing landing.
+		// Lab directly. The public GitHub Pages deployment keeps the marketing landing.
 		if r.URL.Path == "/" {
 			http.Redirect(w, r, "/lab/", http.StatusFound)
 			return

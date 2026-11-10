@@ -1,11 +1,12 @@
 const BUILD_VERSION = '__DASHLAB_BUILD_VERSION__';
 const CACHE_VERSION = `dashlab-plus-shell-${BUILD_VERSION}`;
+const BASE = new URL('.', self.location.href).pathname;
 const SHELL = [
-  '/',
-  '/docs/',
-  '/lab/',
-  '/manifest.webmanifest',
-  '/lab.webmanifest',
+  './',
+  './docs/',
+  './lab/',
+  './manifest.webmanifest',
+  './lab.webmanifest',
 ];
 
 self.addEventListener('install', (event) => {
@@ -34,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (url.origin !== self.location.origin || url.pathname.startsWith(`${BASE}api/`)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -44,7 +45,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(async () => (await caches.match(request)) || caches.match('/lab/')),
+        .catch(async () => (await caches.match(request)) || caches.match('./lab/')),
     );
     return;
   }

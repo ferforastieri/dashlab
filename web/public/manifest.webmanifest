@@ -3,28 +3,28 @@
   "short_name": "DashLab+",
   "description": "Seu homelab, do seu jeito.",
   "lang": "pt-BR",
-  "id": "/",
-  "start_url": "/",
-  "scope": "/",
+  "id": ".",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#101416",
   "theme_color": "#101416",
   "icons": [
     {
-      "src": "/icons/pwa-192.png",
+      "src": "icons/pwa-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/pwa-512.png",
+      "src": "icons/pwa-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/pwa-maskable-512.png",
+      "src": "icons/pwa-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -33,6 +33,6 @@
   "shortcuts": [{
     "name": "Ler documentação",
     "short_name": "Documentação",
-    "url": "/docs/"
+    "url": "docs/"
   }]
 }
